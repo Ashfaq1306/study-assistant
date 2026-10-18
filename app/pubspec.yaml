@@ -1,0 +1,56 @@
+name: study_assistant
+description: "Study Assistant: focus, lock distractions, unlock by passing your exam."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management and dependency injection
+  flutter_riverpod: ^3.4.3
+  # Navigation with auth-aware redirects
+  go_router: ^18.1.0
+  # HTTP client with token-refresh interceptor
+  dio: ^5.11.1
+  # Tokens live in the Android Keystore / iOS Keychain, never in plain prefs
+  flutter_secure_storage: ^11.2.0
+  # Parent pairing: student shows a QR, parent scans it
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^7.4.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  mocktail: ^1.0.5
+  # dart run flutter_launcher_icons (icons are drawn by tool/icon/render_icon_test.dart)
+  flutter_launcher_icons: ^0.14.4
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: assets/icon/app_icon.png
+  remove_alpha_ios: true
+  adaptive_icon_background: assets/icon/app_icon_background.png
+  adaptive_icon_foreground: assets/icon/app_icon_foreground.png
+  adaptive_icon_monochrome: assets/icon/app_icon_monochrome.png
+
+flutter:
+  uses-material-design: true
+
+  fonts:
+    # Nunito, SIL Open Font License 1.1 (assets/fonts/OFL.txt)
+    - family: Nunito
+      fonts:
+        - asset: assets/fonts/Nunito-500.ttf
+          weight: 500
+        - asset: assets/fonts/Nunito-700.ttf
+          weight: 700
+        - asset: assets/fonts/Nunito-800.ttf
+          weight: 800
+        - asset: assets/fonts/Nunito-900.ttf
+          weight: 900
