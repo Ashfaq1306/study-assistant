@@ -1,0 +1,125 @@
+// Study Assistant data model.
+// Development uses SQLite. For production switch `provider` to "postgresql"
+// and point DATABASE_URL at your Postgres instance.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  PARENT
+  ADMIN
+}
+
+enum OtpChannel {
+  EMAIL
+  SMS
+}
+
+enum OtpPurpose {
+  VERIFY_ACCOUNT
+  RESET_PASSWORD
+}
+
+model User {
+  id              String     @id @default(cuid())
+  role            Role
+  name            String
+  email           String?    @unique
+  phone           String?    @unique // E.164, e.g. +8801712345678
+  passwordHash    String
+  dateOfBirth     DateTime
+  otpChannel      OtpChannel
+  /// Set when the account is first opened with a code.
+  verifiedAt      DateTime?
+  /// A contact may only be used to sign in or reset the password once a code has been received on it.
+  emailVerifiedAt DateTime?
+  phoneVerifiedAt DateTime?
+  disabledAt      DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  otpCodes     OtpCode[]
+  sessions     Session[]
+  pairingCodes PairingCode[] @relation("PairingStudent")
+  childLinks   FamilyLink[]  @relation("ParentLinks")
+  parentLinks  FamilyLink[]  @relation("StudentLinks")
+}
+
+model OtpCode {
+  id         String     @id @default(cuid())
+  userId     String
+  purpose    OtpPurpose
+  channel    OtpChannel
+  codeHash   String
+  attempts   Int        @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose, createdAt])
+}
+
+/// One row per code sent, keyed by an HMAC of the destination (not the user),
+/// so resend limits survive deleting and re-creating an unverified signup.
+model OtpSend {
+  id              String   @id @default(cuid())
+  destinationHash String
+  createdAt       DateTime @default(now())
+
+  @@index([destinationHash, createdAt])
+}
+
+/// A refresh-token session. Tokens rotate on every refresh; reuse of a
+/// rotated token revokes the whole family (stolen-token detection).
+model Session {
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  familyId   String
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  replacedAt DateTime?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+/// Short-lived code a student shows as a QR so a parent can link to them.
+model PairingCode {
+  id         String    @id @default(cuid())
+  studentId  String
+  codeHash   String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  student User @relation("PairingStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+}
+
+model FamilyLink {
+  id        String   @id @default(cuid())
+  parentId  String
+  studentId String
+  createdAt DateTime @default(now())
+
+  parent  User @relation("ParentLinks", fields: [parentId], references: [id], onDelete: Cascade)
+  student User @relation("StudentLinks", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([parentId, studentId])
+  @@index([studentId])
+}

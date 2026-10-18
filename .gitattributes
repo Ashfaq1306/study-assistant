@@ -1,0 +1,10 @@
+# Store text with LF everywhere so Windows checkouts, CI and formatters agree.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.ttf binary
+*.jar binary
