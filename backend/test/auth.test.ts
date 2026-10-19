@@ -412,3 +412,16 @@ describe('secondary contacts', () => {
     expect((await prisma.user.findUniqueOrThrow({ where: { id: userId } })).phone).toBeNull();
   });
 });
+
+describe('development codes', () => {
+  it('never returns the code outside development', async () => {
+    const res = await post('/v1/auth/register', studentBody());
+    expect(res.json().verification.devCode).toBeUndefined();
+  });
+
+  it('returns the code in development so the app can be tested without email or SMS', async () => {
+    const dev = await createTestApp({ nodeEnv: 'development' });
+    const res = await dev.app.inject({ method: 'POST', url: '/v1/auth/register', payload: studentBody() });
+    expect(res.json().verification.devCode).toBe(dev.notifier.lastCode());
+  });
+});

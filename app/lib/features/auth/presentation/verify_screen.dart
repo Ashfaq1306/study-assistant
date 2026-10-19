@@ -12,6 +12,7 @@ import '../../../core/widgets/page_shell.dart';
 import '../../../core/widgets/resend_button.dart';
 import '../application/auth_controller.dart';
 import '../domain/otp.dart';
+import 'widgets/dev_code_banner.dart';
 
 /// Enter the 6-digit code that opens a new account. On success the router
 /// takes the user on (to home, or to linking a parent if under 15).
@@ -124,6 +125,10 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
             style: text.bodyLarge?.copyWith(color: AppColors.inkSoft),
           ),
           const SizedBox(height: 28),
+          if (_delivery?.devCode case final devCode?) ...[
+            DevCodeBanner(code: devCode, onUse: () => _code.text = devCode),
+            const SizedBox(height: 16),
+          ],
           OtpInput(controller: _code, hasError: _error != null, onCompleted: (_) => _submit()),
           if (_error != null) ...[const SizedBox(height: 16), MessageBanner.error(_attemptsMessage(_error!))],
           const SizedBox(height: 28),

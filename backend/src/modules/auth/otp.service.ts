@@ -17,6 +17,8 @@ export interface OtpIssued {
   destination: string;
   expiresAt: string;
   resendAvailableAt: string;
+  /** Development only: the code itself, so testing needs no email or SMS. */
+  devCode?: string;
 }
 
 type Recipient = Pick<User, 'id' | 'name' | 'email' | 'phone'>;
@@ -28,6 +30,8 @@ export class OtpService {
     private readonly secret: string,
     private readonly clock: Clock,
     private readonly log: FastifyBaseLogger,
+    /** Never true in production: see buildApp. */
+    private readonly exposeDevCodes = false,
   ) {}
 
   /** Sends a fresh code, invalidating any earlier unused code for the same purpose. */
@@ -81,6 +85,7 @@ export class OtpService {
       destination: channel === 'EMAIL' ? maskEmail(to) : maskPhone(to),
       expiresAt: expiresAt.toISOString(),
       resendAvailableAt: new Date(now.getTime() + OTP_RESEND_COOLDOWN_MS).toISOString(),
+      ...(this.exposeDevCodes ? { devCode: code } : {}),
     };
   }
 

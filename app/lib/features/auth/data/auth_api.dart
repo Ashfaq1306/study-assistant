@@ -99,8 +99,15 @@ class AuthApi {
     ),
   );
 
-  Future<void> forgotPassword(String identifier) =>
-      _client.post('/v1/auth/password/forgot', data: {'identifier': identifier.trim()}, authenticated: false);
+  /// Returns the code only when talking to a development server.
+  Future<String?> forgotPassword(String identifier) async {
+    final json = await _client.post(
+      '/v1/auth/password/forgot',
+      data: {'identifier': identifier.trim()},
+      authenticated: false,
+    );
+    return json['devCode'] as String?;
+  }
 
   Future<SignedInSession> resetPassword(String identifier, String code, String newPassword) async =>
       SignedInSession.fromJson(

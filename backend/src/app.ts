@@ -88,7 +88,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
 
   const notifier = options.notifier ?? createNotifier(env, app.log);
   const users = new UsersService(prisma, clock);
-  const otp = new OtpService(prisma, notifier, env.OTP_SECRET, clock, app.log);
+  // Development builds return OTPs in responses so the app can be tested without email/SMS.
+  const otp = new OtpService(prisma, notifier, env.OTP_SECRET, clock, app.log, env.NODE_ENV === 'development');
   const tokens = new TokenService(prisma, (claims) => app.jwt.sign(claims), clock);
   const auth = new AuthService(prisma, otp, tokens, users, clock);
   const family = new FamilyService(prisma, users, env.OTP_SECRET, clock);

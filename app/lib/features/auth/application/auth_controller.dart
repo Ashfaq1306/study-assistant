@@ -98,7 +98,7 @@ class AuthController extends Notifier<AuthState> {
 
   Future<OtpDelivery> resendCode(String userId, {OtpChannel? channel}) => _api.resend(userId, channel: channel);
 
-  Future<void> forgotPassword(String identifier) => _api.forgotPassword(identifier);
+  Future<String?> forgotPassword(String identifier) => _api.forgotPassword(identifier);
 
   Future<void> resetPassword(String identifier, String code, String newPassword) async =>
       _signIn(await _api.resetPassword(identifier, code, newPassword));

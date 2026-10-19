@@ -12,6 +12,7 @@ import '../../../core/widgets/page_shell.dart';
 import '../../../core/widgets/password_meter.dart';
 import '../../../core/widgets/resend_button.dart';
 import '../application/auth_controller.dart';
+import 'widgets/dev_code_banner.dart';
 
 /// Ask for a code, then set a new password with it. Success signs you in.
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
@@ -33,6 +34,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   bool _codeSent = false;
   bool _loading = false;
   DateTime _resendAt = DateTime.now();
+  String? _devCode;
   ApiException? _error;
 
   @override
@@ -60,8 +62,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   Future<void> _requestCode() async {
     if (!_requestForm.currentState!.validate()) return;
     await _run(() async {
-      await ref.read(authControllerProvider.notifier).forgotPassword(_identifier.text);
+      final devCode = await ref.read(authControllerProvider.notifier).forgotPassword(_identifier.text);
       setState(() {
+        _devCode = devCode;
         _codeSent = true;
         _resendAt = DateTime.now().add(_resendCooldown);
       });
@@ -142,6 +145,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             style: text.bodyLarge?.copyWith(color: AppColors.inkSoft),
           ),
           const SizedBox(height: 24),
+          if (_devCode != null) ...[
+            DevCodeBanner(code: _devCode!, onUse: () => _code.text = _devCode!),
+            const SizedBox(height: 16),
+          ],
           OtpInput(controller: _code, hasError: _error != null),
           const SizedBox(height: 22),
           AppTextField(
@@ -170,7 +177,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
               availableAt: _resendAt,
               onResend: () async {
                 try {
-                  await ref.read(authControllerProvider.notifier).forgotPassword(_identifier.text);
+                  final devCode = await ref.read(authControllerProvider.notifier).forgotPassword(_identifier.text);
+                  if (mounted) setState(() => _devCode = devCode);
                   return DateTime.now().add(_resendCooldown);
                 } on ApiException catch (e) {
                   if (mounted) setState(() => _error = e);

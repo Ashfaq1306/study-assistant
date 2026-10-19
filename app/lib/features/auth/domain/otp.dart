@@ -10,7 +10,7 @@ enum OtpChannel {
 
 /// Where a one-time code went and when another may be requested.
 class OtpDelivery {
-  const OtpDelivery({required this.channel, required this.destination, required this.resendAvailableAt});
+  const OtpDelivery({required this.channel, required this.destination, required this.resendAvailableAt, this.devCode});
 
   final OtpChannel channel;
 
@@ -18,10 +18,14 @@ class OtpDelivery {
   final String destination;
   final DateTime resendAvailableAt;
 
+  /// Only sent by a development server, so testing needs no email or SMS.
+  final String? devCode;
+
   factory OtpDelivery.fromJson(Map<String, Object?> json) => OtpDelivery(
     channel: OtpChannel.fromApi(json['channel']! as String),
     destination: json['destination']! as String,
     resendAvailableAt: DateTime.parse(json['resendAvailableAt']! as String),
+    devCode: json['devCode'] as String?,
   );
 }
 
