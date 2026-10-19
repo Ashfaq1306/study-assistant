@@ -26,7 +26,12 @@ export const examsRoutes =
         timeWindow: '1 minute',
         keyGenerator: (request: FastifyRequest) => {
           const token = request.headers.authorization?.replace(/^Bearer /i, '');
-          const sub = token ? (app.jwt.decode<{ sub?: string }>(token)?.sub ?? null) : null;
+          let sub: string | null = null;
+          try {
+            sub = token ? (app.jwt.decode<{ sub?: string }>(token)?.sub ?? null) : null;
+          } catch {
+            // Malformed token: requireAuth rejects it; limit by IP meanwhile.
+          }
           return sub ? `user:${sub}` : request.ip;
         },
       },

@@ -44,6 +44,7 @@ export class TutorService {
       throw new AppError(409, 'EXAM_IN_PROGRESS', 'The study helper takes a break while your exam is open. Good luck!');
     }
 
+    const session = await this.sessions.findActive(student.id);
     const now = this.clock();
     // Take a slot first and count after (ours included), so parallel requests cannot all slip under the limit.
     const slot = await this.prisma.aiUsage.create({ data: { userId: student.id, kind: 'TUTOR', createdAt: now } });
@@ -55,7 +56,6 @@ export class TutorService {
       throw new AppError(429, 'TUTOR_LIMIT', "You've used all your questions for today. Come back tomorrow!");
     }
 
-    const session = await this.sessions.findActive(student.id);
     let reply: string;
     try {
       reply = await this.ai.tutor(input.messages, {

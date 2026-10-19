@@ -95,7 +95,11 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     if (!mounted) return;
     final now = ref.read(serverClockProvider).now();
     if (exam != null && exam.result == null && !_submitting) {
-      if (exam.status != ExamStatus.active) {
+      if (exam.status == ExamStatus.expired) {
+        // Ran out without a result: show the retry screen.
+        unawaited(_load());
+        return;
+      } else if (exam.status != ExamStatus.active) {
         // Handed in but not marked yet (an older server): check back.
         if (now.second % 3 == 0) unawaited(_check(exam.id));
       } else if (!now.isBefore(exam.expiresAt) && !now.isBefore(_nextAutoSubmit ?? now)) {
@@ -227,6 +231,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   Widget _taking(Exam exam) {
     final left = exam.expiresAt.difference(ref.read(serverClockProvider).now());
     final urgent = left < const Duration(minutes: 1);
+    // Captured now, so a tap on the card sliding out is saved for its own question.
+    final question = exam.questions[_index];
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
@@ -298,11 +304,11 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
                 ),
               ),
               child: _QuestionCard(
-                key: ValueKey(exam.questions[_index].id),
+                key: ValueKey(question.id),
                 number: _index + 1,
-                question: exam.questions[_index],
-                answer: _answers[exam.questions[_index].id],
-                onAnswer: (value) => setState(() => _answers[exam.questions[_index].id] = value),
+                question: question,
+                answer: _answers[question.id],
+                onAnswer: (value) => setState(() => _answers[question.id] = value),
               ),
             ),
             const SizedBox(height: 12),
