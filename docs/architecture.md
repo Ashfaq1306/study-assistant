@@ -64,7 +64,7 @@ Every error is `{ "error": { "code": "OTP_INVALID", "message": "That code is not
 - **Safety:** whole-phone mode only blocks apps with a launcher icon, so emergency (cell broadcast) alerts, Wi-Fi sign-in (captive portal) pages and the SIM toolkit always work. The service catches its own errors: a crash would unbind it and end every lock.
 - **Accessibility shortcut:** if the student turns on a shortcut for the service (volume keys, accessibility button, quick setting), it could switch the lock off without Settings. The app detects this, shows "turn off the shortcut", reports `shortcutOn` to the server, and treats protection as not ready.
 - **Known limits** (an accessibility-based blocker can't prevent these without device-owner rights):
-  - Rebooting into Android safe mode starts no third-party services. The server sees heartbeats stop and `protectionOn` go false, and parents are told about it.
+  - Rebooting into Android safe mode starts no third-party services. The server sees heartbeats stop and `protectionOn` go false; parent alerts for this come with parent controls (phase 5).
   - A video already floating in picture-in-picture when a lock starts is not closed; the lock screen comes up behind it.
 
 ## The 3D look

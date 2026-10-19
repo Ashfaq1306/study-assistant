@@ -157,18 +157,20 @@ class AppLockService : AccessibilityService() {
             Log.w(TAG, "window list unavailable", e)
             return
         }
-        for (window in visible) {
-            if (window.type != AccessibilityWindowInfo.TYPE_APPLICATION) continue
+        val appWindows = visible.mapNotNull { window ->
+            if (window.type != AccessibilityWindowInfo.TYPE_APPLICATION) return@mapNotNull null
             val pkg = try {
                 window.root?.packageName?.toString()
             } catch (_: Exception) {
                 null
-            } ?: continue
-            if (pkg != packageName && shouldBlock(pkg, null)) {
-                block(pkg)
-                return
-            }
+            } ?: return@mapNotNull null
+            LockPolicy.VisibleWindow(pkg, active = window.isActive || window.isFocused, pictureInPicture = window.isInPictureInPictureMode)
         }
+        val pkg = LockPolicy.windowToBlock(appWindows, store.state(), alwaysAllowed, launchable, packageName) ?: return
+        // A window that keeps coming back after going home (pop-up/freeform): don't
+        // press home in a tight loop; give it a pause between attempts.
+        if (pkg == lastBlockedPackage && System.currentTimeMillis() - lastBlockedAt < LOOP_BACKOFF_MS) return
+        block(pkg)
     }
 
     private fun block(pkg: String) {
@@ -245,12 +247,14 @@ class AppLockService : AccessibilityService() {
         private const val ENFORCE_EVERY_MS = 1_500L
         private const val DEBOUNCE_MS = 800L
         private const val AFTER_HOME_MS = 350L
+        private const val LOOP_BACKOFF_MS = 6_000L
 
         /** Settings keys holding the accessibility shortcut targets (volume keys, button, quick settings). */
         private val SHORTCUT_KEYS = listOf(
             "accessibility_shortcut_target_service",
             "accessibility_button_targets",
             "accessibility_qs_targets",
+            "accessibility_key_gesture_targets",
         )
 
         @Volatile

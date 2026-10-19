@@ -53,6 +53,34 @@ object LockPolicy {
     fun isNeverBlocked(packageName: String): Boolean =
         packageName in ALWAYS_ALLOWED || ALLOWED_HINTS.any { packageName.contains(it, ignoreCase = true) }
 
+    /** What the re-check needs to know about one visible app window. */
+    data class VisibleWindow(val packageName: String, val active: Boolean, val pictureInPicture: Boolean)
+
+    /**
+     * Which visible window (if any) the periodic re-check should block.
+     *
+     * Never acts while the phone, dialer or another always-allowed app is the
+     * active window (an emergency call must not be interrupted), and ignores
+     * picture-in-picture windows, which going home cannot clear.
+     */
+    fun windowToBlock(
+        windows: List<VisibleWindow>,
+        state: LockState,
+        alwaysAllowed: Set<String>,
+        launchable: Set<String>,
+        ownPackage: String,
+    ): String? {
+        if (!state.locked) return null
+        val active = windows.firstOrNull { it.active }?.packageName
+        if (active != null && (active in alwaysAllowed || isNeverBlocked(active))) return null
+        return windows.firstOrNull {
+            !it.pictureInPicture &&
+                it.packageName != ownPackage &&
+                !isStrictBlocked(it.packageName) &&
+                shouldBlock(it.packageName, null, state, alwaysAllowed, launchable)
+        }?.packageName
+    }
+
     /**
      * @param alwaysAllowed this phone's launcher, dialer and keyboards.
      * @param launchable apps with a launcher icon; "whole phone" only blocks

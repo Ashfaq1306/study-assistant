@@ -1,6 +1,8 @@
 package com.ashfaq.study_assistant.lock
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -109,5 +111,42 @@ class LockPolicyTest {
     fun `locked apps can never be offered as never-blocked`() {
         assertFalse(LockPolicy.isNeverBlocked("com.google.android.youtube"))
         assertFalse(LockPolicy.isNeverBlocked("com.android.settings"))
+    }
+
+    private fun win(pkg: String, active: Boolean = false, pip: Boolean = false) =
+        LockPolicy.VisibleWindow(pkg, active = active, pictureInPicture = pip)
+
+    private fun pick(windows: List<LockPolicy.VisibleWindow>, state: LockState = youtubeLock) =
+        LockPolicy.windowToBlock(windows, state, allowed, launchable, "com.ashfaq.study_assistant")
+
+    @Test
+    fun `re-check blocks a locked app in split screen`() {
+        assertEquals(
+            "com.google.android.youtube",
+            pick(listOf(win("com.google.android.gm", active = true), win("com.google.android.youtube"))),
+        )
+    }
+
+    @Test
+    fun `re-check never interrupts a call or the dialer`() {
+        val whole = LockState(locked = true, wholePhone = true)
+        assertNull(pick(listOf(win("com.google.android.dialer", active = true), win("com.android.chrome")), whole))
+        assertNull(pick(listOf(win("com.samsung.android.incallui", active = true), win("com.google.android.youtube"))))
+    }
+
+    @Test
+    fun `re-check ignores picture-in-picture windows that going home cannot clear`() {
+        assertNull(pick(listOf(win(launcher, active = true), win("com.google.android.youtube", pip = true))))
+    }
+
+    @Test
+    fun `re-check leaves settings screens to window events`() {
+        assertNull(pick(listOf(win("com.android.settings", active = true)), youtubeLock.copy(strict = true)))
+    }
+
+    @Test
+    fun `re-check does nothing when unlocked or only allowed apps show`() {
+        assertNull(pick(listOf(win("com.google.android.youtube", active = true)), LockState(locked = false)))
+        assertNull(pick(listOf(win("com.google.android.gm", active = true))))
     }
 }

@@ -55,6 +55,7 @@ class AppLockController extends AsyncNotifier<AppLockStatus> {
 
   String? _studentId;
   Future<AppLockStatus>? _inFlight;
+  String? _inFlightFor;
 
   @override
   Future<AppLockStatus> build() async {
@@ -74,8 +75,20 @@ class AppLockController extends AsyncNotifier<AppLockStatus> {
   }
 
   /// Overlapping callers (resume, screens, build) share one sync, so a first
-  /// sign-in registers the phone exactly once.
-  Future<AppLockStatus> _syncOnce() => _inFlight ??= _sync().whenComplete(() => _inFlight = null);
+  /// sign-in registers the phone exactly once. A different account waits for
+  /// the running sync, then gets its own.
+  Future<AppLockStatus> _syncOnce() {
+    final id = _studentId;
+    final running = _inFlight;
+    if (running != null && _inFlightFor == id) return running;
+    _inFlightFor = id;
+    final next = (running ?? Future<void>.value()).then((_) {}, onError: (_) {}).then((_) => _sync());
+    _inFlight = next;
+    next.whenComplete(() {
+      if (identical(_inFlight, next)) _inFlight = null;
+    }).ignore();
+    return next;
+  }
 
   Future<AppLockStatus> _sync() async {
     if (!_platform.isSupported) return const AppLockStatus(supported: false);
