@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
 import android.telecom.TelecomManager
@@ -35,6 +36,7 @@ class AppLockService : AccessibilityService() {
 
     @Volatile private var alwaysAllowed: Set<String> = emptySet()
     @Volatile private var launchable: Set<String> = emptySet()
+    @Volatile private var safetyApps: Set<String> = emptySet()
     @Volatile private var syncing = false
 
     private var lastBlockedPackage: String? = null
@@ -57,7 +59,8 @@ class AppLockService : AccessibilityService() {
         override fun run() {
             if (store.state().locked) {
                 try {
-                    enforceVisibleWindows()
+                    // Nothing to see with the screen off: save the battery.
+                    if ((getSystemService(Context.POWER_SERVICE) as PowerManager).isInteractive) enforceVisibleWindows()
                 } catch (e: Throwable) {
                     Log.e(TAG, "enforcement check failed", e)
                 }
@@ -166,7 +169,15 @@ class AppLockService : AccessibilityService() {
             } ?: return@mapNotNull null
             LockPolicy.VisibleWindow(pkg, active = window.isActive || window.isFocused, pictureInPicture = window.isInPictureInPictureMode)
         }
-        val pkg = LockPolicy.windowToBlock(appWindows, store.state(), alwaysAllowed, launchable, packageName) ?: return
+        val pkg = LockPolicy.windowToBlock(
+            appWindows,
+            store.state(),
+            alwaysAllowed,
+            launchable,
+            packageName,
+            safetyApps,
+            lastScreen,
+        ) ?: return
         // A window that keeps coming back after going home (pop-up/freeform): don't
         // press home in a tight loop; give it a pause between attempts.
         if (pkg == lastBlockedPackage && System.currentTimeMillis() - lastBlockedAt < LOOP_BACKOFF_MS) return
@@ -219,6 +230,7 @@ class AppLockService : AccessibilityService() {
 
     private fun refreshPackageSets() {
         alwaysAllowed = computeAlwaysAllowed()
+        safetyApps = setOfNotNull((getSystemService(Context.TELECOM_SERVICE) as? TelecomManager)?.defaultDialerPackage)
         val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
         launchable = packageManager.queryIntentActivities(launcher, 0).map { it.activityInfo.packageName }.toSet()
     }

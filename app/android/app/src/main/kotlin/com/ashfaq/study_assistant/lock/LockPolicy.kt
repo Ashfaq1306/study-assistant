@@ -59,9 +59,15 @@ object LockPolicy {
     /**
      * Which visible window (if any) the periodic re-check should block.
      *
-     * Never acts while the phone, dialer or another always-allowed app is the
-     * active window (an emergency call must not be interrupted), and ignores
-     * picture-in-picture windows, which going home cannot clear.
+     * Pauses only while a safety app (a call, the dialer, an emergency screen)
+     * is the active window, so an emergency call is never interrupted; this
+     * app, launchers and keyboards do not pause it, or split screen next to
+     * them would be a way around the lock. Picture-in-picture windows are
+     * ignored (going home cannot clear them). Settings & co. are judged by the
+     * last real screen seen in them; unknown screens are left alone.
+     *
+     * @param safetyApps the phone's default dialer (calls/emergency are added here).
+     * @param lastScreen last activity class seen per package.
      */
     fun windowToBlock(
         windows: List<VisibleWindow>,
@@ -69,15 +75,17 @@ object LockPolicy {
         alwaysAllowed: Set<String>,
         launchable: Set<String>,
         ownPackage: String,
+        safetyApps: Set<String>,
+        lastScreen: Map<String, String>,
     ): String? {
         if (!state.locked) return null
         val active = windows.firstOrNull { it.active }?.packageName
-        if (active != null && (active in alwaysAllowed || isNeverBlocked(active))) return null
-        return windows.firstOrNull {
-            !it.pictureInPicture &&
-                it.packageName != ownPackage &&
-                !isStrictBlocked(it.packageName) &&
-                shouldBlock(it.packageName, null, state, alwaysAllowed, launchable)
+        if (active != null && (active in safetyApps || isNeverBlocked(active))) return null
+        return windows.firstOrNull { window ->
+            if (window.pictureInPicture || window.packageName == ownPackage) return@firstOrNull false
+            val screen = lastScreen[window.packageName]
+            if (isStrictBlocked(window.packageName) && screen == null) return@firstOrNull false
+            shouldBlock(window.packageName, screen, state, alwaysAllowed, launchable)
         }?.packageName
     }
 

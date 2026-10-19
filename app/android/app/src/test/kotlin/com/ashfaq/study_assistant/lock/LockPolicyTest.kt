@@ -116,8 +116,47 @@ class LockPolicyTest {
     private fun win(pkg: String, active: Boolean = false, pip: Boolean = false) =
         LockPolicy.VisibleWindow(pkg, active = active, pictureInPicture = pip)
 
-    private fun pick(windows: List<LockPolicy.VisibleWindow>, state: LockState = youtubeLock) =
-        LockPolicy.windowToBlock(windows, state, allowed, launchable, "com.ashfaq.study_assistant")
+    private fun pick(
+        windows: List<LockPolicy.VisibleWindow>,
+        state: LockState = youtubeLock,
+        lastScreen: Map<String, String> = emptyMap(),
+    ) = LockPolicy.windowToBlock(
+        windows,
+        state,
+        allowed,
+        launchable,
+        "com.ashfaq.study_assistant",
+        safetyApps = setOf("com.google.android.dialer"),
+        lastScreen = lastScreen,
+    )
+
+    @Test
+    fun `split screen next to Study Assistant does not get around the lock`() {
+        assertEquals(
+            "com.google.android.youtube",
+            pick(listOf(win("com.ashfaq.study_assistant", active = true), win("com.google.android.youtube"))),
+        )
+    }
+
+    @Test
+    fun `a focused launcher does not pause the re-check`() {
+        assertEquals("com.google.android.youtube", pick(listOf(win(launcher, active = true), win("com.google.android.youtube"))))
+    }
+
+    @Test
+    fun `App info left open in split screen is blocked in strict mode`() {
+        val screens = mapOf("com.android.settings" to "com.android.settings.applications.InstalledAppDetails")
+        assertEquals(
+            "com.android.settings",
+            pick(listOf(win("com.ashfaq.study_assistant", active = true), win("com.android.settings")), youtubeLock.copy(strict = true), screens),
+        )
+    }
+
+    @Test
+    fun `Wi-Fi settings left open in split screen stay usable`() {
+        val screens = mapOf("com.android.settings" to "com.android.settings.Settings\$WifiSettingsActivity")
+        assertNull(pick(listOf(win("com.android.settings", active = true)), youtubeLock.copy(strict = true), screens))
+    }
 
     @Test
     fun `re-check blocks a locked app in split screen`() {
@@ -140,7 +179,7 @@ class LockPolicyTest {
     }
 
     @Test
-    fun `re-check leaves settings screens to window events`() {
+    fun `an unknown settings screen is left to window events`() {
         assertNull(pick(listOf(win("com.android.settings", active = true)), youtubeLock.copy(strict = true)))
     }
 
