@@ -6,6 +6,12 @@ import 'package:study_assistant/features/auth/domain/app_user.dart';
 import '../helpers.dart';
 
 void main() {
+  test('the lock screen is reachable whatever the sign-in state', () {
+    expect(guardRoute(const AuthUnknown(), Routes.locked), isNull);
+    expect(guardRoute(const AuthSignedOut(), Routes.locked), isNull);
+    expect(guardRoute(AuthSignedIn(testUser(age: 12, parentalControlRequired: true)), Routes.locked), isNull);
+  });
+
   group('while the session is loading', () {
     test('everything waits on the splash screen', () {
       expect(guardRoute(const AuthUnknown(), Routes.home), Routes.splash);

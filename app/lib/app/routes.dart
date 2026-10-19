@@ -17,6 +17,10 @@ abstract final class Routes {
   static const exam = '/home/exam';
   static const parentHome = '/parent';
   static const addChild = '/parent/add-child';
+  static const appLock = '/home/app-lock';
+
+  /// Shown over a locked app. Reachable in every sign-in state.
+  static const locked = '/locked';
 
   static const signedOutOnly = {welcome, login, register, verify, forgotPassword};
 
@@ -26,6 +30,7 @@ abstract final class Routes {
 /// Decides where a navigation may go for the current auth state.
 /// Returns the location to redirect to, or null to allow it.
 String? guardRoute(AuthState auth, String location) {
+  if (location == Routes.locked) return null;
   switch (auth) {
     case AuthUnknown():
       return location == Routes.splash ? null : Routes.splash;

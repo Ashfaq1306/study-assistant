@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../app/routes.dart';
 import '../../../core/config/remote_config.dart';
@@ -12,6 +15,9 @@ import '../../../core/widgets/choice_controls.dart';
 import '../../../core/widgets/clay_card.dart';
 import '../../../core/widgets/feedback.dart';
 import '../../../core/widgets/wizard.dart';
+import '../../app_lock/application/app_lock_controller.dart';
+import '../../app_lock/presentation/app_picker.dart';
+import '../../auth/application/auth_controller.dart';
 import '../application/study_providers.dart';
 import '../data/study_api.dart';
 import '../domain/study_session.dart';
@@ -42,9 +48,29 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
     passMarks: 30,
     questionTypes: [QuestionType.mcq, QuestionType.trueFalse],
   );
+  Set<String> _apps = {};
+  bool _strict = true;
   bool _loading = false;
   ApiException? _error;
   String? _whatError;
+
+  static const _lastAppsKey = 'study.lastLockedApps';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLastApps();
+  }
+
+  /// Students usually lock the same apps each time: start from the last choice.
+  Future<void> _loadLastApps() async {
+    try {
+      final saved = (await SharedPreferences.getInstance()).getStringList(_lastAppsKey);
+      if (saved != null && mounted && _apps.isEmpty) setState(() => _apps = saved.toSet());
+    } on Object {
+      // Preferences unavailable: start empty.
+    }
+  }
 
   @override
   void dispose() {
@@ -83,8 +109,18 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
       await ref
           .read(activeSessionProvider.notifier)
           .start(
-            StartSessionRequest(subject: _chosenSubject, topics: _topics.text, plannedMinutes: _minutes, exam: _exam),
+            StartSessionRequest(
+              subject: _chosenSubject,
+              topics: _topics.text,
+              plannedMinutes: _minutes,
+              exam: _exam,
+              lockedApps: _apps.toList(),
+              strict: _strict,
+            ),
           );
+      unawaited(SharedPreferences.getInstance().then((p) => p.setStringList(_lastAppsKey, _apps.toList())));
+      // Hand the new lock to the blocker straight away.
+      unawaited(ref.read(appLockProvider.notifier).refresh());
       if (mounted) context.pushReplacement(Routes.studySession);
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -112,7 +148,7 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
       controller: _pages,
       step: _step,
       onBack: _back,
-      pages: [_whatPage(config), _durationPage(config), _examPage(config), _reviewPage()],
+      pages: [_whatPage(config), _durationPage(config), _examPage(config), _appsPage(), _reviewPage()],
     );
   }
 
@@ -245,6 +281,37 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
     );
   }
 
+  Widget _appsPage() {
+    final auth = ref.watch(authControllerProvider);
+    final mustBeStrict = auth is AuthSignedIn && auth.user.parentalControlRequired;
+    return WizardPage(
+      icon: Icons.lock_rounded,
+      title: 'Lock distractions',
+      subtitle: 'These stay locked until you pass your exam.',
+      children: [
+        AppPicker(selected: _apps, onChanged: (v) => setState(() => _apps = v)),
+        const SizedBox(height: 16),
+        ClayCard(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: mustBeStrict || _strict,
+            onChanged: mustBeStrict ? null : (v) => setState(() => _strict = v),
+            secondary: const IconBadge(Icons.admin_panel_settings_rounded, size: 44),
+            title: const Text('Strict mode', style: TextStyle(fontWeight: FontWeight.w800)),
+            subtitle: Text(
+              mustBeStrict
+                  ? 'Always on for students under 15.'
+                  : 'Also blocks Settings and app uninstalls while locked, so you cannot cheat.',
+            ),
+          ),
+        ),
+        const SizedBox(height: 28),
+        Button3D(label: 'Continue', onPressed: () => _goTo(4)),
+      ],
+    );
+  }
+
   Widget _reviewPage() {
     return WizardPage(
       icon: Icons.rocket_launch_rounded,
@@ -263,9 +330,39 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
                 label: 'Exam',
                 value: '${_exam.questionCount} questions · pass ${_exam.passMarks}/${_exam.totalMarks}',
               ),
+              _SummaryRow(
+                icon: Icons.lock_rounded,
+                label: 'Locked',
+                value: _apps.contains(wholePhone)
+                    ? 'Whole phone'
+                    : _apps.isEmpty
+                    ? 'Nothing'
+                    : '${_apps.length} apps',
+              ),
             ],
           ),
         ),
+        if (_apps.isNotEmpty && !(ref.watch(appLockProvider).value?.ready ?? true)) ...[
+          const SizedBox(height: 16),
+          ClayCard(
+            color: AppColors.coralSoft,
+            glow: AppColors.coralDeep,
+            padding: const EdgeInsets.all(16),
+            onTap: () => context.push(Routes.appLock),
+            child: const Row(
+              children: [
+                Icon(Icons.shield_outlined, color: AppColors.coralDeep),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'App lock is off, so your apps will not be blocked. Tap to turn it on.',
+                    style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.coralDeep),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         if (_error != null) ...[const SizedBox(height: 16), MessageBanner.error(_error!.message)],
         const SizedBox(height: 28),
         Button3D(label: 'Start studying', icon: Icons.play_arrow_rounded, loading: _loading, onPressed: _start),

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/app_lock/presentation/app_lock_screen.dart';
+import '../features/app_lock/presentation/locked_screen.dart';
 import '../features/auth/application/auth_controller.dart';
 import '../features/auth/domain/otp.dart';
 import '../features/auth/presentation/forgot_password_screen.dart';
@@ -32,6 +34,10 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) => guardRoute(authListenable.value, state.matchedLocation),
     routes: [
       GoRoute(path: Routes.splash, builder: (_, _) => const SplashScreen()),
+      GoRoute(
+        path: Routes.locked,
+        pageBuilder: (_, s) => _fade(s, LockedScreen(appLabel: s.uri.queryParameters['app'])),
+      ),
       GoRoute(path: Routes.welcome, pageBuilder: (_, s) => _fade(s, const WelcomeScreen())),
       GoRoute(path: Routes.login, builder: (_, _) => const LoginScreen()),
       GoRoute(path: Routes.register, builder: (_, _) => const RegisterScreen()),
@@ -50,6 +56,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'session', builder: (_, _) => const ActiveSessionScreen()),
           GoRoute(path: 'stats', builder: (_, _) => const StatsScreen()),
           GoRoute(path: 'exam', builder: (_, _) => const ExamScreen()),
+          GoRoute(path: 'app-lock', builder: (_, _) => const AppLockScreen()),
         ],
       ),
       GoRoute(

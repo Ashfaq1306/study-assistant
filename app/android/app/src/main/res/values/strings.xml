@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_lock_service_label">Study Assistant app lock</string>
+    <string name="app_lock_service_description">Study Assistant uses this to lock the apps you choose while you study, and opens your exam when you try to use them. It only sees which app is open, never what is on the screen, and nothing is collected beyond that.</string>
+</resources>
