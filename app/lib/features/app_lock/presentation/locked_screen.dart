@@ -11,6 +11,7 @@ import '../../../core/widgets/page_shell.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../study/application/study_providers.dart';
 import '../../study/domain/study_session.dart';
+import '../../../core/platform/app_lock_platform.dart';
 import '../application/app_lock_controller.dart';
 
 /// Shown on top of an app the student tried to open while it is locked.
@@ -26,7 +27,14 @@ class LockedScreen extends ConsumerWidget {
     final auth = ref.watch(authControllerProvider);
     final signedInStudent = auth is AuthSignedIn && !auth.user.isParent;
     final session = signedInStudent ? ref.watch(activeSessionProvider).value : null;
-    final reasons = ref.watch(appLockProvider).value?.state.reasons ?? const [];
+    final lock = ref.watch(appLockProvider).value?.state;
+    final reasons = lock?.reasons ?? const [];
+    final wholePhone = lock?.wholePhone ?? false;
+    // Names of the locked apps, from the phone's own app list.
+    final labels = {
+      for (final a in ref.watch(installedAppsProvider).value ?? const <InstalledApp>[]) a.packageName: a.label,
+    };
+    final lockedNames = [for (final p in lock?.packages ?? const <String>[]) labels[p] ?? p.split('.').last]..sort();
     final platform = ref.read(appLockPlatformProvider);
     final pending = session?.status == SessionStatus.examPending;
 
@@ -41,17 +49,47 @@ class LockedScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 24),
-            const Center(child: IconBadge(Icons.lock_rounded, size: 96, color: AppColors.violet)),
+            Center(
+              child: IconBadge(
+                wholePhone ? Icons.phonelink_lock_rounded : Icons.lock_rounded,
+                size: 96,
+                color: AppColors.violet,
+              ),
+            ),
             const SizedBox(height: 20),
-            Text('${appLabel ?? 'This app'} is locked', textAlign: TextAlign.center, style: text.headlineMedium),
+            Text(
+              wholePhone ? 'Your phone is locked' : '${appLabel ?? 'This app'} is locked',
+              textAlign: TextAlign.center,
+              style: text.headlineMedium,
+            ),
             const SizedBox(height: 8),
             Text(
-              pending
-                  ? 'Pass your exam to unlock it. You can do this!'
-                  : 'It unlocks when you finish studying and pass your exam.',
+              switch ((wholePhone, pending)) {
+                (true, true) =>
+                  'Pass your exam to unlock your phone. Calls and the camera still work. You can do this!',
+                (true, false) =>
+                  'It unlocks when you finish studying and pass your exam. Calls and the camera still work.',
+                (false, true) => 'Pass your exam to unlock it. You can do this!',
+                (false, false) => 'It unlocks when you finish studying and pass your exam.',
+              },
               textAlign: TextAlign.center,
               style: text.bodyLarge?.copyWith(color: AppColors.inkSoft),
             ),
+            if (!wholePhone && lockedNames.length > 1) ...[
+              const SizedBox(height: 16),
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final name in lockedNames)
+                    Chip(
+                      avatar: const Icon(Icons.lock_rounded, size: 16, color: AppColors.violet),
+                      label: Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                ],
+              ),
+            ],
             if (reasons.isNotEmpty) ...[
               const SizedBox(height: 22),
               for (final r in reasons)

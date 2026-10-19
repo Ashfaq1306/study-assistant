@@ -91,6 +91,9 @@ const startSession = async (exam: Record<string, unknown> = {}, account = studen
   return res.json<{ id: string }>().id;
 };
 
+/** Turns on the optional 2-minute break after a failed exam. */
+const withBreak = () => prisma.appSetting.create({ data: { key: 'examRetryCooldownSeconds', value: '120' } });
+
 /** Starts a session, lets the timer run out, and opens the exam. */
 const examReady = async (exam: Record<string, unknown> = {}) => {
   const sessionId = await startSession(exam);
@@ -224,7 +227,17 @@ describe('passing and failing', () => {
     expect((await as(student).get('/v1/sessions/stats')).json().sessionsCompleted).toBe(1);
   });
 
-  it('a fail keeps the apps locked and asks for a short break before retrying', async () => {
+  it('by default a fail keeps the apps locked and a fresh exam can start straight away', async () => {
+    const { sessionId, exam } = await examReady();
+    await as(student).post(`/v1/exams/${exam.id}/submit`, { answers: wrongAnswers(exam.questions) });
+    expect((await as(student).get(`/v1/sessions/${sessionId}`)).json().status).toBe('EXAM_PENDING');
+    const retry = await as(student).post(`/v1/sessions/${sessionId}/exam`);
+    expect(retry.statusCode).toBe(200);
+    expect(retry.json().id).not.toBe(exam.id);
+  });
+
+  it('an admin can ask for a short break before retrying', async () => {
+    await withBreak();
     const { sessionId, exam } = await examReady();
     const graded = (await as(student).post(`/v1/exams/${exam.id}/submit`, { answers: wrongAnswers(exam.questions) })).json();
     expect(graded.result).toMatchObject({ score: 0, passed: false });
@@ -298,6 +311,7 @@ describe('passing and failing', () => {
   });
 
   it('two starts at once give one exam, and the retry break still applies', async () => {
+    await withBreak();
     const sessionId = await startSession();
     ctx.clock.advance(11 * MIN);
     const [a, b] = await Promise.all([
@@ -313,6 +327,7 @@ describe('passing and failing', () => {
   });
 
   it('an exam left to run out counts as a try: break, then a fresh exam', async () => {
+    await withBreak();
     // 4 questions: 6 minutes, then 1 minute of grace; the 2-minute break counts from the time limit.
     const { sessionId, exam } = await examReady();
     ctx.clock.advance(7.5 * MIN);

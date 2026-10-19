@@ -167,6 +167,16 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     if (ok ?? false) await _submit();
   }
 
+  /// A fresh exam right away (unless the admin set a break, which the server then reports).
+  Future<void> _retry() async {
+    setState(() {
+      _exam = null;
+      _index = 0;
+      _nextAutoSubmit = null;
+    });
+    await _load();
+  }
+
   void _goTo(int index) {
     FocusScope.of(context).unfocus();
     setState(() => _index = index);
@@ -177,7 +187,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     final exam = _exam;
     if (_loading) return const _Writing();
     if (exam == null) return _problem();
-    if (exam.result != null) return _ResultView(exam: exam);
+    if (exam.result != null) return _ResultView(exam: exam, onRetry: _retry);
     if (exam.status != ExamStatus.active) return const _Writing(marking: true);
     return _taking(exam);
   }
@@ -522,9 +532,10 @@ class _ShortAnswerState extends State<_ShortAnswer> {
 
 /// Score, pass/fail, and a review of every question with the right answer.
 class _ResultView extends ConsumerWidget {
-  const _ResultView({required this.exam});
+  const _ResultView({required this.exam, required this.onRetry});
 
   final Exam exam;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -571,15 +582,27 @@ class _ResultView extends ConsumerWidget {
               else
                 MessageBanner.info(
                   'You needed ${exam.passMarks} marks: just ${_fmt(missing.toDouble())} more. '
-                  'Your apps stay locked. Revise the answers below, then try again in about ${(cooldown / 60).ceil()} min '
-                  'with fresh questions.',
+                  '${cooldown == 0 ? 'Your apps stay locked for now. Check the answers below, then try again with fresh questions.' : 'Your apps stay locked. Revise the answers below, then try again in about ${(cooldown / 60).ceil()} min with fresh questions.'}',
                 ),
               const SizedBox(height: 20),
-              Button3D(
-                label: result.passed ? 'Back home' : 'Revise with the AI helper',
-                icon: result.passed ? Icons.home_rounded : Icons.smart_toy_rounded,
-                onPressed: () => result.passed ? context.go(Routes.home) : context.push(Routes.tutor),
-              ),
+              if (result.passed)
+                Button3D(label: 'Back home', icon: Icons.home_rounded, onPressed: () => context.go(Routes.home))
+              else ...[
+                Button3D(
+                  label: cooldown == 0 ? 'Try again now' : 'Try again',
+                  icon: Icons.refresh_rounded,
+                  color: AppColors.sunshine,
+                  edgeColor: AppColors.sunshineDeep,
+                  foreground: AppColors.ink,
+                  onPressed: onRetry,
+                ),
+                const SizedBox(height: 12),
+                Button3D.secondary(
+                  label: 'Revise with the AI helper',
+                  icon: Icons.smart_toy_rounded,
+                  onPressed: () => context.push(Routes.tutor),
+                ),
+              ],
               if (!result.passed) ...[
                 const SizedBox(height: 12),
                 Button3D.secondary(

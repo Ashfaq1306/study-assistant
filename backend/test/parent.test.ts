@@ -173,8 +173,9 @@ describe('parent locks', () => {
     await as(child).post(`/v1/exams/${exam.id}/submit`, { answers: {} });
     expect((await as(child).get('/v1/locks')).json().locks).toHaveLength(1);
     expect((await as(parent).get('/v1/notifications')).json().notifications[0].kind).toBe('EXAM_FAILED');
-    // Same retry break as a study session.
-    expect((await as(child).post(`/v1/locks/${lock.id}/exam`)).json().error.code).toBe('EXAM_COOLDOWN');
+    // A fresh try straight away, as with a study session.
+    const retry = (await as(child).post(`/v1/locks/${lock.id}/exam`)).json();
+    expect(retry.id).not.toBe(exam.id);
   });
 
   it('keeps the pass mark at 50% or more', async () => {

@@ -4,7 +4,7 @@ package com.ashfaq.study_assistant.lock
  * Decides whether an app on screen must be blocked.
  *
  * Safety first: calls, emergency alerts, Wi-Fi sign-in pages, the SIM toolkit,
- * the keyboard, the launcher and the system UI are never blocked. Strict mode
+ * the camera, the keyboard, the launcher and the system UI are never blocked. Strict mode
  * also blocks Settings, app stores and uninstallers while a lock is on, so the
  * lock cannot simply be switched off; Wi-Fi and mobile-data screens stay
  * reachable so the student can always get online to take the exam.
@@ -27,8 +27,9 @@ object LockPolicy {
         "com.samsung.android.stk",
     )
 
-    /** Fragments that mark calling, emergency-alert and Wi-Fi sign-in apps from any maker. */
-    private val ALLOWED_HINTS = listOf("dialer", "incallui", "telecom", "emergency", "cellbroadcast", "captiveportal")
+    /** Fragments that mark calling, emergency-alert, Wi-Fi sign-in and camera apps from any maker. */
+    private val ALLOWED_HINTS =
+        listOf("dialer", "incallui", "telecom", "emergency", "cellbroadcast", "captiveportal", "camera", "photopicker")
 
     private val STRICT_BLOCKED = setOf(
         "com.android.settings",
@@ -49,7 +50,7 @@ object LockPolicy {
     /** Settings, stores and uninstallers: blocked in strict mode. */
     fun isStrictBlocked(packageName: String): Boolean = packageName in STRICT_BLOCKED
 
-    /** Calls, emergency and sign-in apps: never blocked, so not offered in the app picker either. */
+    /** Calls, emergency, sign-in and camera apps: never blocked, so not offered in the app picker either. */
     fun isNeverBlocked(packageName: String): Boolean =
         packageName in ALWAYS_ALLOWED || ALLOWED_HINTS.any { packageName.contains(it, ignoreCase = true) }
 

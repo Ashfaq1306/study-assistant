@@ -33,7 +33,8 @@ export const SettingsSchema = z.object({
   /** Share of the planned time after which "finish early" unlocks the exam. */
   earlyFinishPercent: z.number().int().min(0).max(100).default(50),
   maxQuestions: z.number().int().min(3).max(50).default(30),
-  examRetryCooldownSeconds: z.number().int().min(0).max(3600).default(120),
+  /** 0 = a failed student can try again straight away (with fresh questions). */
+  examRetryCooldownSeconds: z.number().int().min(0).max(3600).default(0),
   tutorDailyLimit: z.number().int().min(0).max(1000).default(60),
   aiEnabled: z.boolean().default(true),
   /** Shown as a banner in the app when set. */

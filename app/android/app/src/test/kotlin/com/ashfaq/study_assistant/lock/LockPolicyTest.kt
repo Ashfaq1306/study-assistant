@@ -65,6 +65,20 @@ class LockPolicyTest {
     }
 
     @Test
+    fun `the camera always works, even with the whole phone locked`() {
+        val everything = LockState(locked = true, wholePhone = true, strict = true)
+        for (pkg in listOf(
+            "com.sec.android.app.camera",
+            "com.google.android.GoogleCamera",
+            "com.android.camera2",
+            "com.google.android.photopicker",
+        )) {
+            assertFalse(pkg, block(pkg, everything))
+            assertTrue(pkg, LockPolicy.isNeverBlocked(pkg))
+        }
+    }
+
+    @Test
     fun `whole phone blocks launchable apps only`() {
         val whole = LockState(locked = true, wholePhone = true)
         assertTrue(block("com.android.chrome", whole))

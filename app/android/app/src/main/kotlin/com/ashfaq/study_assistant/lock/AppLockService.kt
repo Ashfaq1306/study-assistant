@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
+import android.provider.MediaStore
 import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
@@ -245,6 +246,12 @@ class AppLockService : AccessibilityService() {
             .filterNot(LockPolicy::isStrictBlocked)
             .forEach { allowed += it }
         (getSystemService(Context.TELECOM_SERVICE) as? TelecomManager)?.defaultDialerPackage?.let { allowed += it }
+        // The camera stays usable during a lock (and photographs study pages for the quiz).
+        listOf(MediaStore.ACTION_IMAGE_CAPTURE, MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA, MediaStore.ACTION_VIDEO_CAPTURE)
+            .flatMap { packageManager.queryIntentActivities(Intent(it), 0) }
+            .map { it.activityInfo.packageName }
+            .filterNot(LockPolicy::isStrictBlocked)
+            .forEach { allowed += it }
         (getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager)
             ?.enabledInputMethodList
             ?.forEach { allowed += it.packageName }

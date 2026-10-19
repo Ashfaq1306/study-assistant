@@ -50,9 +50,13 @@ class AppPicker extends ConsumerStatefulWidget {
 class _AppPickerState extends ConsumerState<AppPicker> {
   String _query = '';
 
+  /// "Choose apps" was tapped (the list shows even before an app is ticked).
+  late bool _choosing = widget.selected.isNotEmpty && !widget.selected.contains(wholePhone);
+
   bool get _whole => widget.selected.contains(wholePhone);
 
   void _toggle(String pkg) {
+    _choosing = true;
     final next = {...widget.selected}..remove(wholePhone);
     next.contains(pkg) ? next.remove(pkg) : next.add(pkg);
     widget.onChanged(next);
@@ -64,18 +68,41 @@ class _AppPickerState extends ConsumerState<AppPicker> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ClayCard(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: _whole,
-            onChanged: (v) => widget.onChanged(v ? {wholePhone} : {}),
-            secondary: const IconBadge(Icons.phonelink_lock_rounded, size: 44, color: AppColors.coralDeep),
-            title: const Text('Lock the whole phone', style: TextStyle(fontWeight: FontWeight.w800)),
-            subtitle: const Text('Calls and emergency always work'),
-          ),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _ModeCard(
+                icon: Icons.phonelink_lock_rounded,
+                title: 'Whole phone',
+                body: 'Everything locks. Calls and the camera still work.',
+                color: AppColors.coralDeep,
+                selected: _whole,
+                onTap: () {
+                  setState(() => _choosing = false);
+                  widget.onChanged({wholePhone});
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _ModeCard(
+                icon: Icons.apps_rounded,
+                title: 'Choose apps',
+                body: 'Only the apps you tick lock.',
+                color: AppColors.violet,
+                selected: _choosing && !_whole,
+                onTap: () {
+                  setState(() => _choosing = true);
+                  if (_whole) widget.onChanged({});
+                },
+              ),
+            ),
+          ],
         ),
-        if (!_whole) ...[
+        const SizedBox(height: 12),
+        _Summary(selected: widget.selected, choosing: _choosing),
+        if (_choosing && !_whole) ...[
           const SizedBox(height: 16),
           apps.when(
             loading: () => const Padding(
@@ -156,6 +183,94 @@ class _AppPickerState extends ConsumerState<AppPicker> {
                   controlAffinity: ListTileControlAffinity.trailing,
                 ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ModeCard extends StatelessWidget {
+  const _ModeCard({
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+  final Color color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: ClayCard(
+        selected: selected,
+        glow: color,
+        padding: const EdgeInsets.all(14),
+        onTap: onTap,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                IconBadge(icon, size: 40, color: color),
+                const Spacer(),
+                Icon(
+                  selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                  color: selected ? color : AppColors.line,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.ink),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              body,
+              style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.inkSoft, height: 1.3),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Says exactly what will be locked.
+class _Summary extends StatelessWidget {
+  const _Summary({required this.selected, required this.choosing});
+
+  final Set<String> selected;
+  final bool choosing;
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, text, color) = selected.contains(wholePhone)
+        ? (Icons.lock_rounded, 'Locking: the whole phone', AppColors.coralDeep)
+        : selected.isNotEmpty
+        ? (Icons.lock_rounded, 'Locking: ${selected.length} ${selected.length == 1 ? 'app' : 'apps'}', AppColors.violet)
+        : choosing
+        ? (Icons.touch_app_rounded, 'Tick the apps to lock below', AppColors.inkSoft)
+        : (Icons.lock_open_rounded, 'Nothing locked yet: pick one above', AppColors.inkSoft);
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontWeight: FontWeight.w800, color: color),
           ),
         ),
       ],

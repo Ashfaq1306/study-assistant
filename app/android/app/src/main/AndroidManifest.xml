@@ -60,6 +60,13 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <!-- Camera apps stay usable during a lock. -->
+        <intent>
+            <action android:name="android.media.action.IMAGE_CAPTURE" />
+        </intent>
+        <intent>
+            <action android:name="android.media.action.STILL_IMAGE_CAMERA" />
+        </intent>
         <!-- List the apps a student can choose to lock, and find the launcher (never locked). -->
         <intent>
             <action android:name="android.intent.action.MAIN" />

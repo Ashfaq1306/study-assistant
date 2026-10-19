@@ -14,7 +14,7 @@ class RemoteConfig {
     this.maxStudyMinutes = 240,
     this.earlyFinishPercent = 50,
     this.maxQuestions = 30,
-    this.examRetryCooldownSeconds = 120,
+    this.examRetryCooldownSeconds = 0,
     this.aiEnabled = true,
     this.announcement,
   });
