@@ -68,6 +68,7 @@ model User {
   childLinks    FamilyLink[]   @relation("ParentLinks")
   parentLinks   FamilyLink[]   @relation("StudentLinks")
   studySessions StudySession[]
+  devices       Device[]
 }
 
 model OtpCode {
@@ -179,4 +180,28 @@ model AppSetting {
   key       String   @id
   value     String
   updatedAt DateTime @updatedAt
+}
+
+/// A student's phone. It authenticates with its own revocable token, so the
+/// native app blocker can sync even when the app is closed or signed out.
+model Device {
+  id            String    @id @default(cuid())
+  studentId     String
+  tokenHash     String    @unique
+  name          String
+  platform      String
+  appVersion    String?
+  /// The accessibility service that enforces locks is switched on.
+  protectionOn  Boolean   @default(false)
+  /// Usage access (screen time) is granted.
+  usageAccess   Boolean   @default(false)
+  /// JSON array of { package, label } for apps that can be launched.
+  installedApps String    @default("[]")
+  lastSeenAt    DateTime  @default(now())
+  revokedAt     DateTime?
+  createdAt     DateTime  @default(now())
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
 }

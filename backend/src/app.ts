@@ -13,6 +13,9 @@ import { OtpService } from './modules/auth/otp.service.js';
 import { ACCESS_TOKEN_TTL_SECONDS, TokenService } from './modules/auth/token.service.js';
 import { configRoutes } from './modules/config/config.routes.js';
 import { ConfigService } from './modules/config/config.service.js';
+import { deviceSyncRoutes, devicesRoutes } from './modules/devices/devices.routes.js';
+import { DevicesService } from './modules/devices/devices.service.js';
+import { LockStateService } from './modules/devices/lock-state.service.js';
 import { familyRoutes } from './modules/family/family.routes.js';
 import { FamilyService } from './modules/family/family.service.js';
 import { createNotifier, type Notifier } from './modules/notify/notifier.js';
@@ -95,6 +98,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const family = new FamilyService(prisma, users, env.OTP_SECRET, clock);
   const config = new ConfigService(prisma, clock);
   const sessions = new SessionsService(prisma, config, users, clock);
+  const lockState = new LockStateService(sessions);
+  const devices = new DevicesService(prisma, lockState, clock);
 
   app.get('/health', () => ({ status: 'ok' }));
   await app.register(authRoutes(auth), { prefix: '/v1/auth' });
@@ -102,6 +107,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(familyRoutes(prisma, family), { prefix: '/v1/family' });
   await app.register(configRoutes(config), { prefix: '/v1/config' });
   await app.register(sessionsRoutes(prisma, sessions), { prefix: '/v1/sessions' });
+  await app.register(devicesRoutes(prisma, devices), { prefix: '/v1/devices' });
+  await app.register(deviceSyncRoutes(devices), { prefix: '/v1/device' });
 
   return app;
 }

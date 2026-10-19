@@ -51,6 +51,7 @@ export interface TestContext {
 
 export async function resetDatabase(): Promise<void> {
   await prisma.$transaction([
+    prisma.device.deleteMany(),
     prisma.studySession.deleteMany(),
     prisma.appSetting.deleteMany(),
     prisma.otpSend.deleteMany(),
