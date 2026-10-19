@@ -40,6 +40,14 @@ enum ExamStatus {
   EXPIRED
 }
 
+enum ParentLockStatus {
+  ACTIVE
+  /// The student passed the exam: apps are unlocked.
+  PASSED
+  /// The parent lifted the lock.
+  CANCELLED
+}
+
 enum Difficulty {
   EASY
   MEDIUM
@@ -78,6 +86,11 @@ model User {
   devices       Device[]
   exams         Exam[]
   aiUsage       AiUsage[]
+  locksSet      ParentLock[]   @relation("LocksSetByParent")
+  locksOn       ParentLock[]   @relation("LocksOnStudent")
+  questionSets  QuestionSet[]
+  usageDays     UsageDay[]
+  notifications Notification[]
 }
 
 model OtpCode {
@@ -213,7 +226,8 @@ model Device {
   revokedAt     DateTime?
   createdAt     DateTime  @default(now())
 
-  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student   User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  usageDays UsageDay[]
 
   @@index([studentId])
 }
@@ -221,36 +235,40 @@ model Device {
 /// An unlock exam. Questions and answers stay on the server; the app only
 /// sees the answers after submitting.
 model Exam {
-  id          String     @id @default(cuid())
-  studentId   String
-  sessionId   String?
-  subject     String
-  topics      String
-  difficulty  Difficulty
-  totalMarks  Int
-  passMarks   Int
+  id           String     @id @default(cuid())
+  studentId    String
+  sessionId    String?
+  /// Set when the exam unlocks a parent's lock instead of a study session.
+  parentLockId String?
+  subject      String
+  topics       String
+  difficulty   Difficulty
+  totalMarks   Int
+  passMarks    Int
   /// JSON array of questions with their answers and marks.
-  questions   String
+  questions    String
   /// AI, PRACTICE (built-in bank when AI is off) or PARENT.
-  source      String
-  status      ExamStatus @default(ACTIVE)
+  source       String
+  status       ExamStatus @default(ACTIVE)
   /// studentId:target while ACTIVE, cleared when submitted or expired: at most one running exam per target.
-  activeKey   String?    @unique
+  activeKey    String?    @unique
   /// JSON map of questionId -> answer, once submitted.
-  answers     String?
+  answers      String?
   /// JSON array of per-question results, once submitted.
-  results     String?
-  score       Float?
-  passed      Boolean?
-  createdAt   DateTime   @default(now())
-  expiresAt   DateTime
-  submittedAt DateTime?
+  results      String?
+  score        Float?
+  passed       Boolean?
+  createdAt    DateTime   @default(now())
+  expiresAt    DateTime
+  submittedAt  DateTime?
 
-  student User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  session StudySession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  student    User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session    StudySession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  parentLock ParentLock?   @relation(fields: [parentLockId], references: [id], onDelete: Cascade)
 
   @@index([studentId, createdAt])
   @@index([sessionId])
+  @@index([parentLockId])
 }
 
 /// One row per AI call, for daily limits and admin statistics.
@@ -263,4 +281,89 @@ model AiUsage {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, kind, createdAt])
+}
+
+/// A lock a parent puts on a child's phone. Only passing its exam (or the parent) lifts it.
+model ParentLock {
+  id            String           @id @default(cuid())
+  parentId      String
+  studentId     String
+  title         String
+  subject       String
+  topics        String
+  /// JSON array of package names; ["*"] locks the whole phone.
+  lockedApps    String           @default("[]")
+  strict        Boolean          @default(false)
+  /// Use the parent's own questions instead of AI-written ones.
+  questionSetId String?
+  questionCount Int
+  totalMarks    Int
+  passMarks     Int
+  /// JSON array of QuestionType values.
+  questionTypes String
+  difficulty    Difficulty       @default(MEDIUM)
+  status        ParentLockStatus @default(ACTIVE)
+  createdAt     DateTime         @default(now())
+  endedAt       DateTime?
+
+  parent      User         @relation("LocksSetByParent", fields: [parentId], references: [id], onDelete: Cascade)
+  student     User         @relation("LocksOnStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  questionSet QuestionSet? @relation(fields: [questionSetId], references: [id], onDelete: SetNull)
+  exams       Exam[]
+
+  @@index([studentId, status])
+  @@index([parentId, createdAt])
+}
+
+/// Questions a parent wrote, used for the exams on their locks.
+model QuestionSet {
+  id        String   @id @default(cuid())
+  parentId  String
+  title     String
+  subject   String
+  /// JSON array of { type, prompt, options, answer, explanation }.
+  questions String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent User         @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  locks  ParentLock[]
+
+  @@index([parentId])
+}
+
+/// Screen time for one phone on one day (the phone's local date).
+model UsageDay {
+  id           String   @id @default(cuid())
+  studentId    String
+  deviceId     String
+  /// YYYY-MM-DD on the phone.
+  day          String
+  totalMinutes Int
+  /// JSON array of { package, minutes }, most used first.
+  apps         String
+  updatedAt    DateTime @updatedAt
+
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  device  Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@unique([deviceId, day])
+  @@index([studentId, day])
+}
+
+/// In-app alerts (exam results, protection switched off, …).
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  kind      String
+  title     String
+  body      String
+  /// JSON with ids the app can open (studentId, examId, …).
+  data      String    @default("{}")
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
 }

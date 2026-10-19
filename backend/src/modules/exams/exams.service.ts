@@ -1,5 +1,6 @@
 import { Prisma, type Exam, type PrismaClient, type User } from '@prisma/client';
 import type { FastifyBaseLogger } from 'fastify';
+import { randomInt } from 'node:crypto';
 import { randomToken } from '../../lib/crypto.js';
 import { ageOn } from '../../lib/age.js';
 import { AppError, notFound } from '../../lib/errors.js';
@@ -13,6 +14,7 @@ import {
 } from '../ai/ai.types.js';
 import { PracticeProvider } from '../ai/practice.provider.js';
 import type { ConfigService } from '../config/config.service.js';
+import type { NotificationsService } from '../notifications/notifications.service.js';
 import type { QuestionType } from '../sessions/sessions.schemas.js';
 import type { SessionsService } from '../sessions/sessions.service.js';
 
@@ -46,6 +48,7 @@ export interface QuestionResult {
 export interface ExamView {
   id: string;
   sessionId: string | null;
+  parentLockId: string | null;
   subject: string;
   topics: string;
   source: string;
@@ -61,6 +64,9 @@ export interface ExamView {
 
 export interface ExamTarget {
   sessionId?: string;
+  parentLockId?: string;
+  /** A parent's own questions, used instead of generated ones. */
+  fixedQuestions?: GeneratedQuestion[];
   subject: string;
   topics: string;
   difficulty: ExamSpec['difficulty'];
@@ -77,6 +83,25 @@ export function distributeMarks(total: number, count: number): number[] {
   const base = Math.floor(total / count);
   const remainder = total - base * count;
   return Array.from({ length: count }, (_, i) => base + (i < remainder ? 1 : 0));
+}
+
+/** Fisher–Yates shuffle with a crypto RNG. */
+function shuffled<T>(list: readonly T[]): T[] {
+  const out = [...list];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = randomInt(i + 1);
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
+}
+
+/** Shuffles a parent's questions and their options, so a retry is not the same paper. */
+export function shuffleFixed(questions: GeneratedQuestion[]): GeneratedQuestion[] {
+  return shuffled(questions).map((q) => {
+    if (q.type !== 'MCQ') return q;
+    const order = shuffled([0, 1, 2, 3]);
+    return { ...q, options: order.map((i) => q.options[i]!), answer: String(order.indexOf(Number(q.answer))) };
+  });
 }
 
 /** Drops malformed questions so a bad AI answer can never produce an ungradable exam. */
@@ -98,6 +123,7 @@ export class ExamsService {
     private readonly ai: AiProvider,
     private readonly config: ConfigService,
     private readonly sessions: SessionsService,
+    private readonly notifications: NotificationsService,
     private readonly clock: Clock,
     private readonly log: FastifyBaseLogger,
   ) {}
@@ -126,11 +152,31 @@ export class ExamsService {
     });
   }
 
-  /** Shared by study sessions and (later) parent locks. */
+  /** The exam that lifts a parent's lock. */
+  async startForLock(student: User, lockId: string): Promise<ExamView> {
+    const lock = await this.prisma.parentLock.findUnique({ where: { id: lockId }, include: { questionSet: true } });
+    if (!lock || lock.studentId !== student.id) throw notFound('Lock not found.');
+    if (lock.status !== 'ACTIVE') throw new AppError(409, 'ALREADY_PASSED', 'This lock has already been lifted.');
+
+    const fixed = lock.questionSet ? (JSON.parse(lock.questionSet.questions) as GeneratedQuestion[]) : undefined;
+    return this.start(student, {
+      parentLockId: lock.id,
+      subject: lock.subject,
+      topics: lock.topics,
+      difficulty: lock.difficulty,
+      questionCount: fixed ? fixed.length : lock.questionCount,
+      totalMarks: lock.totalMarks,
+      passMarks: lock.passMarks,
+      types: fixed ? [...new Set(fixed.map((q) => q.type))] : (JSON.parse(lock.questionTypes) as QuestionType[]),
+      fixedQuestions: fixed,
+    });
+  }
+
+  /** Shared by study sessions and parent locks. */
   async start(student: User, target: ExamTarget): Promise<ExamView> {
     const now = this.clock();
-    const scope = target.sessionId ? { sessionId: target.sessionId } : { sessionId: null };
-    const activeKey = `${student.id}:${target.sessionId ?? '-'}`;
+    const scope = { sessionId: target.sessionId ?? null, parentLockId: target.parentLockId ?? null };
+    const activeKey = `${student.id}:${target.sessionId ?? (target.parentLockId ? `lock:${target.parentLockId}` : '-')}`;
 
     const running = await this.prisma.exam.findFirst({
       where: { studentId: student.id, ...scope, status: 'ACTIVE' },
@@ -155,7 +201,9 @@ export class ExamsService {
       }
     }
 
-    const { questions, source } = await this.generate(student, target, settings.aiEnabled);
+    const { questions, source } = target.fixedQuestions
+      ? { questions: shuffleFixed(target.fixedQuestions), source: 'PARENT' }
+      : await this.generate(student, target, settings.aiEnabled);
     const marks = distributeMarks(target.totalMarks, questions.length);
     const stored: StoredQuestion[] = questions.map((q, i) => ({
       id: randomToken(6),
@@ -175,6 +223,7 @@ export class ExamsService {
           activeKey,
           studentId: student.id,
         sessionId: target.sessionId ?? null,
+        parentLockId: target.parentLockId ?? null,
         subject: target.subject,
         topics: target.topics,
         difficulty: target.difficulty,
@@ -241,7 +290,8 @@ export class ExamsService {
     const passed = score >= exam.passMarks;
 
     // One write wins, even if the student tapped twice: the result and the unlock land together.
-    await this.prisma.$transaction(async (tx) => {
+    // Passing is the only way a session or a parent's lock ends: this is what unlocks the apps.
+    const outcome = await this.prisma.$transaction(async (tx) => {
       const { count } = await tx.exam.updateMany({
         where: { id: exam.id, status: 'ACTIVE' },
         data: {
@@ -254,15 +304,29 @@ export class ExamsService {
           passed,
         },
       });
-      // Passing is the only way a session ends: this is what unlocks the apps.
-      if (count > 0 && passed && exam.sessionId) {
+      if (count === 0) return { won: false, liftedLock: null };
+      if (!passed) return { won: true, liftedLock: null };
+      if (exam.sessionId) {
         await tx.studySession.updateMany({
           where: { id: exam.sessionId, status: 'EXAM_PENDING' },
           data: { status: 'PASSED', completedAt: now },
         });
       }
+      if (exam.parentLockId) {
+        const lifted = await tx.parentLock.updateMany({
+          where: { id: exam.parentLockId, status: 'ACTIVE' },
+          data: { status: 'PASSED', endedAt: now },
+        });
+        if (lifted.count > 0) {
+          const lock = await tx.parentLock.findUnique({ where: { id: exam.parentLockId } });
+          return { won: true, liftedLock: lock?.title ?? null };
+        }
+      }
+      return { won: true, liftedLock: null };
     });
-    return this.view(await this.owned(student.id, examId));
+    const graded = await this.owned(student.id, examId);
+    if (outcome.won) await this.tellParents(student, graded, outcome.liftedLock);
+    return this.view(graded);
   }
 
   async get(studentId: string, examId: string): Promise<ExamView> {
@@ -288,6 +352,41 @@ export class ExamsService {
   }
 
   // ── helpers ────────────────────────────────────────────────────────────────
+
+  private async tellParents(student: User, exam: Exam, liftedLock: string | null): Promise<void> {
+    const score = `${formatScore(exam.score ?? 0)}/${exam.totalMarks}`;
+    const data = { examId: exam.id };
+    try {
+      if (liftedLock) {
+        await this.notifications.notifyParents(
+          student.id,
+          'LOCK_PASSED',
+          `${student.name} unlocked "${liftedLock}"`,
+          `Passed the ${exam.subject} exam with ${score}. The apps from your lock are open again.`,
+          data,
+        );
+      } else if (exam.passed) {
+        await this.notifications.notifyParents(
+          student.id,
+          'EXAM_PASSED',
+          `${student.name} passed an exam`,
+          `${exam.subject}: ${score} (pass mark ${exam.passMarks}).`,
+          data,
+        );
+      } else {
+        await this.notifications.notifyParents(
+          student.id,
+          'EXAM_FAILED',
+          `${student.name} didn't pass yet`,
+          `${exam.subject}: ${score}, needed ${exam.passMarks}. The apps stay locked until a retry is passed.`,
+          data,
+        );
+      }
+    } catch (err) {
+      // An alert failing must never undo a graded exam.
+      this.log.warn({ err }, 'could not notify parents');
+    }
+  }
 
   private async generate(
     student: User,
@@ -376,9 +475,12 @@ export class ExamsService {
 
   view(exam: Exam): ExamView {
     const questions = parseQuestions(exam);
+    // A parent's questions come back on every retry: don't hand out their answers before a pass.
+    const hideAnswers = exam.source === 'PARENT' && !exam.passed;
     return {
       id: exam.id,
       sessionId: exam.sessionId,
+      parentLockId: exam.parentLockId,
       subject: exam.subject,
       topics: exam.topics,
       source: exam.source,
@@ -394,7 +496,11 @@ export class ExamsService {
               score: exam.score ?? 0,
               passed: exam.passed ?? false,
               submittedAt: (exam.submittedAt ?? exam.createdAt).toISOString(),
-              questions: JSON.parse(exam.results) as QuestionResult[],
+              questions: (JSON.parse(exam.results) as QuestionResult[]).map((r) =>
+                hideAnswers
+                  ? { ...r, correctAnswer: '', explanation: '', feedback: r.correct ? r.feedback : 'Not quite.' }
+                  : r,
+              ),
             }
           : null,
     };
@@ -402,3 +508,5 @@ export class ExamsService {
 }
 
 const expired = () => new AppError(409, 'EXAM_EXPIRED', 'Time ran out for this exam. Start a new one when you are ready.');
+
+const formatScore = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));

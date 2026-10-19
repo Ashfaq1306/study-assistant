@@ -2,6 +2,7 @@ import { Prisma, type PrismaClient, type StudySession, type User } from '@prisma
 import { AppError, notFound } from '../../lib/errors.js';
 import type { Clock } from '../../lib/clock.js';
 import { PASS_PERCENT_FLOOR, type ConfigService, type Settings } from '../config/config.service.js';
+import type { NotificationsService } from '../notifications/notifications.service.js';
 import type { UsersService } from '../users/users.service.js';
 import type { ExamSettings, QuestionType, StartSessionInput } from './sessions.schemas.js';
 
@@ -58,6 +59,7 @@ export class SessionsService {
     private readonly prisma: PrismaClient,
     private readonly config: ConfigService,
     private readonly users: UsersService,
+    private readonly notifications: NotificationsService,
     private readonly clock: Clock,
   ) {}
 
@@ -84,7 +86,9 @@ export class SessionsService {
     assertExamAllowed(input.exam, settings);
 
     // Younger students always get strict mode, so the lock cannot be undone in Settings.
-    const strict = input.strict || this.users.requiresParentalControl(student);
+    const young = this.users.requiresParentalControl(student);
+    const strict = input.strict || young;
+    if (young && input.lockedApps.length > 0) await this.assertProtected(student.id);
     try {
       const session = await this.prisma.$transaction(
         async (tx) => {
@@ -110,6 +114,15 @@ export class SessionsService {
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
+      await this.notifications
+        .notifyParents(
+          student.id,
+          'SESSION_STARTED',
+          `${student.name} started studying`,
+          `${session.subject}: ${session.topics} for ${session.plannedMinutes} min.`,
+          { sessionId: session.id },
+        )
+        .catch(() => undefined);
       return this.view(session);
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2034') throw sessionActive();
@@ -118,6 +131,20 @@ export class SessionsService {
   }
 
   /** The running session, moved to EXAM_PENDING if its timer has finished. */
+  /**
+   * A younger student's phone must be enforcing locks before a locked session
+   * starts: App lock on, recently seen, and no accessibility shortcut.
+   */
+  private async assertProtected(studentId: string): Promise<void> {
+    const since = new Date(this.clock().getTime() - 10 * MINUTE);
+    const ready = await this.prisma.device.count({
+      where: { studentId, revokedAt: null, protectionOn: true, shortcutOn: false, lastSeenAt: { gte: since } },
+    });
+    if (ready === 0) {
+      throw new AppError(409, 'PROTECTION_REQUIRED', 'Turn on App lock on this phone first, then start your session.');
+    }
+  }
+
   async active(studentId: string): Promise<SessionView | null> {
     const session = await this.findActive(studentId);
     return session ? this.view(session) : null;

@@ -16,6 +16,11 @@ import { ConfigService } from './modules/config/config.service.js';
 import { deviceSyncRoutes, devicesRoutes } from './modules/devices/devices.routes.js';
 import { DevicesService } from './modules/devices/devices.service.js';
 import { LockStateService } from './modules/devices/lock-state.service.js';
+import { UsageService } from './modules/devices/usage.service.js';
+import { notificationsRoutes } from './modules/notifications/notifications.routes.js';
+import { NotificationsService } from './modules/notifications/notifications.service.js';
+import { parentRoutes, studentLockRoutes } from './modules/parent/parent.routes.js';
+import { ParentService } from './modules/parent/parent.service.js';
 import { AnthropicProvider } from './modules/ai/anthropic.provider.js';
 import type { AiProvider } from './modules/ai/ai.types.js';
 import { PracticeProvider } from './modules/ai/practice.provider.js';
@@ -105,9 +110,11 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const auth = new AuthService(prisma, otp, tokens, users, clock);
   const family = new FamilyService(prisma, users, env.OTP_SECRET, clock);
   const config = new ConfigService(prisma, clock);
-  const sessions = new SessionsService(prisma, config, users, clock);
-  const lockState = new LockStateService(sessions);
-  const devices = new DevicesService(prisma, lockState, clock);
+  const notifications = new NotificationsService(prisma, clock);
+  const sessions = new SessionsService(prisma, config, users, notifications, clock);
+  const lockState = new LockStateService(prisma, sessions);
+  const usage = new UsageService(prisma);
+  const devices = new DevicesService(prisma, lockState, usage, notifications, clock);
   const ai =
     options.ai ??
     (env.ANTHROPIC_API_KEY
@@ -121,7 +128,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
           app.log,
         )
       : new PracticeProvider());
-  const exams = new ExamsService(prisma, ai, config, sessions, clock, app.log);
+  const exams = new ExamsService(prisma, ai, config, sessions, notifications, clock, app.log);
+  const parent = new ParentService(prisma, sessions, usage, config, notifications, clock);
   const tutor = new TutorService(prisma, ai, config, sessions, exams, clock);
 
   app.get('/health', () => ({ status: 'ok' }));
@@ -133,6 +141,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(devicesRoutes(prisma, devices), { prefix: '/v1/devices' });
   await app.register(deviceSyncRoutes(devices), { prefix: '/v1/device' });
   await app.register(examsRoutes(prisma, exams, tutor), { prefix: '/v1' });
+  await app.register(parentRoutes(prisma, parent), { prefix: '/v1/parent' });
+  await app.register(studentLockRoutes(prisma, parent, exams), { prefix: '/v1/locks' });
+  await app.register(notificationsRoutes(prisma, notifications), { prefix: '/v1/notifications' });
 
   return app;
 }
