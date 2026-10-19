@@ -14,6 +14,7 @@ class NativeLockStatus {
     this.shortcutOn = false,
     this.ownerUserId,
     this.deviceToken,
+    this.apiBaseUrl,
   });
 
   /// The accessibility service is switched on.
@@ -28,6 +29,9 @@ class NativeLockStatus {
   final bool shortcutOn;
   final String? ownerUserId;
   final String? deviceToken;
+
+  /// Where the native blocker syncs; updated when the app's server changes.
+  final String? apiBaseUrl;
 }
 
 class InstalledApp {
@@ -74,6 +78,7 @@ class AppLockPlatform {
       shortcutOn: map['shortcutOn'] as bool? ?? false,
       ownerUserId: map['ownerUserId'] as String?,
       deviceToken: map['deviceToken'] as String?,
+      apiBaseUrl: map['apiBaseUrl'] as String?,
     );
   }
 

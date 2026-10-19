@@ -114,6 +114,11 @@ class AppLockController extends AsyncNotifier<AppLockStatus> {
       }
     }
 
+    // The app now talks to a different server (e.g. a new address): keep the native sync in step.
+    if (token != null && studentId != null && !lockedForAnotherUser && native.apiBaseUrl != AppConfig.apiBaseUrl) {
+      await _platform.configure(baseUrl: AppConfig.apiBaseUrl, deviceToken: token, userId: studentId);
+    }
+
     var lockState = DeviceLockState.unlocked;
     if (token != null && !lockedForAnotherUser) {
       try {

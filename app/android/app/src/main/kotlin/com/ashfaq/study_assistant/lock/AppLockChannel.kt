@@ -27,6 +27,7 @@ class AppLockChannel(private val activity: Activity) : MethodChannel.MethodCallH
                     "deviceModel" to "${Build.MANUFACTURER} ${Build.MODEL}".trim(),
                     "ownerUserId" to store.ownerUserId,
                     "deviceToken" to store.deviceToken,
+                    "apiBaseUrl" to store.apiBaseUrl,
                     "locked" to store.state().locked,
                 ),
             )
