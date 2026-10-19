@@ -189,13 +189,20 @@ class _Welcome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final about = topic ?? 'what I am studying';
-    final prompts = [
-      'Explain $about simply',
-      'Give me 3 practice questions on $about',
-      'Make a short summary of $about I can revise',
-      'What are common mistakes with $about?',
-    ];
+    final about = topic;
+    final prompts = about == null
+        ? const [
+            'Help me make a study plan for today',
+            'How can I remember things better?',
+            'Explain photosynthesis simply',
+            'Give me a quick maths warm-up',
+          ]
+        : [
+            'Explain $about simply',
+            'Give me 3 practice questions on $about',
+            'Summarise $about for revision',
+            'Common mistakes with $about?',
+          ];
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [

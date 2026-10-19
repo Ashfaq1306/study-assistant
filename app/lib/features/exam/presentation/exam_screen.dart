@@ -251,7 +251,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (exam.isPractice) ...[
-              const MessageBanner.info('Practice questions: the AI is not set up yet, so these are general questions.'),
+              const MessageBanner.info('Practice round: these are built-in questions, so some may be general ones.'),
               const SizedBox(height: 12),
             ],
             Text(
