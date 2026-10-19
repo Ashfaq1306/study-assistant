@@ -156,6 +156,19 @@ describe('device sync', () => {
     expect((await state(deviceToken)).statusCode).toBe(401);
   });
 
+  it('cannot be revoked while a lock is running (that would skip the exam)', async () => {
+    const { deviceId, deviceToken } = await register();
+    await startSession(['com.instagram.android']);
+    const res = await ctx.app.inject({
+      method: 'DELETE',
+      url: `/v1/devices/${deviceId}`,
+      headers: bearer(student.accessToken),
+    });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().error.code).toBe('LOCK_ACTIVE');
+    expect((await state(deviceToken)).json().locked).toBe(true);
+  });
+
   it("keeps a student's lock separate from other students", async () => {
     const other = await signUp(ctx, { dateOfBirth: DOB.student16 });
     const { deviceToken } = await register(other);

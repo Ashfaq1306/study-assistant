@@ -49,5 +49,16 @@ Every error is `{ "error": { "code": "OTP_INVALID", "message": "That code is not
 | `PAIRING_CODE_INVALID` / `ALREADY_LINKED` / `TOO_MANY_PARENTS` | Family linking |
 | `UNAUTHORIZED` / `FORBIDDEN` / `RATE_LIMITED` | Access control |
 
+## App blocker (Android)
+- **The server decides.** A phone registers with `POST /v1/devices` and gets its own device token. `GET /v1/device/state` (or the heartbeat) returns what to block: the running session's apps, a parent's lock, or the whole phone (`*`).
+- **The phone enforces.** `AppLockService` is an accessibility service that only listens for window changes; it never reads screen content. When a locked app comes to the front, it goes home and opens Study Assistant's lock screen. A re-check catches apps that open a second window while starting.
+- **Sync** runs natively every minute, so a lock starts and ends even when the app is closed. Offline, the last known state keeps applying; staying locked is the safe default.
+- **Never blocked:** this app, the launcher, the keyboard, the phone dialer, in-call screens and emergency apps.
+- **Strict mode** (always on for under-15s) also blocks Settings, app stores, the uninstaller and the permission controller. Wi-Fi, mobile data and the Internet panel stay reachable so the student can get online for the exam. Only real activity windows decide, because splash windows say nothing about which screen is opening.
+- **No escape hatches:**
+  - Signing out keeps the lock.
+  - Signing in as another account cannot replace a running lock.
+  - A phone cannot be removed from the account while it is locked (`409 LOCK_ACTIVE`).
+
 ## The 3D look
 There is no 3D engine. `Pencil3D` is a hand-built mesh (an 18-sided eraser and ferrule, a hexagonal body, a sharpened cone and a graphite tip) projected with perspective in a `CustomPainter`. It uses back-face culling, painter's-algorithm depth sorting and Blinn-Phong shading tinted violet. Buttons (`Button3D`) have a physical bottom edge that sinks on press, and cards (`ClayCard`) use soft coloured "clay" shadows.

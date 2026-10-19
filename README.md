@@ -57,7 +57,7 @@ flowchart LR
 | 👨‍👩‍👧 | Parent ↔ student linking by QR (required under 15) | ✅ Done |
 | 🎨 | 3D design system: spinning 3D pencil mascot, chunky 3D buttons, clay cards | ✅ Done |
 | ⏱️ | Study sessions: subject and topics, timer on server time, finish-early rule, stats, streaks and history | ✅ Done |
-| 🔒 | App blocker (Android accessibility and usage-access service) | 🔜 Phase 3 |
+| 🔒 | App blocker: lock chosen apps or the whole phone; strict mode blocks Settings and uninstalls; calls and Wi-Fi always work | ✅ Done |
 | 📝 | AI-generated exams, custom pattern and marks, pass mark ≥ 50% | 🔜 Phase 4 |
 | 🤖 | AI study helper | 🔜 Phase 4 |
 | 📊 | Parent dashboard: screen time, remote block, parent-written questions | 🔜 Phase 5 |

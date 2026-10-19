@@ -98,7 +98,11 @@ export class DevicesService {
     return devices.map(toView);
   }
 
+  /** Not while a lock is running: removing the phone would end the lock without an exam. */
   async revoke(studentId: string, deviceId: string): Promise<void> {
+    if ((await this.lockState.forStudent(studentId)).locked) {
+      throw new AppError(409, 'LOCK_ACTIVE', 'You can remove this phone after your locked apps are unlocked.');
+    }
     const { count } = await this.prisma.device.updateMany({
       where: { id: deviceId, studentId, revokedAt: null },
       data: { revokedAt: this.clock() },

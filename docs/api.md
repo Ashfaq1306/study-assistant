@@ -67,3 +67,14 @@ Rules:
 - A session moves from `STUDYING` to `EXAM_PENDING` when the timer ends. Students cannot cancel it.
 
 Every response carries `X-Server-Time`, so clients can run countdowns on server time.
+
+## Devices: `/v1/devices` (students) and `/v1/device` (phone, `X-Device-Token`)
+| Method | Path | Body | Success |
+| --- | --- | --- | --- |
+| POST | `/v1/devices` | `name`, `platform` (`android`), `appVersion?` | `201 { deviceId, deviceToken }` |
+| GET | `/v1/devices` | | `{ devices }` |
+| DELETE | `/v1/devices/:id` | | `204`, or `409 LOCK_ACTIVE` while a lock is running |
+| GET | `/v1/device/state` | | `lockState` |
+| POST | `/v1/device/heartbeat` | `protectionOn`, `usageAccess`, `appVersion?`, `installedApps?[{ package, label }]` | `lockState` |
+
+`lockState` = `{ locked, wholePhone, packages[], strict, reasons[{ kind: SESSION | PARENT, id, title, status }] }`
