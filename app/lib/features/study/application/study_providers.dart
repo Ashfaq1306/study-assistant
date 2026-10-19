@@ -35,6 +35,7 @@ class ActiveSessionController extends AsyncNotifier<StudySession?> {
     if (current == null) throw StateError('No session');
     final session = await _api.finish(current.id);
     state = AsyncData(session);
+    _invalidateStats();
     return session;
   }
 

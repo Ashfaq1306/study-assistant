@@ -1,7 +1,7 @@
 import { Prisma, type PrismaClient, type StudySession, type User } from '@prisma/client';
 import { AppError, notFound } from '../../lib/errors.js';
 import type { Clock } from '../../lib/clock.js';
-import type { ConfigService, Settings } from '../config/config.service.js';
+import { PASS_PERCENT_FLOOR, type ConfigService, type Settings } from '../config/config.service.js';
 import type { UsersService } from '../users/users.service.js';
 import type { ExamSettings, QuestionType, StartSessionInput } from './sessions.schemas.js';
 
@@ -38,9 +38,11 @@ export interface StudyStats {
 
 /** Throws unless the pass mark meets the floor and the size is within limits. */
 export function assertExamAllowed(exam: ExamSettings, settings: Settings): void {
-  const minPass = Math.ceil((exam.totalMarks * settings.minPassPercent) / 100);
+  // Belt and braces: the floor holds even if a setting slipped past validation.
+  const percent = Math.max(PASS_PERCENT_FLOOR, settings.minPassPercent);
+  const minPass = Math.ceil((exam.totalMarks * percent) / 100);
   if (exam.passMarks < minPass) {
-    throw new AppError(400, 'VALIDATION_FAILED', `The pass mark must be at least ${settings.minPassPercent}%.`, {
+    throw new AppError(400, 'VALIDATION_FAILED', `The pass mark must be at least ${percent}%.`, {
       fields: { 'exam.passMarks': [`Choose at least ${minPass} of ${exam.totalMarks} marks.`] },
     });
   }
@@ -101,6 +103,7 @@ export class SessionsService {
               passMarks: input.exam.passMarks,
               questionTypes: JSON.stringify(input.exam.questionTypes),
               difficulty: input.exam.difficulty,
+              earlyFinishPercent: settings.earlyFinishPercent,
               startedAt: this.clock(),
             },
           });
@@ -134,20 +137,20 @@ export class SessionsService {
     const settled = await this.settle(session);
     if (settled.status !== 'STUDYING') return this.view(settled);
 
-    const settings = await this.config.get();
     const now = this.clock();
-    const canFinishAt = this.canFinishAt(settled, settings.earlyFinishPercent);
+    const canFinishAt = this.canFinishAt(settled);
     if (now < canFinishAt) {
       const minutes = Math.ceil((canFinishAt.getTime() - now.getTime()) / MINUTE);
       throw new AppError(409, 'TOO_EARLY', `Keep going! You can finish in ${minutes} min.`, {
         canFinishAt: canFinishAt.toISOString(),
       });
     }
-    const updated = await this.prisma.studySession.update({
-      where: { id: settled.id },
+    // Guarded on STUDYING so a slow request can never re-lock a session that moved on.
+    await this.prisma.studySession.updateMany({
+      where: { id: settled.id, status: 'STUDYING' },
       data: { status: 'EXAM_PENDING', studyEndedAt: now },
     });
-    return this.view(updated);
+    return this.view(await this.prisma.studySession.findUniqueOrThrow({ where: { id: settled.id } }));
   }
 
   async list(studentId: string, limit: number): Promise<SessionView[]> {
@@ -156,7 +159,8 @@ export class SessionsService {
       orderBy: { startedAt: 'desc' },
       take: limit,
     });
-    return Promise.all(sessions.map((s) => this.view(s)));
+    const settled = await Promise.all(sessions.map((s) => this.settle(s)));
+    return settled.map((s) => this.view(s));
   }
 
   async get(studentId: string, sessionId: string): Promise<SessionView> {
@@ -221,8 +225,8 @@ export class SessionsService {
     return new Date(s.startedAt.getTime() + s.plannedMinutes * MINUTE);
   }
 
-  private canFinishAt(s: Pick<StudySession, 'startedAt' | 'plannedMinutes'>, percent: number): Date {
-    return new Date(s.startedAt.getTime() + Math.round((s.plannedMinutes * MINUTE * percent) / 100));
+  private canFinishAt(s: Pick<StudySession, 'startedAt' | 'plannedMinutes' | 'earlyFinishPercent'>): Date {
+    return new Date(s.startedAt.getTime() + Math.round((s.plannedMinutes * MINUTE * s.earlyFinishPercent) / 100));
   }
 
   private studiedMinutes(
@@ -234,8 +238,7 @@ export class SessionsService {
     return Math.max(0, Math.floor((end - s.startedAt.getTime()) / MINUTE));
   }
 
-  async view(s: StudySession): Promise<SessionView> {
-    const settings = await this.config.get();
+  view(s: StudySession): SessionView {
     return {
       id: s.id,
       subject: s.subject,
@@ -253,7 +256,7 @@ export class SessionsService {
       },
       startedAt: s.startedAt.toISOString(),
       endsAt: this.endsAt(s).toISOString(),
-      canFinishAt: this.canFinishAt(s, settings.earlyFinishPercent).toISOString(),
+      canFinishAt: this.canFinishAt(s).toISOString(),
       studyEndedAt: s.studyEndedAt?.toISOString() ?? null,
       completedAt: s.completedAt?.toISOString() ?? null,
       studiedMinutes: this.studiedMinutes(s, this.clock()),

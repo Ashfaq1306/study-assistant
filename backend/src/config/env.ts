@@ -33,6 +33,14 @@ const EnvSchema = z
     DATABASE_URL: z.string().min(1),
     JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
     OTP_SECRET: z.string().min(32, 'OTP_SECRET must be at least 32 characters'),
+    /**
+     * Return one-time codes in API responses so the app can be tested without
+     * email or SMS. Local development only: refused in production.
+     */
+    EXPOSE_DEV_CODES: z
+      .enum(['true', 'false'])
+      .default('false')
+      .transform((v) => v === 'true'),
     CORS_ORIGINS: z
       .string()
       .default('')
@@ -63,6 +71,9 @@ const EnvSchema = z
         message: 'console OTP providers are not allowed in production',
         path: ['EMAIL_PROVIDER'],
       });
+    }
+    if (env.NODE_ENV === 'production' && env.EXPOSE_DEV_CODES) {
+      ctx.addIssue({ code: 'custom', message: 'EXPOSE_DEV_CODES is not allowed in production', path: ['EXPOSE_DEV_CODES'] });
     }
     if (env.EMAIL_PROVIDER === 'smtp' && !env.SMTP_HOST) {
       ctx.addIssue({ code: 'custom', message: 'SMTP_HOST is required', path: ['SMTP_HOST'] });

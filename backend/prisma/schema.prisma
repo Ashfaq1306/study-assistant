@@ -145,26 +145,28 @@ model FamilyLink {
 /// One study block: what the student will study, for how long, which apps are
 /// locked meanwhile, and the exam they must pass to unlock them.
 model StudySession {
-  id             String        @id @default(cuid())
-  studentId      String
-  subject        String
-  topics         String
-  plannedMinutes Int
-  status         SessionStatus @default(STUDYING)
+  id                 String        @id @default(cuid())
+  studentId          String
+  subject            String
+  topics             String
+  plannedMinutes     Int
+  status             SessionStatus @default(STUDYING)
   /// JSON array of Android package names locked during the session.
-  lockedApps     String        @default("[]")
+  lockedApps         String        @default("[]")
   /// Also block Settings, Play Store and the package installer while locked.
-  strict         Boolean       @default(true)
-  questionCount  Int
-  totalMarks     Int
-  passMarks      Int
+  strict             Boolean       @default(true)
+  questionCount      Int
+  totalMarks         Int
+  passMarks          Int
   /// JSON array of QuestionType values.
-  questionTypes  String
-  difficulty     Difficulty    @default(MEDIUM)
-  startedAt      DateTime      @default(now())
+  questionTypes      String
+  difficulty         Difficulty    @default(MEDIUM)
+  /// Share of the timer after which the student may finish early, fixed at start.
+  earlyFinishPercent Int           @default(50)
+  startedAt          DateTime      @default(now())
   /// When studying stopped (timer finished or finished early).
-  studyEndedAt   DateTime?
-  completedAt    DateTime?
+  studyEndedAt       DateTime?
+  completedAt        DateTime?
 
   student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
 

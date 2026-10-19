@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
@@ -40,10 +42,14 @@ class RemoteConfig {
   );
 }
 
+/// Falls back to the defaults when offline, and tries again shortly so admin
+/// changes (e.g. a higher pass mark floor) reach the app.
 final remoteConfigProvider = FutureProvider<RemoteConfig>((ref) async {
   try {
     return RemoteConfig.fromJson(await ref.watch(apiClientProvider).get('/v1/config'));
   } on Object {
+    final retry = Timer(const Duration(seconds: 30), ref.invalidateSelf);
+    ref.onDispose(retry.cancel);
     return const RemoteConfig();
   }
 });

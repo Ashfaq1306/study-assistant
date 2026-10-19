@@ -63,12 +63,16 @@ export async function resetDatabase(): Promise<void> {
 }
 
 export async function createTestApp(
-  options: { rateLimit?: boolean; nodeEnv?: typeof env.NODE_ENV } = {},
+  options: { rateLimit?: boolean; nodeEnv?: typeof env.NODE_ENV; exposeDevCodes?: boolean } = {},
 ): Promise<TestContext> {
   const notifier = new FakeNotifier();
   const clock = new TestClock();
   const app = await buildApp({
-    env: { ...env, NODE_ENV: options.nodeEnv ?? env.NODE_ENV },
+    env: {
+      ...env,
+      NODE_ENV: options.nodeEnv ?? env.NODE_ENV,
+      EXPOSE_DEV_CODES: options.exposeDevCodes ?? false,
+    },
     prisma,
     notifier,
     clock: clock.fn,

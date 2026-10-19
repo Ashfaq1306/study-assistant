@@ -25,7 +25,8 @@ class StudentHomeScreen extends ConsumerWidget {
     if (auth is! AuthSignedIn) return const SizedBox.shrink();
     final user = auth.user;
     final text = Theme.of(context).textTheme;
-    final active = ref.watch(activeSessionProvider).value;
+    final activeAsync = ref.watch(activeSessionProvider);
+    final active = activeAsync.value;
     final stats = ref.watch(studyStatsProvider).value;
     final announcement = ref.watch(remoteConfigProvider).value?.announcement;
 
@@ -41,6 +42,10 @@ class StudentHomeScreen extends ConsumerWidget {
             MessageBanner.info(announcement),
           ],
           const SizedBox(height: 22),
+          if (activeAsync.hasError && active == null) ...[
+            _RetryBanner(onRetry: () => ref.invalidate(activeSessionProvider)),
+            const SizedBox(height: 14),
+          ],
           if (active != null && active.status.isActive)
             _ActiveCard(session: active)
           else
@@ -110,6 +115,39 @@ class StudentHomeScreen extends ConsumerWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _RetryBanner extends StatelessWidget {
+  const _RetryBanner({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.coralSoft,
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onRetry,
+        child: const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Icon(Icons.wifi_off_rounded, color: AppColors.coralDeep),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  "Couldn't check your study session. Tap to try again.",
+                  style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.coralDeep),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

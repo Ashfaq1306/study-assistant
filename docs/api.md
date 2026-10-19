@@ -39,3 +39,18 @@ Only a **verified** contact (one that has received a code) can be used to sign i
 | DELETE | `/links/:id` | either side | | `204` (a student under 15 cannot remove their last parent) |
 
 `link` = `{ id, linkedAt, person: { id, name, role, age } }`
+
+## Config: Public. Admin-tunable settings the app needs: ,  (never below 50), , , , , , , .
+
+## Study sessions:  (students)
+| Method | Path | Body / query | Success |
+| --- | --- | --- | --- |
+| POST |  | , , , , ,  |  |
+| GET |  | |  |
+| POST |  | |  ( before the early-finish point) |
+| GET |  |  |  |
+| GET |  |  |  |
+
+Rules: students under 15 get  until a parent links; only one session can be running (); the pass mark must be at least the configured percent (floor 50%). A session moves from  to  when the timer ends; students cannot cancel it.
+
+Every response carries  so clients can run countdowns on server time.

@@ -87,7 +87,14 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
           );
       if (mounted) context.pushReplacement(Routes.studySession);
     } on ApiException catch (e) {
-      if (mounted) setState(() => _error = e);
+      if (!mounted) return;
+      if (e.code == 'SESSION_ACTIVE') {
+        // Home was out of date: take the student to the session that is running.
+        await ref.read(activeSessionProvider.notifier).refresh();
+        if (mounted) context.pushReplacement(Routes.studySession);
+        return;
+      }
+      setState(() => _error = e);
     } finally {
       if (mounted) setState(() => _loading = false);
     }

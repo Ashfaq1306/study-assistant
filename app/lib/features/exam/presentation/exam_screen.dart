@@ -16,7 +16,11 @@ class ExamScreen extends StatelessWidget {
         children: [
           const IconBadge(Icons.quiz_rounded, size: 80, color: AppColors.sunshineDeep),
           const SizedBox(height: 16),
-          Text('Your exam is being prepared', style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            'AI exams arrive in the next update',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
         ],
       ),
     );

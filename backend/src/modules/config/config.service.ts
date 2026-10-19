@@ -1,6 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import type { Clock } from '../../lib/clock.js';
+import { AppError } from '../../lib/errors.js';
 
 /** The pass mark can be raised by an admin, never lowered below this. */
 export const PASS_PERCENT_FLOOR = 50;
@@ -66,6 +67,12 @@ export class ConfigService {
       }
     }
     const value = SettingsSchema.parse(this.dropInvalid(raw));
+    // A crossed pair would make every session impossible: fall back to defaults.
+    if (value.minStudyMinutes > value.maxStudyMinutes) {
+      const defaults = SettingsSchema.parse({});
+      value.minStudyMinutes = defaults.minStudyMinutes;
+      value.maxStudyMinutes = defaults.maxStudyMinutes;
+    }
     this.cache = { at: now, value };
     return value;
   }
@@ -73,6 +80,14 @@ export class ConfigService {
   /** Validates and stores a partial update. Returns the full new settings. */
   async update(patch: Partial<Settings>): Promise<Settings> {
     const valid = SettingsSchema.partial().parse(patch);
+    const current = await this.get();
+    const min = valid.minStudyMinutes ?? current.minStudyMinutes;
+    const max = valid.maxStudyMinutes ?? current.maxStudyMinutes;
+    if (min > max) {
+      throw new AppError(400, 'VALIDATION_FAILED', 'Minimum study time must not exceed the maximum.', {
+        fields: { minStudyMinutes: ['Must be at most the maximum study time.'] },
+      });
+    }
     await this.prisma.$transaction(
       Object.entries(valid).map(([key, value]) =>
         this.prisma.appSetting.upsert({

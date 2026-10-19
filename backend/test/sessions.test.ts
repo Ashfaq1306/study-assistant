@@ -138,7 +138,7 @@ describe('the timer', () => {
     ctx.clock.advance(10 * MIN);
     const res = await as(student).post(`/v1/sessions/${id}/finish`);
     expect(res.statusCode).toBe(409);
-    expect(res.json().error).toMatchObject({ code: 'TOO_EARLY' });
+    expect(res.json().error).toMatchObject({ code: 'TOO_EARLY', details: { canFinishAt: '2026-06-01T08:15:00.000Z' } });
   });
 
   it('can be finished early after half the time, and the apps stay locked', async () => {
@@ -147,6 +147,27 @@ describe('the timer', () => {
     const res = await as(student).post(`/v1/sessions/${id}/finish`);
     expect(res.json()).toMatchObject({ status: 'EXAM_PENDING', studiedMinutes: 16 });
     expect((await as(student).get('/v1/sessions/active')).json().session.status).toBe('EXAM_PENDING');
+    // Finishing again changes nothing.
+    const again = await as(student).post(`/v1/sessions/${id}/finish`);
+    expect(again.json()).toMatchObject({ status: 'EXAM_PENDING', studiedMinutes: 16 });
+  });
+
+  it('keeps the finish-early point fixed when the admin changes it mid-session', async () => {
+    const { id } = (await start()).json();
+    await prisma.appSetting.create({ data: { key: 'earlyFinishPercent', value: '0' } });
+    ctx.clock.advance(MIN);
+    expect((await as(student).post(`/v1/sessions/${id}/finish`)).statusCode).toBe(409);
+  });
+
+  it('falls back to defaults if the admin crossed the study time limits', async () => {
+    await prisma.appSetting.createMany({
+      data: [
+        { key: 'minStudyMinutes', value: '60' },
+        { key: 'maxStudyMinutes', value: '30' },
+      ],
+    });
+    const config = (await ctx.app.inject({ method: 'GET', url: '/v1/config' })).json();
+    expect(config).toMatchObject({ minStudyMinutes: 5, maxStudyMinutes: 240 });
   });
 
   it('moves to the exam when time is up', async () => {
@@ -190,6 +211,7 @@ describe('history and stats', () => {
     expect(stats.sessionsCompleted).toBe(3);
 
     const history = (await as(student).get('/v1/sessions?limit=2')).json().sessions;
+    expect(history.every((s: { status: string }) => s.status === 'PASSED')).toBe(true);
     expect(history).toHaveLength(2);
     expect(history[0].plannedMinutes).toBe(10);
   });

@@ -1,4 +1,5 @@
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
+import { loadEnv } from '../src/config/env.js';
 import {
   bearer,
   createTestApp,
@@ -419,8 +420,20 @@ describe('development codes', () => {
     expect(res.json().verification.devCode).toBeUndefined();
   });
 
-  it('returns the code in development so the app can be tested without email or SMS', async () => {
+  it('stays hidden in development unless explicitly enabled', async () => {
     const dev = await createTestApp({ nodeEnv: 'development' });
+    const res = await dev.app.inject({ method: 'POST', url: '/v1/auth/register', payload: studentBody() });
+    expect(res.json().verification.devCode).toBeUndefined();
+  });
+
+  it('can be refused at startup in production', () => {
+    expect(() =>
+      loadEnv({ ...process.env, NODE_ENV: 'production', EXPOSE_DEV_CODES: 'true', DATABASE_URL: 'file:x', JWT_SECRET: 'x'.repeat(40), OTP_SECRET: 'y'.repeat(40), EMAIL_PROVIDER: 'smtp', SMTP_HOST: 'h', SMS_PROVIDER: 'twilio', TWILIO_ACCOUNT_SID: 'a', TWILIO_AUTH_TOKEN: 'b', TWILIO_FROM: 'c' }),
+    ).toThrow(/EXPOSE_DEV_CODES/);
+  });
+
+  it('returns the code when enabled so the app can be tested without email or SMS', async () => {
+    const dev = await createTestApp({ nodeEnv: 'development', exposeDevCodes: true });
     const res = await dev.app.inject({ method: 'POST', url: '/v1/auth/register', payload: studentBody() });
     expect(res.json().verification.devCode).toBe(dev.notifier.lastCode());
   });
