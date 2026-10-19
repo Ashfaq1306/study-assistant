@@ -1,6 +1,7 @@
 import 'package:study_assistant/features/auth/domain/app_user.dart';
 
 AppUser testUser({
+  String id = 'u1',
   UserRole role = UserRole.student,
   int age = 16,
   bool parentalControlRequired = false,
@@ -8,7 +9,7 @@ AppUser testUser({
   int linkedChildren = 0,
   String name = 'Nadia Rahman',
 }) => AppUser(
-  id: 'u1',
+  id: id,
   role: role,
   name: name,
   email: 'nadia@example.com',

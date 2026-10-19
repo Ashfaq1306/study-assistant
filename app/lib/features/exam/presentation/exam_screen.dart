@@ -41,7 +41,10 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   bool _submitting = false;
   int _index = 0;
   Timer? _ticker;
-  final _pages = PageController();
+
+  /// After a failed automatic hand-in, wait before trying again (no request storm).
+  DateTime? _nextAutoSubmit;
+  bool _checking = false;
 
   Map<String, String> get _answers => ref.read(_draftAnswersProvider).putIfAbsent(_exam!.id, () => {});
 
@@ -55,7 +58,6 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   @override
   void dispose() {
     _ticker?.cancel();
-    _pages.dispose();
     super.dispose();
   }
 
@@ -91,17 +93,34 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   void _tick() {
     final exam = _exam;
     if (!mounted) return;
-    // Out of time: hand in whatever is answered.
+    final now = ref.read(serverClockProvider).now();
     if (exam != null && exam.result == null && !_submitting) {
-      if (!ref.read(serverClockProvider).now().isBefore(exam.expiresAt)) {
-        _submit();
+      if (exam.status != ExamStatus.active) {
+        // Handed in but not marked yet (an older server): check back.
+        if (now.second % 3 == 0) unawaited(_check(exam.id));
+      } else if (!now.isBefore(exam.expiresAt) && !now.isBefore(_nextAutoSubmit ?? now)) {
+        // Out of time: hand in whatever is answered.
+        unawaited(_submit(automatic: true));
         return;
       }
     }
     setState(() {});
   }
 
-  Future<void> _submit() async {
+  Future<void> _check(String examId) async {
+    if (_checking) return;
+    _checking = true;
+    try {
+      final exam = await ref.read(examApiProvider).get(examId);
+      if (mounted) setState(() => _exam = exam);
+    } on ApiException {
+      // Try again on a later tick.
+    } finally {
+      _checking = false;
+    }
+  }
+
+  Future<void> _submit({bool automatic = false}) async {
     final exam = _exam!;
     setState(() => _submitting = true);
     try {
@@ -115,6 +134,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
         unawaited(ref.read(activeSessionProvider.notifier).refresh());
       }
     } on ApiException catch (e) {
+      if (automatic) _nextAutoSubmit = ref.read(serverClockProvider).now().add(const Duration(seconds: 10));
       if (mounted) showSnack(context, e.message);
       if (e.code == 'EXAM_EXPIRED' && mounted) await _load();
     } finally {
@@ -146,7 +166,6 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
   void _goTo(int index) {
     FocusScope.of(context).unfocus();
     setState(() => _index = index);
-    _pages.animateToPage(index, duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic);
   }
 
   @override
@@ -155,6 +174,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     if (_loading) return const _Writing();
     if (exam == null) return _problem();
     if (exam.result != null) return _ResultView(exam: exam);
+    if (exam.status != ExamStatus.active) return const _Writing(marking: true);
     return _taking(exam);
   }
 
@@ -268,20 +288,21 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 470,
-              child: PageView(
-                controller: _pages,
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  for (final (i, q) in exam.questions.indexed)
-                    _QuestionCard(
-                      number: i + 1,
-                      question: q,
-                      answer: _answers[q.id],
-                      onAnswer: (value) => setState(() => _answers[q.id] = value),
-                    ),
-                ],
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween(begin: const Offset(0.06, 0), end: Offset.zero).animate(animation),
+                  child: child,
+                ),
+              ),
+              child: _QuestionCard(
+                key: ValueKey(exam.questions[_index].id),
+                number: _index + 1,
+                question: exam.questions[_index],
+                answer: _answers[exam.questions[_index].id],
+                onAnswer: (value) => setState(() => _answers[exam.questions[_index].id] = value),
               ),
             ),
             const SizedBox(height: 12),
@@ -324,7 +345,9 @@ String _mmss(Duration d) {
 }
 
 class _Writing extends StatelessWidget {
-  const _Writing();
+  const _Writing({this.marking = false});
+
+  final bool marking;
 
   @override
   Widget build(BuildContext context) {
@@ -334,9 +357,17 @@ class _Writing extends StatelessWidget {
         children: [
           const SizedBox(height: 40),
           const Pencil3D(size: 220, interactive: false),
-          Text('Writing your exam…', style: Theme.of(context).textTheme.headlineSmall),
+          Text(
+            marking ? 'Marking your answers…' : 'Writing your exam…',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
           const SizedBox(height: 8),
-          const Text('Questions about exactly what you studied. Take a deep breath!', textAlign: TextAlign.center),
+          Text(
+            marking
+                ? 'Almost there. Your result is on its way!'
+                : 'Questions about exactly what you studied. Take a deep breath!',
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 24),
           const SizedBox(width: 180, child: LinearProgressIndicator(minHeight: 8)),
         ],
@@ -346,7 +377,13 @@ class _Writing extends StatelessWidget {
 }
 
 class _QuestionCard extends StatelessWidget {
-  const _QuestionCard({required this.number, required this.question, required this.answer, required this.onAnswer});
+  const _QuestionCard({
+    super.key,
+    required this.number,
+    required this.question,
+    required this.answer,
+    required this.onAnswer,
+  });
 
   final int number;
   final ExamQuestion question;
@@ -357,42 +394,40 @@ class _QuestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ClayCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Q$number · ${question.marks} ${question.marks == 1 ? 'mark' : 'marks'} · ${question.type.label}',
-                  style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.violet),
-                ),
-                const SizedBox(height: 8),
-                Text(question.prompt, style: Theme.of(context).textTheme.titleLarge?.copyWith(height: 1.3)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          if (question.type == QuestionType.short)
-            _ShortAnswer(initial: answer ?? '', onChanged: onAnswer)
-          else
-            for (final (i, option) in question.options.indexed)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _Option(
-                  badge: question.type == QuestionType.trueFalse ? null : _letters[i],
-                  icon: question.type == QuestionType.trueFalse
-                      ? (i == 0 ? Icons.check_circle_rounded : Icons.cancel_rounded)
-                      : null,
-                  label: option,
-                  selected: answer == question.answerForOption(i),
-                  onTap: () => onAnswer(question.answerForOption(i)),
-                ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ClayCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Q$number · ${question.marks} ${question.marks == 1 ? 'mark' : 'marks'} · ${question.type.label}',
+                style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.violet),
               ),
-        ],
-      ),
+              const SizedBox(height: 8),
+              Text(question.prompt, style: Theme.of(context).textTheme.titleLarge?.copyWith(height: 1.3)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (question.type == QuestionType.short)
+          _ShortAnswer(initial: answer ?? '', onChanged: onAnswer)
+        else
+          for (final (i, option) in question.options.indexed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _Option(
+                badge: question.type == QuestionType.trueFalse ? null : _letters[i],
+                icon: question.type == QuestionType.trueFalse
+                    ? (i == 0 ? Icons.check_circle_rounded : Icons.cancel_rounded)
+                    : null,
+                label: option,
+                selected: answer == question.answerForOption(i),
+                onTap: () => onAnswer(question.answerForOption(i)),
+              ),
+            ),
+      ],
     );
   }
 }

@@ -17,6 +17,10 @@ class FakeAi implements AiProvider {
   failNext = false;
   brokenQuestions = 0;
   shortScore = 1;
+  /** Throws this from grading (once) when set. */
+  gradeError: Error | null = null;
+  /** Leaves these question ids out of the AI's grades. */
+  skipGrades = new Set<string>();
   examCalls = 0;
   tutorCalls: TutorMessage[][] = [];
 
@@ -38,7 +42,14 @@ class FakeAi implements AiProvider {
   }
 
   gradeShortAnswers(items: ShortAnswerToGrade[]) {
-    return Promise.resolve(items.map((i) => ({ id: i.id, score: this.shortScore, feedback: 'AI feedback' })));
+    if (this.gradeError) {
+      const err = this.gradeError;
+      this.gradeError = null;
+      return Promise.reject(err);
+    }
+    return Promise.resolve(
+      items.filter((i) => !this.skipGrades.has(i.id)).map((i) => ({ id: i.id, score: this.shortScore, feedback: 'AI feedback' })),
+    );
   }
 
   tutor(messages: TutorMessage[]): Promise<string> {
@@ -265,6 +276,54 @@ describe('passing and failing', () => {
     expect(again.result).toMatchObject({ score: 10, passed: true });
   });
 
+  it('a grading crash leaves the exam open, so handing in again works', async () => {
+    const { exam } = await examReady({ questionTypes: ['SHORT'], questionCount: 3, totalMarks: 9, passMarks: 5 });
+    const answers = Object.fromEntries(exam.questions.map((q: Q) => [q.id, 'photosynthesis']));
+    ai.gradeError = new Error('database hiccup');
+    const failed = await as(student).post(`/v1/exams/${exam.id}/submit`, { answers });
+    expect(failed.statusCode).toBe(500);
+    expect((await as(student).get(`/v1/exams/${exam.id}`)).json().status).toBe('ACTIVE');
+
+    const graded = (await as(student).post(`/v1/exams/${exam.id}/submit`, { answers })).json();
+    expect(graded.result).toMatchObject({ score: 9, passed: true });
+  });
+
+  it('answers the AI did not grade fall back to keyword grading instead of zero', async () => {
+    const { exam } = await examReady({ questionTypes: ['SHORT'], questionCount: 3, totalMarks: 9, passMarks: 5 });
+    ai.skipGrades = new Set([exam.questions[0].id]);
+    const answers = Object.fromEntries(exam.questions.map((q: Q) => [q.id, 'photosynthesis']));
+    const graded = (await as(student).post(`/v1/exams/${exam.id}/submit`, { answers })).json();
+    expect(graded.result.score).toBe(9);
+    expect(graded.result.questions[0].feedback).toBe('Correct!');
+  });
+
+  it('two starts at once give one exam, and the retry break still applies', async () => {
+    const sessionId = await startSession();
+    ctx.clock.advance(11 * MIN);
+    const [a, b] = await Promise.all([
+      as(student).post(`/v1/sessions/${sessionId}/exam`),
+      as(student).post(`/v1/sessions/${sessionId}/exam`),
+    ]);
+    expect(a.json().id).toBe(b.json().id);
+    expect(await prisma.exam.count({ where: { status: 'ACTIVE' } })).toBe(1);
+
+    await as(student).post(`/v1/exams/${a.json().id}/submit`, { answers: wrongAnswers(a.json().questions) });
+    const again = await as(student).post(`/v1/sessions/${sessionId}/exam`);
+    expect(again.json().error.code).toBe('EXAM_COOLDOWN');
+  });
+
+  it('an exam left to run out counts as a try: break, then a fresh exam', async () => {
+    // 4 questions: 6 minutes, then 1 minute of grace; the 2-minute break counts from the time limit.
+    const { sessionId, exam } = await examReady();
+    ctx.clock.advance(7.5 * MIN);
+    const tooSoon = await as(student).post(`/v1/sessions/${sessionId}/exam`);
+    expect(tooSoon.json().error.code).toBe('EXAM_COOLDOWN');
+    ctx.clock.advance(MIN);
+    const retry = await as(student).post(`/v1/sessions/${sessionId}/exam`);
+    expect(retry.statusCode).toBe(200);
+    expect(retry.json().id).not.toBe(exam.id);
+  });
+
   it('refuses late submissions after the time limit', async () => {
     // 4 questions: 6 minutes plus 1 minute of grace.
     const { exam } = await examReady();
@@ -318,6 +377,24 @@ describe('AI study helper', () => {
   it('follows the parent gate for younger students', async () => {
     const young = await signUp(ctx, { dateOfBirth: DOB.student12 });
     expect((await ask(young)).json().error.code).toBe('PARENT_REQUIRED');
+  });
+
+  it('parallel questions cannot beat the daily limit', async () => {
+    await prisma.appSetting.create({ data: { key: 'tutorDailyLimit', value: '2' } });
+    const results = await Promise.all(Array.from({ length: 6 }, () => ask()));
+    expect(results.filter((r) => r.statusCode === 200).length).toBeLessThanOrEqual(2);
+    expect(await prisma.aiUsage.count({ where: { kind: 'TUTOR' } })).toBeLessThanOrEqual(2);
+  });
+
+  it('accepts long helper replies sent back as history', async () => {
+    const res = await as(student).post('/v1/tutor', {
+      messages: [
+        { role: 'user', content: 'Explain' },
+        { role: 'assistant', content: 'x'.repeat(5000) },
+        { role: 'user', content: 'Thanks, and?' },
+      ],
+    });
+    expect(res.statusCode).toBe(200);
   });
 
   it('validates the conversation', async () => {

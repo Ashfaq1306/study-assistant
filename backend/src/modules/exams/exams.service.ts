@@ -1,4 +1,4 @@
-import type { Exam, PrismaClient, User } from '@prisma/client';
+import { Prisma, type Exam, type PrismaClient, type User } from '@prisma/client';
 import type { FastifyBaseLogger } from 'fastify';
 import { randomToken } from '../../lib/crypto.js';
 import { ageOn } from '../../lib/age.js';
@@ -130,6 +130,7 @@ export class ExamsService {
   async start(student: User, target: ExamTarget): Promise<ExamView> {
     const now = this.clock();
     const scope = target.sessionId ? { sessionId: target.sessionId } : { sessionId: null };
+    const activeKey = `${student.id}:${target.sessionId ?? '-'}`;
 
     const running = await this.prisma.exam.findFirst({
       where: { studentId: student.id, ...scope, status: 'ACTIVE' },
@@ -167,9 +168,12 @@ export class ExamsService {
       marks: marks[i]!,
     }));
 
-    const exam = await this.prisma.exam.create({
-      data: {
-        studentId: student.id,
+    let exam: Exam;
+    try {
+      exam = await this.prisma.exam.create({
+        data: {
+          activeKey,
+          studentId: student.id,
         sessionId: target.sessionId ?? null,
         subject: target.subject,
         topics: target.topics,
@@ -180,8 +184,16 @@ export class ExamsService {
         source,
         createdAt: now,
         expiresAt: new Date(now.getTime() + Math.max(MIN_EXAM_MS, questions.length * PER_QUESTION_MS)),
-      },
-    });
+        },
+      });
+    } catch (err) {
+      // Another request (a retry after a slow network) created the exam first: use that one.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        const existing = await this.prisma.exam.findUnique({ where: { activeKey } });
+        if (existing) return this.view(existing);
+      }
+      throw err;
+    }
     if (source === 'AI') await this.prisma.aiUsage.create({ data: { userId: student.id, kind: 'EXAM', createdAt: now } });
     return this.view(exam);
   }
@@ -197,13 +209,7 @@ export class ExamsService {
       throw expired();
     }
 
-    // Claim the submission first, so two taps cannot grade (or unlock) twice.
-    const { count } = await this.prisma.exam.updateMany({
-      where: { id: exam.id, status: 'ACTIVE' },
-      data: { status: 'SUBMITTED', submittedAt: now, answers: JSON.stringify(answers) },
-    });
-    if (count === 0) return this.view(await this.owned(student.id, examId));
-
+    // Grade first: if grading fails, the exam is still open and can be handed in again.
     const questions = parseQuestions(exam);
     const shortGrades = await this.gradeShort(exam, questions, answers);
     const results: QuestionResult[] = questions.map((q) => {
@@ -233,19 +239,30 @@ export class ExamsService {
 
     const score = Math.round(results.reduce((sum, r) => sum + r.awarded, 0) * 100) / 100;
     const passed = score >= exam.passMarks;
-    const graded = await this.prisma.exam.update({
-      where: { id: exam.id },
-      data: { results: JSON.stringify(results), score, passed },
-    });
 
-    // Passing is the only way a session ends: this is what unlocks the apps.
-    if (passed && exam.sessionId) {
-      await this.prisma.studySession.updateMany({
-        where: { id: exam.sessionId, status: 'EXAM_PENDING' },
-        data: { status: 'PASSED', completedAt: now },
+    // One write wins, even if the student tapped twice: the result and the unlock land together.
+    await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.exam.updateMany({
+        where: { id: exam.id, status: 'ACTIVE' },
+        data: {
+          status: 'SUBMITTED',
+          activeKey: null,
+          submittedAt: now,
+          answers: JSON.stringify(answers),
+          results: JSON.stringify(results),
+          score,
+          passed,
+        },
       });
-    }
-    return this.view(graded);
+      // Passing is the only way a session ends: this is what unlocks the apps.
+      if (count > 0 && passed && exam.sessionId) {
+        await tx.studySession.updateMany({
+          where: { id: exam.sessionId, status: 'EXAM_PENDING' },
+          data: { status: 'PASSED', completedAt: now },
+        });
+      }
+    });
+    return this.view(await this.owned(student.id, examId));
   }
 
   async get(studentId: string, examId: string): Promise<ExamView> {
@@ -322,18 +339,22 @@ export class ExamsService {
 
     // Empty answers are simply wrong; only real attempts go to the grader.
     const attempted = items.filter((i) => i.studentAnswer.trim().length > 0);
-    let grades: ShortAnswerGrade[] = [];
+    const byId = new Map<string, ShortAnswerGrade>();
     if (exam.source === 'AI' && attempted.length > 0) {
       try {
-        grades = await this.ai.gradeShortAnswers(attempted);
+        for (const g of await this.ai.gradeShortAnswers(attempted)) {
+          if (attempted.some((a) => a.id === g.id)) byId.set(g.id, g);
+        }
+        await this.prisma.aiUsage.create({ data: { userId: exam.studentId, kind: 'GRADE', createdAt: this.clock() } });
       } catch (err) {
         if (!(err instanceof AiUnavailableError)) throw err;
         this.log.warn({ err }, 'AI grading failed; using keyword grading');
       }
     }
-    if (grades.length === 0) grades = await this.practice.gradeShortAnswers(attempted);
+    // Anything the AI did not grade gets keyword grading rather than a zero.
+    const ungraded = attempted.filter((a) => !byId.has(a.id));
+    for (const g of await this.practice.gradeShortAnswers(ungraded)) byId.set(g.id, g);
 
-    const byId = new Map(grades.filter((g) => attempted.some((a) => a.id === g.id)).map((g) => [g.id, g]));
     for (const item of items) {
       if (!byId.has(item.id)) byId.set(item.id, { id: item.id, score: 0, feedback: `The answer is: ${item.modelAnswer}` });
     }
@@ -347,7 +368,10 @@ export class ExamsService {
   }
 
   private async expire(examId: string): Promise<void> {
-    await this.prisma.exam.updateMany({ where: { id: examId, status: 'ACTIVE' }, data: { status: 'EXPIRED', passed: false } });
+    await this.prisma.exam.updateMany({
+      where: { id: examId, status: 'ACTIVE' },
+      data: { status: 'EXPIRED', passed: false, activeKey: null },
+    });
   }
 
   view(exam: Exam): ExamView {

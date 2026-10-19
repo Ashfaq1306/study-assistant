@@ -28,6 +28,24 @@ export type GeneratedQuestion = z.infer<typeof GeneratedQuestionSchema>;
 
 export const GeneratedExamSchema = z.object({ questions: z.array(GeneratedQuestionSchema) });
 
+/** What the model is asked to return. Limits are applied per question afterwards. */
+export const AiExamSchema = z.object({
+  questions: z.array(
+    z.object({
+      type: z.enum(['MCQ', 'TRUE_FALSE', 'SHORT']),
+      prompt: z.string(),
+      options: z.array(z.string()),
+      answer: z.string(),
+      keyPoints: z.array(z.string()),
+      explanation: z.string(),
+    }),
+  ),
+});
+
+export const AiGradesSchema = z.object({
+  grades: z.array(z.object({ id: z.string(), score: z.number(), feedback: z.string() })),
+});
+
 export interface ShortAnswerToGrade {
   id: string;
   question: string;

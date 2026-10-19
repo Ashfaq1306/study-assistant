@@ -1,14 +1,27 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:study_assistant/app/providers.dart';
 import 'package:study_assistant/core/network/api_exception.dart';
+import 'package:study_assistant/features/auth/application/auth_controller.dart';
 import 'package:study_assistant/features/exam/data/exam_api.dart';
 import 'package:study_assistant/features/exam/domain/exam.dart';
 import 'package:study_assistant/features/study/domain/study_session.dart';
 import 'package:study_assistant/features/tutor/tutor_screen.dart';
 
+import '../../helpers.dart';
+
 class _MockExamApi extends Mock implements ExamApi {}
+
+/// Signed in as [testUser] until [switchTo] is called.
+class _FakeAuth extends AuthController {
+  @override
+  AuthState build() => AuthSignedIn(testUser());
+
+  void switchTo(String name) => state = AuthSignedIn(testUser(id: 'u2', name: name));
+}
 
 Map<String, Object?> _examJson({Map<String, Object?>? result}) => {
   'id': 'e1',
@@ -95,7 +108,10 @@ void main() {
 
     setUp(() {
       api = _MockExamApi();
-      container = ProviderContainer(overrides: [examApiProvider.overrideWithValue(api)]);
+      container = ProviderContainer(
+        overrides: [examApiProvider.overrideWithValue(api), authControllerProvider.overrideWith(_FakeAuth.new)],
+      );
+      container.listen(tutorProvider, (_, _) {});
     });
     tearDown(() => container.dispose());
 
@@ -132,6 +148,28 @@ void main() {
       expect(sent!.length, lessThanOrEqualTo(20));
       expect(sent!.first.role, 'user');
       expect(sent!.last.content, 'question 11');
+    });
+
+    test('a different account gets a fresh chat (no sharing on a family phone)', () async {
+      when(() => api.askTutor(any())).thenAnswer((_) async => (reply: 'Hi Nadia', remainingToday: 59));
+      await container.read(tutorProvider.notifier).ask('Hello');
+      expect(container.read(tutorProvider).messages, hasLength(2));
+
+      (container.read(authControllerProvider.notifier) as _FakeAuth).switchTo('Rafi');
+      expect(container.read(tutorProvider).messages, isEmpty);
+    });
+
+    test('a reply to a chat that was cleared is dropped', () async {
+      final reply = Completer<({String reply, int remainingToday})>();
+      when(() => api.askTutor(any())).thenAnswer((_) => reply.future);
+      final pending = container.read(tutorProvider.notifier).ask('Hello');
+      container.read(tutorProvider.notifier).clear(); // ignored while thinking
+      expect(container.read(tutorProvider).messages, hasLength(1));
+
+      (container.read(authControllerProvider.notifier) as _FakeAuth).switchTo('Rafi');
+      reply.complete((reply: 'Old reply', remainingToday: 1));
+      await pending;
+      expect(container.read(tutorProvider).messages, isEmpty);
     });
 
     test('ignores blank questions', () async {

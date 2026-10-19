@@ -8,6 +8,7 @@ import '../../core/widgets/choice_controls.dart';
 import '../../core/widgets/dreamy_background.dart';
 import '../../core/widgets/feedback.dart';
 import '../../core/widgets/page_shell.dart';
+import '../auth/application/auth_controller.dart';
 import '../study/application/study_providers.dart';
 
 class ChatMessage {
@@ -36,17 +37,26 @@ class TutorState {
 
 final tutorProvider = NotifierProvider<TutorController, TutorState>(TutorController.new);
 
-/// The conversation with the AI study helper (kept while the app is open).
+/// The conversation with the AI study helper, kept while the app is open.
+/// Each account gets its own: signing in as someone else starts a fresh chat.
 class TutorController extends Notifier<TutorState> {
   /// The server accepts the latest 20 messages; older ones are dropped from requests.
   static const _maxHistory = 20;
 
+  /// Bumped when the chat is replaced, so a late reply to an old chat is dropped.
+  int _chat = 0;
+
   @override
-  TutorState build() => const TutorState();
+  TutorState build() {
+    ref.watch(authControllerProvider.select((s) => s is AuthSignedIn ? s.user.id : null));
+    _chat++;
+    return const TutorState();
+  }
 
   Future<void> ask(String question) async {
     final text = question.trim();
     if (text.isEmpty || state.thinking) return;
+    final chat = _chat;
     final messages = [...state.messages, ChatMessage(fromStudent: true, text: text)];
     state = state.copyWith(messages: messages, thinking: true);
 
@@ -59,21 +69,30 @@ class TutorController extends Notifier<TutorState> {
       final reply = await ref.read(examApiProvider).askTutor([
         for (final m in history) (role: m.fromStudent ? 'user' : 'assistant', content: m.text),
       ]);
+      if (_stale(chat, messages)) return;
       state = state.copyWith(
         messages: [
-          ...state.messages,
+          ...messages,
           ChatMessage(fromStudent: false, text: reply.reply),
         ],
         thinking: false,
         remainingToday: reply.remainingToday,
       );
     } on ApiException catch (e) {
+      if (_stale(chat, messages)) return;
       // Take the unanswered question back out, so it can be asked again.
-      state = state.copyWith(messages: state.messages.sublist(0, state.messages.length - 1), thinking: false, error: e);
+      state = state.copyWith(messages: messages.sublist(0, messages.length - 1), thinking: false, error: e);
     }
   }
 
-  void clear() => state = const TutorState();
+  /// The chat was cleared or replaced (another account) while waiting.
+  bool _stale(int chat, List<ChatMessage> sent) => !ref.mounted || chat != _chat || !identical(state.messages, sent);
+
+  void clear() {
+    if (state.thinking) return;
+    _chat++;
+    state = const TutorState();
+  }
 }
 
 class TutorScreen extends ConsumerStatefulWidget {
@@ -141,7 +160,7 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                       IconButton(
                         tooltip: 'New chat',
                         icon: const Icon(Icons.refresh_rounded, color: AppColors.inkSoft),
-                        onPressed: ref.read(tutorProvider.notifier).clear,
+                        onPressed: state.thinking ? null : ref.read(tutorProvider.notifier).clear,
                       ),
                   ],
                 ),

@@ -234,6 +234,8 @@ model Exam {
   /// AI, PRACTICE (built-in bank when AI is off) or PARENT.
   source      String
   status      ExamStatus @default(ACTIVE)
+  /// studentId:target while ACTIVE, cleared when submitted or expired: at most one running exam per target.
+  activeKey   String?    @unique
   /// JSON map of questionId -> answer, once submitted.
   answers     String?
   /// JSON array of per-question results, once submitted.

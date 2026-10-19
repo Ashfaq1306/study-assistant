@@ -1,8 +1,8 @@
 import '../../../core/network/api_client.dart';
 import '../domain/exam.dart';
 
-/// Writing or grading an exam with AI can take a little while.
-const _aiTimeout = Duration(seconds: 120);
+/// Writing or grading an exam with AI can take a little while. The server gives up well before this.
+const _aiTimeout = Duration(seconds: 150);
 
 /// /v1/sessions/:id/exam, /v1/exams and /v1/tutor.
 class ExamApi {
@@ -15,6 +15,8 @@ class ExamApi {
 
   Future<Exam> submit(String examId, Map<String, String> answers) async =>
       Exam.fromJson(await _client.post('/v1/exams/$examId/submit', data: {'answers': answers}, timeout: _aiTimeout));
+
+  Future<Exam> get(String examId) async => Exam.fromJson(await _client.get('/v1/exams/$examId'));
 
   Future<List<Exam>> history({int limit = 20}) async {
     final json = await _client.get('/v1/exams?limit=$limit');

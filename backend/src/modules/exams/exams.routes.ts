@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
-import type { FastifyPluginAsync } from 'fastify';
+import type { FastifyPluginAsync, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { currentUser, requireAuth } from '../../plugins/auth-guard.js';
 import { parse } from '../../lib/validate.js';
@@ -19,8 +19,18 @@ export const examsRoutes =
   async (app) => {
     app.addHook('preHandler', requireAuth(prisma, ['STUDENT']));
 
-    // AI calls cost money: keep a tighter per-IP limit on them.
-    const aiLimit = { rateLimit: { max: 20, timeWindow: '1 minute' } };
+    // AI calls cost money: a tighter limit, per account (a school network shares one IP).
+    const aiLimit = {
+      rateLimit: {
+        max: 20,
+        timeWindow: '1 minute',
+        keyGenerator: (request: FastifyRequest) => {
+          const token = request.headers.authorization?.replace(/^Bearer /i, '');
+          const sub = token ? (app.jwt.decode<{ sub?: string }>(token)?.sub ?? null) : null;
+          return sub ? `user:${sub}` : request.ip;
+        },
+      },
+    };
 
     app.post('/sessions/:id/exam', { config: aiLimit }, async (request) => {
       const { id } = parse(IdParams, request.params);
