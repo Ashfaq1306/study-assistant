@@ -49,11 +49,12 @@ class MessageBanner extends StatelessWidget {
   }
 }
 
-/// Round emoji badge on a tinted circle, used as a friendly icon.
-class EmojiBadge extends StatelessWidget {
-  const EmojiBadge(this.emoji, {super.key, this.color = AppColors.violetSoft, this.size = 56});
+/// A raised, softly shaded circle holding an icon in [color]. The app's
+/// friendly illustration style: icons everywhere, never emoji.
+class IconBadge extends StatelessWidget {
+  const IconBadge(this.icon, {super.key, this.color = AppColors.violet, this.size = 56});
 
-  final String emoji;
+  final IconData icon;
   final Color color;
   final double size;
 
@@ -64,8 +65,19 @@ class EmojiBadge extends StatelessWidget {
         width: size,
         height: size,
         alignment: Alignment.center,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        child: Text(emoji, style: TextStyle(fontSize: size * 0.5)),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color.lerp(color, Colors.white, 0.86)!, Color.lerp(color, Colors.white, 0.72)!],
+          ),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.9), width: size * 0.03),
+          boxShadow: [
+            BoxShadow(color: color.withValues(alpha: 0.22), blurRadius: size * 0.22, offset: Offset(0, size * 0.1)),
+          ],
+        ),
+        child: Icon(icon, size: size * 0.5, color: Color.lerp(color, AppColors.ink, 0.12)),
       ),
     );
   }

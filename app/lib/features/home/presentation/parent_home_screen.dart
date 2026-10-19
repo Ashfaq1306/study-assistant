@@ -30,7 +30,7 @@ class ParentHomeScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          HomeHeader(greeting: 'Hi ${auth.user.firstName}! 🌷', subtitle: "Let's help your child shine."),
+          HomeHeader(greeting: 'Hi ${auth.user.firstName}!', subtitle: "Let's help your child shine."),
           const SizedBox(height: 22),
           Text('Your children', style: text.titleLarge),
           const SizedBox(height: 12),
@@ -62,24 +62,29 @@ class ParentHomeScreen extends ConsumerWidget {
           const FeatureGrid(
             children: [
               FeatureTile(
-                emoji: '📊',
+                icon: Icons.insights_rounded,
                 title: 'Screen time',
                 subtitle: 'See daily phone and study time',
                 color: AppColors.sky,
               ),
               FeatureTile(
-                emoji: '🔒',
+                icon: Icons.lock_rounded,
                 title: 'Block apps',
                 subtitle: 'Lock apps or the whole phone',
                 color: AppColors.violet,
               ),
               FeatureTile(
-                emoji: '📝',
+                icon: Icons.quiz_rounded,
                 title: 'Set quizzes',
                 subtitle: 'Write questions for your child',
                 color: AppColors.sunshineDeep,
               ),
-              FeatureTile(emoji: '🔔', title: 'Alerts', subtitle: 'Know when a quiz is passed', color: AppColors.coral),
+              FeatureTile(
+                icon: Icons.notifications_active_rounded,
+                title: 'Alerts',
+                subtitle: 'Know when a quiz is passed',
+                color: AppColors.coral,
+              ),
             ],
           ),
         ],
@@ -96,7 +101,7 @@ class _NoChildren extends StatelessWidget {
     return ClayCard(
       child: Column(
         children: [
-          const Text('🧒', style: TextStyle(fontSize: 48)),
+          const IconBadge(Icons.child_care_rounded, size: 64, color: AppColors.sky),
           const SizedBox(height: 8),
           Text('No child linked yet', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
@@ -122,7 +127,7 @@ class _ChildCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          const EmojiBadge('🎒', size: 52, color: AppColors.skySoft),
+          const IconBadge(Icons.backpack_rounded, size: 52, color: AppColors.sky),
           const SizedBox(width: 14),
           Expanded(
             child: Column(

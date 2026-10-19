@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 
 import '../storage/token_store.dart';
 import 'api_exception.dart';
+import 'server_clock.dart';
 
 typedef Json = Map<String, Object?>;
 
@@ -13,7 +14,16 @@ class ApiClient {
   ApiClient({required String baseUrl, required this._store, Dio? dio, Dio? refreshDio})
     : _dio = dio ?? Dio(_options(baseUrl)),
       _refreshDio = refreshDio ?? Dio(_options(baseUrl)) {
-    _dio.interceptors.add(_AuthInterceptor(this));
+    _dio.interceptors
+      ..add(_AuthInterceptor(this))
+      ..add(
+        InterceptorsWrapper(
+          onResponse: (response, handler) {
+            clock.observe(response.headers.value('x-server-time'));
+            handler.next(response);
+          },
+        ),
+      );
   }
 
   static BaseOptions _options(String baseUrl) => BaseOptions(
@@ -29,6 +39,9 @@ class ApiClient {
 
   /// Separate instance without interceptors, so refreshing cannot recurse.
   final Dio _refreshDio;
+
+  /// Server time, kept in sync from every response.
+  final ServerClock clock = ServerClock();
 
   /// Called when the refresh token is rejected: the user must sign in again.
   void Function()? onSessionExpired;

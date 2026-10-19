@@ -56,14 +56,14 @@ class HomeHeader extends ConsumerWidget {
 class FeatureTile extends StatelessWidget {
   const FeatureTile({
     super.key,
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.color,
     this.onTap,
   });
 
-  final String emoji;
+  final IconData icon;
   final String title;
   final String subtitle;
   final Color color;
@@ -77,13 +77,13 @@ class FeatureTile extends StatelessWidget {
     return ClayCard(
       glow: color,
       padding: const EdgeInsets.all(16),
-      onTap: onTap ?? () => showSnack(context, '$title is coming in the next update ✨'),
+      onTap: onTap ?? () => showSnack(context, '$title is coming in the next update'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              EmojiBadge(emoji, size: 46, color: color.withValues(alpha: 0.14)),
+              IconBadge(icon, size: 46, color: color),
               const Spacer(),
               if (soon)
                 Container(

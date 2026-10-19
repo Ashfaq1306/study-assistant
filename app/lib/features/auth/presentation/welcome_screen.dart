@@ -49,10 +49,10 @@ class WelcomeScreen extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _Chip('🔒', 'Lock apps', AppColors.violetSoft),
-              _Chip('🧠', 'AI quizzes', AppColors.sunshineSoft),
-              _Chip('⏱️', 'Study timer', AppColors.mintSoft),
-              _Chip('🏡', 'Family', AppColors.coralSoft),
+              _Chip(Icons.lock_rounded, 'Lock apps', AppColors.violet),
+              _Chip(Icons.psychology_rounded, 'AI quizzes', AppColors.sunshineDeep),
+              _Chip(Icons.timer_rounded, 'Study timer', AppColors.mintDeep),
+              _Chip(Icons.family_restroom_rounded, 'Family', AppColors.coralDeep),
             ],
           ),
           const SizedBox(height: 28),
@@ -70,9 +70,9 @@ class WelcomeScreen extends StatelessWidget {
 }
 
 class _Chip extends StatelessWidget {
-  const _Chip(this.emoji, this.label, this.color);
+  const _Chip(this.icon, this.label, this.color);
 
-  final String emoji;
+  final IconData icon;
   final String label;
   final Color color;
 
@@ -80,10 +80,17 @@ class _Chip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(40)),
-      child: Text(
-        '$emoji  $label',
-        style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(40)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink),
+          ),
+        ],
       ),
     );
   }

@@ -51,6 +51,8 @@ export interface TestContext {
 
 export async function resetDatabase(): Promise<void> {
   await prisma.$transaction([
+    prisma.studySession.deleteMany(),
+    prisma.appSetting.deleteMany(),
     prisma.otpSend.deleteMany(),
     prisma.familyLink.deleteMany(),
     prisma.pairingCode.deleteMany(),
@@ -60,11 +62,17 @@ export async function resetDatabase(): Promise<void> {
   ]);
 }
 
-export async function createTestApp(options: { rateLimit?: boolean } = {}): Promise<TestContext> {
+export async function createTestApp(
+  options: { rateLimit?: boolean; nodeEnv?: typeof env.NODE_ENV; exposeDevCodes?: boolean } = {},
+): Promise<TestContext> {
   const notifier = new FakeNotifier();
   const clock = new TestClock();
   const app = await buildApp({
-    env,
+    env: {
+      ...env,
+      NODE_ENV: options.nodeEnv ?? env.NODE_ENV,
+      EXPOSE_DEV_CODES: options.exposeDevCodes ?? false,
+    },
     prisma,
     notifier,
     clock: clock.fn,

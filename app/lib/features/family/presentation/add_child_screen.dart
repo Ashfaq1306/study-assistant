@@ -57,7 +57,7 @@ class _AddChildScreenState extends ConsumerState<AddChildScreen> {
       ref.invalidate(familyLinksProvider);
       await ref.read(authControllerProvider.notifier).refreshUser();
       if (!mounted) return;
-      showSnack(context, '🎉 ${link.personName} is now linked!');
+      showSnack(context, '${link.personName} is now linked!');
       context.pop();
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e);
@@ -179,7 +179,7 @@ class _CameraProblem extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('📷', style: TextStyle(fontSize: 48)),
+              const IconBadge(Icons.no_photography_rounded, size: 64),
               const SizedBox(height: 12),
               Text(
                 message,

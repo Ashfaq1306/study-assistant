@@ -58,7 +58,7 @@ class _LinkParentScreenState extends ConsumerState<LinkParentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Center(child: EmojiBadge('🏡', size: 76, color: AppColors.mintSoft)),
+          const Center(child: IconBadge(Icons.family_restroom_rounded, size: 76, color: AppColors.mintDeep)),
           const SizedBox(height: 14),
           Text('One last step, $name!', textAlign: TextAlign.center, style: text.headlineMedium),
           const SizedBox(height: 8),
@@ -94,21 +94,21 @@ class _HowTo extends StatelessWidget {
   const _HowTo();
 
   static const _steps = [
-    ('📲', 'Your parent installs ${AppConfig.appName}.'),
-    ('🌷', 'They create an account and choose "I\'m a parent".'),
-    ('📷', 'They tap "Add a child" and scan this code.'),
+    (Icons.install_mobile_rounded, 'Your parent installs ${AppConfig.appName}.'),
+    (Icons.person_add_alt_1_rounded, 'They create an account and choose "I\'m a parent".'),
+    (Icons.qr_code_scanner_rounded, 'They tap "Add a child" and scan this code.'),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        for (final (i, (emoji, step)) in _steps.indexed)
+        for (final (i, (icon, step)) in _steps.indexed)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Row(
               children: [
-                EmojiBadge(emoji, size: 42, color: AppColors.violetSoft),
+                IconBadge(icon, size: 42),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(

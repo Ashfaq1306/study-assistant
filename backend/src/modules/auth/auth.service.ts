@@ -147,11 +147,12 @@ export class AuthService {
    * Always reports success, so this endpoint cannot be used to find out
    * which emails or numbers have accounts.
    */
-  async forgotPassword(identifier: string): Promise<{ sent: true }> {
+  async forgotPassword(identifier: string): Promise<{ sent: true; devCode?: string }> {
     const user = await this.findByIdentifier(identifier);
     if (user?.verifiedAt && !user.disabledAt) {
       try {
-        await this.otp.issue(user, 'RESET_PASSWORD', identifier.includes('@') ? 'EMAIL' : 'SMS');
+        const issued = await this.otp.issue(user, 'RESET_PASSWORD', identifier.includes('@') ? 'EMAIL' : 'SMS');
+        if (issued.devCode) return { sent: true, devCode: issued.devCode };
       } catch (err) {
         if (!(err instanceof AppError && err.statusCode === 429)) throw err;
       }

@@ -123,7 +123,7 @@ class _ParentTile extends ConsumerWidget {
       glow: AppColors.mint,
       child: Row(
         children: [
-          const EmojiBadge('🏡', size: 48, color: AppColors.mintSoft),
+          const IconBadge(Icons.family_restroom_rounded, size: 48, color: AppColors.mintDeep),
           const SizedBox(width: 14),
           Expanded(child: Text(link.personName, style: Theme.of(context).textTheme.titleMedium)),
           if (canRemove)

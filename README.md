@@ -56,7 +56,7 @@ flowchart LR
 | 👤 | Accounts with email **or** SMS one-time codes, password reset | ✅ Done |
 | 👨‍👩‍👧 | Parent ↔ student linking by QR (required under 15) | ✅ Done |
 | 🎨 | 3D design system: spinning 3D pencil mascot, chunky 3D buttons, clay cards | ✅ Done |
-| ⏱️ | Study sessions and timer, study history | 🔜 Phase 2 |
+| ⏱️ | Study sessions: subject and topics, timer on server time, finish-early rule, stats, streaks and history | ✅ Done |
 | 🔒 | App blocker (Android accessibility and usage-access service) | 🔜 Phase 3 |
 | 📝 | AI-generated exams, custom pattern and marks, pass mark ≥ 50% | 🔜 Phase 4 |
 | 🤖 | AI study helper | 🔜 Phase 4 |
@@ -88,7 +88,7 @@ cp .env.example .env        # then set JWT_SECRET and OTP_SECRET (the file says 
 npm run db:push             # creates the local SQLite database
 npm run dev                 # http://localhost:8080
 ```
-In development, one-time codes are **printed in the API log** instead of being emailed or texted. Look for `DEV OTP`.
+In development, one-time codes are **printed in the API log** instead of being emailed or texted (look for `DEV OTP`). With `EXPOSE_DEV_CODES=true` (set in `.env.example`, refused in production) the app also shows the code on screen, so you can test on a phone without email or SMS.
 
 ### 2. Run the app
 ```bash
