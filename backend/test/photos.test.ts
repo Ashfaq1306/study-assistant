@@ -54,7 +54,7 @@ const startSession = async (over: Record<string, unknown> = {}) => {
     ...over,
   });
   expect(res.statusCode).toBe(201);
-  return res.json();
+  return res.json<{ id: string; notes: string; photoIds: string[]; exam: { difficulty: string } }>();
 };
 
 beforeEach(async () => {
