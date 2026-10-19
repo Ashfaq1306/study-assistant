@@ -81,11 +81,14 @@ class ExamSettingsEditor extends StatelessWidget {
               Row(
                 children: [
                   const Expanded(
-                    child: Text('Pass mark', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                    child: Text(
+                      'Pass mark',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink),
+                    ),
                   ),
                   Text(
                     '${value.passMarks} / ${value.totalMarks}',
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20),
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppColors.ink),
                   ),
                   const SizedBox(width: 8),
                   Container(
