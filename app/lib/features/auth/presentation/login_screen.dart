@@ -59,7 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Center(child: EmojiBadge('👋', size: 76)),
+              const Center(child: IconBadge(Icons.waving_hand_rounded, size: 76)),
               const SizedBox(height: 16),
               Text('Welcome back!', textAlign: TextAlign.center, style: text.headlineMedium),
               const SizedBox(height: 6),

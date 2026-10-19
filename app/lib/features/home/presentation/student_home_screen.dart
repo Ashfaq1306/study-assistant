@@ -28,7 +28,7 @@ class StudentHomeScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          HomeHeader(greeting: 'Hi ${user.firstName}! 👋', subtitle: 'Ready to learn something today?'),
+          HomeHeader(greeting: 'Hi ${user.firstName}!', subtitle: 'Ready to learn something today?'),
           const SizedBox(height: 22),
           ClayCard(
             color: AppColors.violet,
@@ -53,7 +53,7 @@ class StudentHomeScreen extends ConsumerWidget {
                         color: AppColors.sunshine,
                         edgeColor: AppColors.sunshineDeep,
                         foreground: AppColors.ink,
-                        onPressed: () => showSnack(context, 'Study sessions arrive in the next update ✨'),
+                        onPressed: () => showSnack(context, 'Study sessions arrive in the next update'),
                       ),
                     ],
                   ),
@@ -68,31 +68,31 @@ class StudentHomeScreen extends ConsumerWidget {
           FeatureGrid(
             children: [
               const FeatureTile(
-                emoji: '⏱️',
+                icon: Icons.timer_rounded,
                 title: 'Study timer',
                 subtitle: 'See how long you studied',
                 color: AppColors.mint,
               ),
               const FeatureTile(
-                emoji: '🔒',
+                icon: Icons.lock_rounded,
                 title: 'App lock',
                 subtitle: 'Block apps while you study',
                 color: AppColors.violet,
               ),
               const FeatureTile(
-                emoji: '📝',
+                icon: Icons.quiz_rounded,
                 title: 'Exams',
                 subtitle: 'Pass to unlock your apps',
                 color: AppColors.sunshineDeep,
               ),
               const FeatureTile(
-                emoji: '🤖',
+                icon: Icons.smart_toy_rounded,
                 title: 'AI helper',
                 subtitle: 'Ask anything about your lesson',
                 color: AppColors.sky,
               ),
               FeatureTile(
-                emoji: '🏡',
+                icon: Icons.family_restroom_rounded,
                 title: 'Family',
                 subtitle: user.linkedParents == 0 ? 'Link a parent (optional)' : '${user.linkedParents} parent linked',
                 color: AppColors.coral,

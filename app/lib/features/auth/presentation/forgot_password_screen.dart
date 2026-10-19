@@ -98,7 +98,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         key: const ValueKey('request'),
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Center(child: EmojiBadge('🗝️', size: 76, color: AppColors.sunshineSoft)),
+          const Center(child: IconBadge(Icons.key_rounded, size: 76, color: AppColors.sunshineDeep)),
           const SizedBox(height: 16),
           Text('Forgot your password?', textAlign: TextAlign.center, style: text.headlineMedium),
           const SizedBox(height: 6),
@@ -132,7 +132,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         key: const ValueKey('reset'),
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Center(child: EmojiBadge('📮', size: 76, color: AppColors.sunshineSoft)),
+          const Center(child: IconBadge(Icons.mark_email_read_rounded, size: 76, color: AppColors.sunshineDeep)),
           const SizedBox(height: 16),
           Text('Enter your code', textAlign: TextAlign.center, style: text.headlineMedium),
           const SizedBox(height: 6),

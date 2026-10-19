@@ -155,7 +155,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Widget _stepBody({
-    required String emoji,
+    required IconData icon,
     required String title,
     required String subtitle,
     required List<Widget> children,
@@ -170,7 +170,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Center(child: EmojiBadge(emoji, size: 72)),
+              Center(child: IconBadge(icon, size: 72)),
               const SizedBox(height: 14),
               Text(title, textAlign: TextAlign.center, style: text.headlineMedium),
               const SizedBox(height: 6),
@@ -190,12 +190,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Widget _roleStep() {
     return _stepBody(
-      emoji: '✨',
+      icon: Icons.auto_awesome_rounded,
       title: 'Who is joining?',
       subtitle: 'Pick one. You can link student and parent accounts later.',
       children: [
         _RoleCard(
-          emoji: '🎒',
+          icon: Icons.backpack_rounded,
           title: "I'm a student",
           subtitle: 'Focus, lock distracting apps and pass quizzes to unlock them.',
           color: AppColors.violet,
@@ -204,7 +204,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ),
         const SizedBox(height: 16),
         _RoleCard(
-          emoji: '🏡',
+          icon: Icons.family_restroom_rounded,
           title: "I'm a parent",
           subtitle: "Link to your child's phone, see screen time and set quizzes.",
           color: AppColors.mintDeep,
@@ -225,7 +225,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return Form(
       key: _aboutForm,
       child: _stepBody(
-        emoji: _role == UserRole.parent ? '🌷' : '🌟',
+        icon: Icons.badge_rounded,
         title: 'Tell us about you',
         subtitle: 'This helps us keep the app right for your age.',
         children: [
@@ -273,7 +273,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       key: _loginForm,
       child: AutofillGroup(
         child: _stepBody(
-          emoji: '🔐',
+          icon: Icons.lock_person_rounded,
           title: 'Create your login',
           subtitle: "We'll send a 6-digit code to open your account.",
           children: [
@@ -313,10 +313,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       radius: 20,
                       selected: _channel == channel,
                       onTap: () => setState(() => _channel = channel),
-                      child: Text(
-                        channel == OtpChannel.email ? '📧  Email' : '💬  SMS',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            channel == OtpChannel.email ? Icons.mail_rounded : Icons.sms_rounded,
+                            color: _channel == channel ? AppColors.violet : AppColors.inkSoft,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(channel.label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                        ],
                       ),
                     ),
                   ),
@@ -358,7 +364,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
 class _RoleCard extends StatelessWidget {
   const _RoleCard({
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.subtitle,
     required this.color,
@@ -366,7 +372,7 @@ class _RoleCard extends StatelessWidget {
     required this.onTap,
   });
 
-  final String emoji;
+  final IconData icon;
   final String title;
   final String subtitle;
   final Color color;
@@ -384,7 +390,7 @@ class _RoleCard extends StatelessWidget {
         onTap: onTap,
         child: Row(
           children: [
-            EmojiBadge(emoji, color: color.withValues(alpha: 0.12), size: 64),
+            IconBadge(icon, color: color, size: 64),
             const SizedBox(width: 16),
             Expanded(
               child: Column(

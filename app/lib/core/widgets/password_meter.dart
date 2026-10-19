@@ -16,7 +16,7 @@ class PasswordMeter extends StatelessWidget {
       0 => ('Use 8+ characters with letters and numbers', AppColors.inkFaint),
       1 => ('Weak', AppColors.coral),
       2 => ('Good', AppColors.sunshineDeep),
-      _ => ('Strong 💪', AppColors.mintDeep),
+      _ => ('Strong', AppColors.mintDeep),
     };
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

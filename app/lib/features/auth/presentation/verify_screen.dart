@@ -96,7 +96,11 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Center(
-            child: EmojiBadge(_channel == OtpChannel.email ? '📬' : '💬', size: 80, color: AppColors.sunshineSoft),
+            child: IconBadge(
+              _channel == OtpChannel.email ? Icons.mark_email_unread_rounded : Icons.sms_rounded,
+              size: 80,
+              color: AppColors.sunshineDeep,
+            ),
           ),
           const SizedBox(height: 16),
           Text(
@@ -156,7 +160,7 @@ class _Expired extends StatelessWidget {
     return PageShell(
       child: Column(
         children: [
-          const EmojiBadge('⌛', size: 80),
+          const IconBadge(Icons.hourglass_bottom_rounded, size: 80),
           const SizedBox(height: 16),
           Text('This page has expired', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 8),
