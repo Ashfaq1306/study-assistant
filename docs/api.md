@@ -40,17 +40,30 @@ Only a **verified** contact (one that has received a code) can be used to sign i
 
 `link` = `{ id, linkedAt, person: { id, name, role, age } }`
 
-## Config: Public. Admin-tunable settings the app needs: ,  (never below 50), , , , , , , .
+## Config: `/v1/config`
+Public. These are the admin-tunable settings the app needs:
+- `subjects`
+- `minPassPercent` (never below 50)
+- `minStudyMinutes`, `maxStudyMinutes`
+- `earlyFinishPercent`
+- `maxQuestions`
+- `examRetryCooldownSeconds`
+- `aiEnabled`
+- `announcement`
 
-## Study sessions:  (students)
+## Study sessions: `/v1/sessions` (students)
 | Method | Path | Body / query | Success |
 | --- | --- | --- | --- |
-| POST |  | , , , , ,  |  |
-| GET |  | |  |
-| POST |  | |  ( before the early-finish point) |
-| GET |  |  |  |
-| GET |  |  |  |
+| POST | `/` | `subject`, `topics`, `plannedMinutes`, `lockedApps[]`, `strict`, `exam: { questionCount, totalMarks, passMarks, questionTypes[], difficulty }` | `201 session` |
+| GET | `/active` | | `{ session }` (or `null`) |
+| POST | `/:id/finish` | | `session`, or `409 TOO_EARLY` before the early-finish point |
+| GET | `/` | `?limit=` | `{ sessions }` |
+| GET | `/stats` | `?utcOffsetMinutes=` | `{ todayMinutes, streakDays, week[7], totalMinutes, sessionsCompleted }` (`totalMinutes` covers the last 60 days) |
 
-Rules: students under 15 get  until a parent links; only one session can be running (); the pass mark must be at least the configured percent (floor 50%). A session moves from  to  when the timer ends; students cannot cancel it.
+Rules:
+- Students under 15 get `403 PARENT_REQUIRED` until a parent links.
+- Only one session can run at a time (`409 SESSION_ACTIVE`).
+- The pass mark must be at least the configured percent, and never below 50%.
+- A session moves from `STUDYING` to `EXAM_PENDING` when the timer ends. Students cannot cancel it.
 
-Every response carries  so clients can run countdowns on server time.
+Every response carries `X-Server-Time`, so clients can run countdowns on server time.
