@@ -11,6 +11,10 @@ abstract final class Routes {
   static const linkParent = '/link-parent';
   static const home = '/home';
   static const family = '/home/family';
+  static const studyNew = '/home/study';
+  static const studySession = '/home/session';
+  static const stats = '/home/stats';
+  static const exam = '/home/exam';
   static const parentHome = '/parent';
   static const addChild = '/parent/add-child';
 

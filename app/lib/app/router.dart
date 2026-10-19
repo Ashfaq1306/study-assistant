@@ -10,11 +10,15 @@ import '../features/auth/presentation/register_screen.dart';
 import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/presentation/verify_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
+import '../features/exam/presentation/exam_screen.dart';
 import '../features/family/presentation/add_child_screen.dart';
 import '../features/family/presentation/family_screen.dart';
 import '../features/family/presentation/link_parent_screen.dart';
 import '../features/home/presentation/parent_home_screen.dart';
 import '../features/home/presentation/student_home_screen.dart';
+import '../features/study/presentation/active_session_screen.dart';
+import '../features/study/presentation/start_session_screen.dart';
+import '../features/study/presentation/stats_screen.dart';
 import 'routes.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -40,7 +44,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.home,
         pageBuilder: (_, s) => _fade(s, const StudentHomeScreen()),
-        routes: [GoRoute(path: 'family', builder: (_, _) => const FamilyScreen())],
+        routes: [
+          GoRoute(path: 'family', builder: (_, _) => const FamilyScreen()),
+          GoRoute(path: 'study', builder: (_, _) => const StartSessionScreen()),
+          GoRoute(path: 'session', builder: (_, _) => const ActiveSessionScreen()),
+          GoRoute(path: 'stats', builder: (_, _) => const StatsScreen()),
+          GoRoute(path: 'exam', builder: (_, _) => const ExamScreen()),
+        ],
       ),
       GoRoute(
         path: Routes.parentHome,

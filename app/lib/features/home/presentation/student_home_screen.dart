@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/routes.dart';
+import '../../../core/config/remote_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/button_3d.dart';
 import '../../../core/widgets/clay_card.dart';
@@ -10,6 +11,9 @@ import '../../../core/widgets/feedback.dart';
 import '../../../core/widgets/page_shell.dart';
 import '../../../core/widgets/pencil_3d.dart';
 import '../../auth/application/auth_controller.dart';
+import '../../study/application/study_providers.dart';
+import '../../study/domain/study_session.dart';
+import '../../study/presentation/stats_screen.dart';
 import 'home_widgets.dart';
 
 class StudentHomeScreen extends ConsumerWidget {
@@ -21,6 +25,9 @@ class StudentHomeScreen extends ConsumerWidget {
     if (auth is! AuthSignedIn) return const SizedBox.shrink();
     final user = auth.user;
     final text = Theme.of(context).textTheme;
+    final active = ref.watch(activeSessionProvider).value;
+    final stats = ref.watch(studyStatsProvider).value;
+    final announcement = ref.watch(remoteConfigProvider).value?.announcement;
 
     return PageShell(
       showBack: false,
@@ -29,61 +36,63 @@ class StudentHomeScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           HomeHeader(greeting: 'Hi ${user.firstName}!', subtitle: 'Ready to learn something today?'),
+          if (announcement != null && announcement.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            MessageBanner.info(announcement),
+          ],
           const SizedBox(height: 22),
-          ClayCard(
-            color: AppColors.violet,
-            glow: AppColors.violetDeep,
-            padding: const EdgeInsets.fromLTRB(22, 18, 12, 22),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Today's focus", style: text.titleMedium?.copyWith(color: Colors.white70)),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Pick a subject, lock distractions, pass the quiz.',
-                        style: text.titleLarge?.copyWith(color: Colors.white, height: 1.2),
-                      ),
-                      const SizedBox(height: 16),
-                      Button3D(
-                        label: 'Start studying',
-                        height: 50,
-                        color: AppColors.sunshine,
-                        edgeColor: AppColors.sunshineDeep,
-                        foreground: AppColors.ink,
-                        onPressed: () => showSnack(context, 'Study sessions arrive in the next update'),
-                      ),
-                    ],
-                  ),
+          if (active != null && active.status.isActive)
+            _ActiveCard(session: active)
+          else
+            _StartCard(onStart: () => context.push(Routes.studyNew)),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              Expanded(
+                child: StatTile(
+                  icon: Icons.today_rounded,
+                  value: formatMinutes(stats?.todayMinutes ?? 0),
+                  label: 'Today',
+                  color: AppColors.violet,
                 ),
-                const Pencil3D(size: 120, interactive: false),
-              ],
-            ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: StatTile(
+                  icon: Icons.local_fire_department_rounded,
+                  value: '${stats?.streakDays ?? 0}',
+                  label: 'Day streak',
+                  color: AppColors.coralDeep,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: StatTile(
+                  icon: Icons.emoji_events_rounded,
+                  value: '${stats?.sessionsCompleted ?? 0}',
+                  label: 'Exams passed',
+                  color: AppColors.sunshineDeep,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 22),
           Text('Your toolkit', style: text.titleLarge),
           const SizedBox(height: 12),
           FeatureGrid(
             children: [
-              const FeatureTile(
-                icon: Icons.timer_rounded,
-                title: 'Study timer',
-                subtitle: 'See how long you studied',
-                color: AppColors.mint,
+              FeatureTile(
+                icon: Icons.insights_rounded,
+                title: 'Study time',
+                subtitle: 'Your week and past sessions',
+                color: AppColors.mintDeep,
+                onTap: () => context.push(Routes.stats),
               ),
               const FeatureTile(
                 icon: Icons.lock_rounded,
                 title: 'App lock',
                 subtitle: 'Block apps while you study',
                 color: AppColors.violet,
-              ),
-              const FeatureTile(
-                icon: Icons.quiz_rounded,
-                title: 'Exams',
-                subtitle: 'Pass to unlock your apps',
-                color: AppColors.sunshineDeep,
               ),
               const FeatureTile(
                 icon: Icons.smart_toy_rounded,
@@ -100,6 +109,84 @@ class StudentHomeScreen extends ConsumerWidget {
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StartCard extends StatelessWidget {
+  const _StartCard({required this.onStart});
+
+  final VoidCallback onStart;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return ClayCard(
+      color: AppColors.violet,
+      glow: AppColors.violetDeep,
+      padding: const EdgeInsets.fromLTRB(22, 18, 12, 22),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Today's focus", style: text.titleMedium?.copyWith(color: Colors.white70)),
+                const SizedBox(height: 4),
+                Text(
+                  'Pick a subject, lock distractions, pass the quiz.',
+                  style: text.titleLarge?.copyWith(color: Colors.white, height: 1.2),
+                ),
+                const SizedBox(height: 16),
+                Button3D(
+                  label: 'Start studying',
+                  icon: Icons.play_arrow_rounded,
+                  height: 50,
+                  color: AppColors.sunshine,
+                  edgeColor: AppColors.sunshineDeep,
+                  foreground: AppColors.ink,
+                  onPressed: onStart,
+                ),
+              ],
+            ),
+          ),
+          const Pencil3D(size: 120, interactive: false),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActiveCard extends StatelessWidget {
+  const _ActiveCard({required this.session});
+
+  final StudySession session;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    final pending = session.status == SessionStatus.examPending;
+    final color = pending ? AppColors.sunshineDeep : AppColors.mintDeep;
+    return ClayCard(
+      glow: color,
+      onTap: () => context.push(Routes.studySession),
+      child: Row(
+        children: [
+          IconBadge(pending ? Icons.quiz_rounded : Icons.timer_rounded, size: 60, color: color),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(pending ? 'Exam waiting' : 'Studying now', style: text.titleMedium?.copyWith(color: color)),
+                Text(session.subject, style: text.titleLarge),
+                Text(pending ? 'Pass it to unlock your apps' : 'Tap to see your timer', style: text.bodyMedium),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: color, size: 32),
         ],
       ),
     );
