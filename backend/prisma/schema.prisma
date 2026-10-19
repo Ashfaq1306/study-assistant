@@ -91,6 +91,7 @@ model User {
   questionSets  QuestionSet[]
   usageDays     UsageDay[]
   notifications Notification[]
+  studyPhotos   StudyPhoto[]
 }
 
 model OtpCode {
@@ -184,6 +185,10 @@ model StudySession {
   /// JSON array of QuestionType values.
   questionTypes      String
   difficulty         Difficulty    @default(MEDIUM)
+  /// What the student plans to do, in their own words (used for the exam too).
+  notes              String        @default("")
+  /// JSON array of StudyPhoto ids, in the order they were taken.
+  photoIds           String        @default("[]")
   /// Share of the timer after which the student may finish early, fixed at start.
   earlyFinishPercent Int           @default(50)
   startedAt          DateTime      @default(now())
@@ -191,8 +196,9 @@ model StudySession {
   studyEndedAt       DateTime?
   completedAt        DateTime?
 
-  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
   exams   Exam[]
+  photos  StudyPhoto[]
 
   @@index([studentId, status])
   @@index([studentId, startedAt])
@@ -366,4 +372,20 @@ model Notification {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
+}
+
+/// A photo of what the student is studying (book page, notes), taken before or while studying.
+model StudyPhoto {
+  id        String   @id @default(cuid())
+  studentId String
+  sessionId String
+  /// image/jpeg, image/png or image/webp.
+  mime      String
+  data      Bytes
+  createdAt DateTime @default(now())
+
+  student User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session StudySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
 }

@@ -14,6 +14,9 @@ export interface SessionView {
   id: string;
   subject: string;
   topics: string;
+  notes: string;
+  /** Photos of the study material; fetch each from /v1/photos/:id. */
+  photoIds: string[];
   plannedMinutes: number;
   status: StudySession['status'];
   lockedApps: string[];
@@ -99,6 +102,7 @@ export class SessionsService {
               studentId: student.id,
               subject: input.subject,
               topics: input.topics,
+              notes: input.notes,
               plannedMinutes: input.plannedMinutes,
               lockedApps: JSON.stringify(input.lockedApps),
               strict,
@@ -270,6 +274,8 @@ export class SessionsService {
       id: s.id,
       subject: s.subject,
       topics: s.topics,
+      notes: s.notes,
+      photoIds: JSON.parse(s.photoIds) as string[],
       plannedMinutes: s.plannedMinutes,
       status: s.status,
       lockedApps: JSON.parse(s.lockedApps) as string[],

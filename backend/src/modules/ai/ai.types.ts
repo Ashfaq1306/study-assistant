@@ -9,6 +9,10 @@ export interface ExamSpec {
   types: QuestionType[];
   /** Student's age, so wording and level fit. */
   age: number;
+  /** The student's plan or notes. */
+  notes?: string;
+  /** Photos of the pages they studied: questions come from these. */
+  images?: { mediaType: 'image/jpeg' | 'image/png' | 'image/webp'; data: string }[];
 }
 
 /**

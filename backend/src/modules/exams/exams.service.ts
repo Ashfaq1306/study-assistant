@@ -15,6 +15,7 @@ import {
 import { PracticeProvider } from '../ai/practice.provider.js';
 import type { ConfigService } from '../config/config.service.js';
 import type { NotificationsService } from '../notifications/notifications.service.js';
+import type { PhotosService } from '../photos/photos.service.js';
 import type { QuestionType } from '../sessions/sessions.schemas.js';
 import type { SessionsService } from '../sessions/sessions.service.js';
 
@@ -67,6 +68,8 @@ export interface ExamTarget {
   parentLockId?: string;
   /** A parent's own questions, used instead of generated ones. */
   fixedQuestions?: GeneratedQuestion[];
+  notes?: string;
+  images?: ExamSpec['images'];
   subject: string;
   topics: string;
   difficulty: ExamSpec['difficulty'];
@@ -124,6 +127,7 @@ export class ExamsService {
     private readonly config: ConfigService,
     private readonly sessions: SessionsService,
     private readonly notifications: NotificationsService,
+    private readonly photos: PhotosService,
     private readonly clock: Clock,
     private readonly log: FastifyBaseLogger,
   ) {}
@@ -149,6 +153,8 @@ export class ExamsService {
       totalMarks: session.totalMarks,
       passMarks: session.passMarks,
       types: JSON.parse(session.questionTypes) as QuestionType[],
+      notes: session.notes,
+      images: await this.photos.forExam(session.id),
     });
   }
 
@@ -400,6 +406,8 @@ export class ExamsService {
       count: target.questionCount,
       types: target.types,
       age: ageOn(student.dateOfBirth, this.clock()),
+      notes: target.notes,
+      images: target.images,
     };
     const provider = aiEnabled ? this.ai : this.practice;
     let questions: GeneratedQuestion[] = [];
@@ -413,7 +421,7 @@ export class ExamsService {
     }
     if (questions.length < spec.count) {
       const missing = spec.count - questions.length;
-      const extra = await this.practice.generateExam({ ...spec, count: missing });
+      const extra = await this.practice.generateExam({ ...spec, count: missing, images: undefined });
       questions = [...questions, ...extra];
       if (questions.length === extra.length) source = 'PRACTICE';
     }

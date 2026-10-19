@@ -20,6 +20,8 @@ import { UsageService } from './modules/devices/usage.service.js';
 import { notificationsRoutes } from './modules/notifications/notifications.routes.js';
 import { NotificationsService } from './modules/notifications/notifications.service.js';
 import { parentRoutes, studentLockRoutes } from './modules/parent/parent.routes.js';
+import { photoFileRoutes, sessionPhotosRoutes } from './modules/photos/photos.routes.js';
+import { PhotosService } from './modules/photos/photos.service.js';
 import { ParentService } from './modules/parent/parent.service.js';
 import { AnthropicProvider } from './modules/ai/anthropic.provider.js';
 import type { AiProvider } from './modules/ai/ai.types.js';
@@ -128,7 +130,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
           app.log,
         )
       : new PracticeProvider());
-  const exams = new ExamsService(prisma, ai, config, sessions, notifications, clock, app.log);
+  const photos = new PhotosService(prisma, clock);
+  const exams = new ExamsService(prisma, ai, config, sessions, notifications, photos, clock, app.log);
   const parent = new ParentService(prisma, sessions, usage, config, notifications, clock);
   const tutor = new TutorService(prisma, ai, config, sessions, exams, clock);
 
@@ -138,6 +141,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(familyRoutes(prisma, family), { prefix: '/v1/family' });
   await app.register(configRoutes(config), { prefix: '/v1/config' });
   await app.register(sessionsRoutes(prisma, sessions), { prefix: '/v1/sessions' });
+  await app.register(sessionPhotosRoutes(prisma, photos), { prefix: '/v1/sessions' });
+  await app.register(photoFileRoutes(prisma, photos), { prefix: '/v1/photos' });
   await app.register(devicesRoutes(prisma, devices), { prefix: '/v1/devices' });
   await app.register(deviceSyncRoutes(devices), { prefix: '/v1/device' });
   await app.register(examsRoutes(prisma, exams, tutor), { prefix: '/v1' });

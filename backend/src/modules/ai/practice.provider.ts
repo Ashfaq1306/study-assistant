@@ -112,10 +112,13 @@ function shuffle<T>(list: T[]): T[] {
 
 /** An arithmetic question whose answer is computed, so it is always right. */
 function mathQuestion(type: QuestionType, difficulty: ExamSpec['difficulty']): GeneratedQuestion {
-  const max = difficulty === 'EASY' ? 20 : difficulty === 'MEDIUM' ? 100 : 1000;
-  const op = pick(['+', '-', '×'] as const);
-  const a = randomInt(2, op === '×' ? Math.min(max, 30) : max);
-  const b = randomInt(2, op === '×' ? 12 : max);
+  // Kept gentle: small numbers, and no times tables at the easiest level.
+  const max = difficulty === 'EASY' ? 10 : difficulty === 'MEDIUM' ? 20 : 50;
+  const op = difficulty === 'EASY' ? pick(['+', '-'] as const) : pick(['+', '-', '×'] as const);
+  const x = randomInt(2, op === '×' ? Math.min(max, 30) : max);
+  const y = randomInt(2, op === '×' ? 10 : max);
+  // Never a negative answer.
+  const [a, b] = op === '-' && y > x ? [y, x] : [x, y];
   const value = op === '+' ? a + b : op === '-' ? a - b : a * b;
   const expr = `${a} ${op} ${b}`;
 
