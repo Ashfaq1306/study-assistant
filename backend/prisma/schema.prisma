@@ -22,6 +22,23 @@ enum OtpChannel {
   SMS
 }
 
+enum SessionStatus {
+  /// Timer running; the chosen apps are locked.
+  STUDYING
+  /// Study time is over; apps stay locked until an exam is passed.
+  EXAM_PENDING
+  /// Exam passed; apps unlocked.
+  PASSED
+  /// Ended by an admin (support only). Students cannot cancel a lock.
+  CANCELLED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
 enum OtpPurpose {
   VERIFY_ACCOUNT
   RESET_PASSWORD
@@ -45,11 +62,12 @@ model User {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
-  otpCodes     OtpCode[]
-  sessions     Session[]
-  pairingCodes PairingCode[] @relation("PairingStudent")
-  childLinks   FamilyLink[]  @relation("ParentLinks")
-  parentLinks  FamilyLink[]  @relation("StudentLinks")
+  otpCodes      OtpCode[]
+  sessions      Session[]
+  pairingCodes  PairingCode[]  @relation("PairingStudent")
+  childLinks    FamilyLink[]   @relation("ParentLinks")
+  parentLinks   FamilyLink[]   @relation("StudentLinks")
+  studySessions StudySession[]
 }
 
 model OtpCode {
@@ -122,4 +140,41 @@ model FamilyLink {
 
   @@unique([parentId, studentId])
   @@index([studentId])
+}
+
+/// One study block: what the student will study, for how long, which apps are
+/// locked meanwhile, and the exam they must pass to unlock them.
+model StudySession {
+  id             String        @id @default(cuid())
+  studentId      String
+  subject        String
+  topics         String
+  plannedMinutes Int
+  status         SessionStatus @default(STUDYING)
+  /// JSON array of Android package names locked during the session.
+  lockedApps     String        @default("[]")
+  /// Also block Settings, Play Store and the package installer while locked.
+  strict         Boolean       @default(true)
+  questionCount  Int
+  totalMarks     Int
+  passMarks      Int
+  /// JSON array of QuestionType values.
+  questionTypes  String
+  difficulty     Difficulty    @default(MEDIUM)
+  startedAt      DateTime      @default(now())
+  /// When studying stopped (timer finished or finished early).
+  studyEndedAt   DateTime?
+  completedAt    DateTime?
+
+  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, status])
+  @@index([studentId, startedAt])
+}
+
+/// Admin-editable settings, one JSON value per key (see config.service.ts).
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
 }

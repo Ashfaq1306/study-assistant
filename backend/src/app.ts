@@ -11,9 +11,13 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 import { AuthService } from './modules/auth/auth.service.js';
 import { OtpService } from './modules/auth/otp.service.js';
 import { ACCESS_TOKEN_TTL_SECONDS, TokenService } from './modules/auth/token.service.js';
+import { configRoutes } from './modules/config/config.routes.js';
+import { ConfigService } from './modules/config/config.service.js';
 import { familyRoutes } from './modules/family/family.routes.js';
 import { FamilyService } from './modules/family/family.service.js';
 import { createNotifier, type Notifier } from './modules/notify/notifier.js';
+import { sessionsRoutes } from './modules/sessions/sessions.routes.js';
+import { SessionsService } from './modules/sessions/sessions.service.js';
 import { usersRoutes } from './modules/users/users.routes.js';
 import { UsersService } from './modules/users/users.service.js';
 
@@ -72,6 +76,12 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       .send({ error: { code: 'INTERNAL', message: 'Something went wrong on our side. Please try again.' } });
   });
 
+  // Lets clients run countdowns on server time even when the phone's clock is off.
+  app.addHook('onSend', async (_request, reply, payload) => {
+    reply.header('x-server-time', clock().toISOString());
+    return payload;
+  });
+
   app.setNotFoundHandler((_request, reply) =>
     reply.code(404).send({ error: { code: 'NOT_FOUND', message: 'Not found.' } }),
   );
@@ -82,11 +92,15 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const tokens = new TokenService(prisma, (claims) => app.jwt.sign(claims), clock);
   const auth = new AuthService(prisma, otp, tokens, users, clock);
   const family = new FamilyService(prisma, users, env.OTP_SECRET, clock);
+  const config = new ConfigService(prisma, clock);
+  const sessions = new SessionsService(prisma, config, users, clock);
 
   app.get('/health', () => ({ status: 'ok' }));
   await app.register(authRoutes(auth), { prefix: '/v1/auth' });
   await app.register(usersRoutes(prisma, users), { prefix: '/v1/me' });
   await app.register(familyRoutes(prisma, family), { prefix: '/v1/family' });
+  await app.register(configRoutes(config), { prefix: '/v1/config' });
+  await app.register(sessionsRoutes(prisma, sessions), { prefix: '/v1/sessions' });
 
   return app;
 }
