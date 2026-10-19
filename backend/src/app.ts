@@ -3,7 +3,7 @@ import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
 import type { PrismaClient } from '@prisma/client';
-import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastify';
+import Fastify, { type FastifyBaseLogger, type FastifyInstance, type FastifyServerOptions } from 'fastify';
 import type { Env } from './config/env.js';
 import { systemClock, type Clock } from './lib/clock.js';
 import { AppError } from './lib/errors.js';
@@ -25,6 +25,7 @@ import { PhotosService } from './modules/photos/photos.service.js';
 import { ParentService } from './modules/parent/parent.service.js';
 import { AnthropicProvider } from './modules/ai/anthropic.provider.js';
 import type { AiProvider } from './modules/ai/ai.types.js';
+import { GeminiProvider } from './modules/ai/gemini.provider.js';
 import { PracticeProvider } from './modules/ai/practice.provider.js';
 import { examsRoutes } from './modules/exams/exams.routes.js';
 import { ExamsService } from './modules/exams/exams.service.js';
@@ -36,6 +37,26 @@ import { sessionsRoutes } from './modules/sessions/sessions.routes.js';
 import { SessionsService } from './modules/sessions/sessions.service.js';
 import { usersRoutes } from './modules/users/users.routes.js';
 import { UsersService } from './modules/users/users.service.js';
+
+/** The configured AI, or built-in practice questions when none is set up. */
+function createAi(env: Env, log: FastifyBaseLogger): AiProvider {
+  const provider =
+    env.AI_PROVIDER === 'auto' ? (env.ANTHROPIC_API_KEY ? 'anthropic' : env.GEMINI_API_KEY ? 'gemini' : null) : env.AI_PROVIDER;
+  if (provider === 'anthropic' && env.ANTHROPIC_API_KEY) {
+    return new AnthropicProvider(
+      { apiKey: env.ANTHROPIC_API_KEY, model: env.AI_MODEL, examEffort: env.AI_EXAM_EFFORT, tutorEffort: env.AI_TUTOR_EFFORT },
+      log,
+    );
+  }
+  if (provider === 'gemini' && env.GEMINI_API_KEY) {
+    return new GeminiProvider(
+      { apiKey: env.GEMINI_API_KEY, models: [env.GEMINI_MODEL, ...env.GEMINI_FALLBACK_MODELS] },
+      log,
+    );
+  }
+  if (provider) log.warn({ provider }, 'AI provider chosen but its API key is missing: using practice questions');
+  return new PracticeProvider();
+}
 
 export interface AppOptions {
   env: Env;
@@ -117,19 +138,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const lockState = new LockStateService(prisma, sessions);
   const usage = new UsageService(prisma);
   const devices = new DevicesService(prisma, lockState, usage, notifications, clock);
-  const ai =
-    options.ai ??
-    (env.ANTHROPIC_API_KEY
-      ? new AnthropicProvider(
-          {
-            apiKey: env.ANTHROPIC_API_KEY,
-            model: env.AI_MODEL,
-            examEffort: env.AI_EXAM_EFFORT,
-            tutorEffort: env.AI_TUTOR_EFFORT,
-          },
-          app.log,
-        )
-      : new PracticeProvider());
+  const ai = options.ai ?? createAi(env, app.log);
   const photos = new PhotosService(prisma, clock);
   const exams = new ExamsService(prisma, ai, config, sessions, notifications, photos, clock, app.log);
   const parent = new ParentService(prisma, sessions, usage, config, notifications, clock);
