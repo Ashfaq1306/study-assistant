@@ -11,6 +11,7 @@ class AppLockStatus {
   const AppLockStatus({
     required this.supported,
     this.protectionOn = false,
+    this.shortcutOn = false,
     this.usageAccess = false,
     this.registered = false,
     this.lockedForAnotherUser = false,
@@ -22,6 +23,9 @@ class AppLockStatus {
 
   /// The accessibility service that enforces locks is on.
   final bool protectionOn;
+
+  /// An accessibility shortcut could switch the lock off; the student must turn it off.
+  final bool shortcutOn;
   final bool usageAccess;
   final bool registered;
 
@@ -29,14 +33,14 @@ class AppLockStatus {
   final bool lockedForAnotherUser;
   final DeviceLockState state;
 
-  bool get ready => supported && protectionOn && registered;
+  bool get ready => supported && protectionOn && !shortcutOn && registered;
 }
 
 final appLockPlatformProvider = Provider<AppLockPlatform>((ref) => AppLockPlatform());
 
 final deviceApiProvider = Provider<DeviceApi>((ref) => DeviceApi(ref.watch(apiClientProvider)));
 
-/// Launchable apps on this phone, with icons (loaded once).
+/// Launchable apps on this phone, with icons, for the app picker (loaded once).
 final installedAppsProvider = FutureProvider<List<InstalledApp>>(
   (ref) => ref.watch(appLockPlatformProvider).installedApps(),
 );
@@ -47,21 +51,31 @@ final appLockProvider = AsyncNotifierProvider<AppLockController, AppLockStatus>(
 /// blocker in step with the server's lock state.
 class AppLockController extends AsyncNotifier<AppLockStatus> {
   AppLockPlatform get _platform => ref.read(appLockPlatformProvider);
+  DeviceApi get _api => ref.read(deviceApiProvider);
 
   String? _studentId;
+  Future<AppLockStatus>? _inFlight;
 
   @override
   Future<AppLockStatus> build() async {
     _studentId = ref.watch(
       authControllerProvider.select((s) => s is AuthSignedIn && !s.user.isParent ? s.user.id : null),
     );
-    return _sync();
+    return _syncOnce();
   }
 
   /// Re-reads permissions and the lock state, e.g. when the app comes back to the front.
   Future<void> refresh() async {
-    state = AsyncData(await _sync());
+    try {
+      state = AsyncData(await _syncOnce());
+    } on Object catch (e, st) {
+      state = AsyncError(e, st);
+    }
   }
+
+  /// Overlapping callers (resume, screens, build) share one sync, so a first
+  /// sign-in registers the phone exactly once.
+  Future<AppLockStatus> _syncOnce() => _inFlight ??= _sync().whenComplete(() => _inFlight = null);
 
   Future<AppLockStatus> _sync() async {
     if (!_platform.isSupported) return const AppLockStatus(supported: false);
@@ -72,14 +86,12 @@ class AppLockController extends AsyncNotifier<AppLockStatus> {
     var lockedForAnotherUser = false;
 
     if (studentId != null && (token == null || native.ownerUserId != studentId)) {
-      if (native.locked && native.ownerUserId != null && native.ownerUserId != studentId) {
+      if (token != null && await _stillLocked(token, cachedLocked: native.locked)) {
         // Signing in as someone else must not end a running lock.
         lockedForAnotherUser = true;
       } else {
         try {
-          final device = await ref
-              .read(deviceApiProvider)
-              .register(name: native.deviceModel, appVersion: AppConfig.appVersion);
+          final device = await _api.register(name: native.deviceModel, appVersion: AppConfig.appVersion);
           await _platform.configure(baseUrl: AppConfig.apiBaseUrl, deviceToken: device.deviceToken, userId: studentId);
           token = device.deviceToken;
           native = await _platform.status();
@@ -90,18 +102,17 @@ class AppLockController extends AsyncNotifier<AppLockStatus> {
     }
 
     var lockState = DeviceLockState.unlocked;
-    if (token != null) {
+    if (token != null && !lockedForAnotherUser) {
       try {
-        final apps = await ref.read(installedAppsProvider.future);
-        lockState = await ref
-            .read(deviceApiProvider)
-            .heartbeat(
-              token,
-              protectionOn: native.protectionOn,
-              usageAccess: native.usageAccess,
-              appVersion: AppConfig.appVersion,
-              installedApps: [for (final a in apps) (packageName: a.packageName, label: a.label)],
-            );
+        final apps = await _platform.installedApps(withIcons: false);
+        lockState = await _api.heartbeat(
+          token,
+          protectionOn: native.protectionOn,
+          usageAccess: native.usageAccess,
+          shortcutOn: native.shortcutOn,
+          appVersion: AppConfig.appVersion,
+          installedApps: [for (final a in apps) (packageName: a.packageName, label: a.label)],
+        );
         await _platform.applyState(lockState.raw);
       } on ApiException {
         // Offline: the blocker keeps enforcing its last known state.
@@ -111,10 +122,21 @@ class AppLockController extends AsyncNotifier<AppLockStatus> {
     return AppLockStatus(
       supported: true,
       protectionOn: native.protectionOn,
+      shortcutOn: native.shortcutOn,
       usageAccess: native.usageAccess,
-      registered: token != null,
+      registered: token != null && !lockedForAnotherUser,
       lockedForAnotherUser: lockedForAnotherUser,
       state: lockState,
     );
+  }
+
+  /// Asks the server whether the previous owner's lock is still running.
+  Future<bool> _stillLocked(String token, {required bool cachedLocked}) async {
+    try {
+      return (await _api.state(token)).locked;
+    } on ApiException catch (e) {
+      if (e.code == 'DEVICE_UNAUTHORIZED') return false;
+      return cachedLocked; // Offline: trust the last known state (the safe side).
+    }
   }
 }

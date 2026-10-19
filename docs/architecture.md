@@ -57,8 +57,15 @@ Every error is `{ "error": { "code": "OTP_INVALID", "message": "That code is not
 - **Strict mode** (always on for under-15s) also blocks Settings, app stores, the uninstaller and the permission controller. Wi-Fi, mobile data and the Internet panel stay reachable so the student can get online for the exam. Only real activity windows decide, because splash windows say nothing about which screen is opening.
 - **No escape hatches:**
   - Signing out keeps the lock.
-  - Signing in as another account cannot replace a running lock.
+  - Signing in as another account cannot replace a running lock (the server is asked, not a cached flag).
   - A phone cannot be removed from the account while it is locked (`409 LOCK_ACTIVE`).
+  - Only the server's `DEVICE_UNAUTHORIZED` makes a phone forget its token; any other 401 keeps the lock.
+- **Already-open apps:** while a lock is on, every visible app window (full screen, split screen) is re-checked every 1.5 s. The service reads only which package owns each window, never what is inside it.
+- **Safety:** whole-phone mode only blocks apps with a launcher icon, so emergency (cell broadcast) alerts, Wi-Fi sign-in (captive portal) pages and the SIM toolkit always work. The service catches its own errors: a crash would unbind it and end every lock.
+- **Accessibility shortcut:** if the student turns on a shortcut for the service (volume keys, accessibility button, quick setting), it could switch the lock off without Settings. The app detects this, shows "turn off the shortcut", reports `shortcutOn` to the server, and treats protection as not ready.
+- **Known limits** (an accessibility-based blocker can't prevent these without device-owner rights):
+  - Rebooting into Android safe mode starts no third-party services. The server sees heartbeats stop and `protectionOn` go false, and parents are told about it.
+  - A video already floating in picture-in-picture when a lock starts is not closed; the lock screen comes up behind it.
 
 ## The 3D look
 There is no 3D engine. `Pencil3D` is a hand-built mesh (an 18-sided eraser and ferrule, a hexagonal body, a sharpened cone and a graphite tip) projected with perspective in a `CustomPainter`. It uses back-face culling, painter's-algorithm depth sorting and Blinn-Phong shading tinted violet. Buttons (`Button3D`) have a physical bottom edge that sinks on press, and cards (`ClayCard`) use soft coloured "clay" shadows.

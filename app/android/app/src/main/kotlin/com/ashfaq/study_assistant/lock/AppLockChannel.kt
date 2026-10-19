@@ -15,7 +15,6 @@ import java.util.concurrent.Executors
 /** The Flutter side's handle on the native app blocker. */
 class AppLockChannel(private val activity: Activity) : MethodChannel.MethodCallHandler {
     private val store = LockStore(activity)
-    private val executor = Executors.newSingleThreadExecutor()
     private val main = Handler(Looper.getMainLooper())
 
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
@@ -24,6 +23,7 @@ class AppLockChannel(private val activity: Activity) : MethodChannel.MethodCallH
                 mapOf(
                     "protectionOn" to AppLockService.isEnabled(activity),
                     "usageAccess" to LockSync.hasUsageAccess(activity),
+                    "shortcutOn" to AppLockService.isShortcutOn(activity),
                     "deviceModel" to "${Build.MANUFACTURER} ${Build.MODEL}".trim(),
                     "ownerUserId" to store.ownerUserId,
                     "deviceToken" to store.deviceToken,
@@ -42,7 +42,10 @@ class AppLockChannel(private val activity: Activity) : MethodChannel.MethodCallH
 
             "applyState" -> {
                 val json = call.argument<String>("state")
-                if (json != null) store.saveState(JSONObject(json))
+                if (json != null) {
+                    store.saveState(JSONObject(json))
+                    AppLockService.instance?.onLockStateChanged()
+                }
                 result.success(null)
             }
 
@@ -52,7 +55,8 @@ class AppLockChannel(private val activity: Activity) : MethodChannel.MethodCallH
             }
 
             "getInstalledApps" -> executor.execute {
-                val apps = InstalledApps.list(activity, withIcons = true).map {
+                val withIcons = call.argument<Boolean>("withIcons") ?: true
+                val apps = InstalledApps.list(activity, withIcons).map {
                     mapOf("package" to it.packageName, "label" to it.label, "icon" to it.icon)
                 }
                 main.post { result.success(apps) }
@@ -83,6 +87,11 @@ class AppLockChannel(private val activity: Activity) : MethodChannel.MethodCallH
 
             else -> result.notImplemented()
         }
+    }
+
+    private companion object {
+        /** One background thread for the whole process (activities come and go). */
+        val executor: java.util.concurrent.ExecutorService = Executors.newSingleThreadExecutor()
     }
 
     private fun open(intent: Intent, result: MethodChannel.Result) {

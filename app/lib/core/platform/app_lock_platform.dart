@@ -11,6 +11,7 @@ class NativeLockStatus {
     required this.usageAccess,
     required this.deviceModel,
     required this.locked,
+    this.shortcutOn = false,
     this.ownerUserId,
     this.deviceToken,
   });
@@ -22,6 +23,9 @@ class NativeLockStatus {
 
   /// A lock is being enforced right now (from the last known server state).
   final bool locked;
+
+  /// An accessibility shortcut could switch the lock off without opening Settings.
+  final bool shortcutOn;
   final String? ownerUserId;
   final String? deviceToken;
 }
@@ -67,6 +71,7 @@ class AppLockPlatform {
       usageAccess: map['usageAccess']! as bool,
       deviceModel: map['deviceModel']! as String,
       locked: map['locked'] as bool? ?? false,
+      shortcutOn: map['shortcutOn'] as bool? ?? false,
       ownerUserId: map['ownerUserId'] as String?,
       deviceToken: map['deviceToken'] as String?,
     );
@@ -80,9 +85,12 @@ class AppLockPlatform {
 
   Future<void> syncNow() => _invoke('syncNow');
 
-  Future<List<InstalledApp>> installedApps() async {
+  /// Launchable apps; icons are only loaded when [withIcons] (for the picker).
+  Future<List<InstalledApp>> installedApps({bool withIcons = true}) async {
     if (!isSupported) return const [];
-    final list = await _channel.invokeListMethod<Map<Object?, Object?>>('getInstalledApps') ?? const [];
+    final list =
+        await _channel.invokeListMethod<Map<Object?, Object?>>('getInstalledApps', {'withIcons': withIcons}) ??
+        const [];
     return [
       for (final raw in list)
         InstalledApp(

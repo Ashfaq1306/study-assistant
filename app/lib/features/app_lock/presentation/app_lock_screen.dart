@@ -103,11 +103,27 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with WidgetsBindi
                 title: 'Allow app lock',
                 body:
                     'Opens Accessibility settings. Choose "Study Assistant app lock" and switch it on. '
-                    'It only sees which app is open, never what is on your screen.',
+                    'It only checks which app is open on screen, never what you type or what is inside apps. '
+                    'Your list of installed apps is shared with your linked parent so they can choose apps to lock.',
                 done: s.protectionOn,
                 action: 'Open settings',
                 onAction: platform.openAccessibilitySettings,
               ),
+              if (s.protectionOn && s.shortcutOn) ...[
+                const SizedBox(height: 12),
+                _Step(
+                  number: 1,
+                  icon: Icons.keyboard_double_arrow_up_rounded,
+                  title: 'Turn off the shortcut',
+                  body:
+                      'The app lock has a shortcut switched on (volume keys, accessibility button or a quick setting). '
+                      'Open Accessibility settings, choose "Study Assistant app lock" and turn its shortcut off, '
+                      'so the lock cannot be switched off by accident.',
+                  done: false,
+                  action: 'Open settings',
+                  onAction: platform.openAccessibilitySettings,
+                ),
+              ],
               if (!s.protectionOn) ...[
                 const SizedBox(height: 12),
                 ClayCard(

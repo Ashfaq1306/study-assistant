@@ -195,6 +195,8 @@ model Device {
   protectionOn  Boolean   @default(false)
   /// Usage access (screen time) is granted.
   usageAccess   Boolean   @default(false)
+  /// An accessibility shortcut could switch the lock off without Settings.
+  shortcutOn    Boolean   @default(false)
   /// JSON array of { package, label } for apps that can be launched.
   installedApps String    @default("[]")
   lastSeenAt    DateTime  @default(now())

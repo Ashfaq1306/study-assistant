@@ -1,13 +1,13 @@
 package com.ashfaq.study_assistant.lock
 
 /**
- * Decides whether a window that just came to the front must be blocked.
+ * Decides whether an app on screen must be blocked.
  *
- * Safety first: calls, emergency, the keyboard, the launcher and the system UI
- * are never blocked. Strict mode also blocks Settings, app stores and
- * uninstallers while a lock is on, so the lock cannot simply be switched off,
- * but Wi-Fi and mobile-data screens stay reachable so the student can get
- * online to take the exam.
+ * Safety first: calls, emergency alerts, Wi-Fi sign-in pages, the SIM toolkit,
+ * the keyboard, the launcher and the system UI are never blocked. Strict mode
+ * also blocks Settings, app stores and uninstallers while a lock is on, so the
+ * lock cannot simply be switched off; Wi-Fi and mobile-data screens stay
+ * reachable so the student can always get online to take the exam.
  */
 object LockPolicy {
     private val ALWAYS_ALLOWED = setOf(
@@ -23,10 +23,12 @@ object LockPolicy {
         "com.android.emergency",
         "com.google.android.apps.safetyhub",
         "com.samsung.android.emergency",
+        "com.android.stk",
+        "com.samsung.android.stk",
     )
 
-    /** Fragments that mark calling/emergency apps from other makers. */
-    private val ALLOWED_HINTS = listOf("dialer", "incallui", "telecom", "emergency")
+    /** Fragments that mark calling, emergency-alert and Wi-Fi sign-in apps from any maker. */
+    private val ALLOWED_HINTS = listOf("dialer", "incallui", "telecom", "emergency", "cellbroadcast", "captiveportal")
 
     private val STRICT_BLOCKED = setOf(
         "com.android.settings",
@@ -42,24 +44,37 @@ object LockPolicy {
     )
 
     /** Settings screens that only help the student get online. */
-    private val CONNECTIVITY_HINTS = listOf("wifi", "network", "internet", "mobile", "sim", "airplane", "data", "panel")
+    private val CONNECTIVITY_HINTS = listOf("wifi", "network", "internet", "mobile", "sim", "airplane", "datausage", "panel")
 
     /** Settings, stores and uninstallers: blocked in strict mode. */
     fun isStrictBlocked(packageName: String): Boolean = packageName in STRICT_BLOCKED
 
-    /** Calls and emergency apps: never blocked, so not offered in the app picker either. */
+    /** Calls, emergency and sign-in apps: never blocked, so not offered in the app picker either. */
     fun isNeverBlocked(packageName: String): Boolean =
         packageName in ALWAYS_ALLOWED || ALLOWED_HINTS.any { packageName.contains(it, ignoreCase = true) }
 
-    fun shouldBlock(packageName: String, className: String?, state: LockState, alwaysAllowed: Set<String>): Boolean {
+    /**
+     * @param alwaysAllowed this phone's launcher, dialer and keyboards.
+     * @param launchable apps with a launcher icon; "whole phone" only blocks
+     *   these, so background system screens (alerts, sign-in pages) keep working.
+     */
+    fun shouldBlock(
+        packageName: String,
+        className: String?,
+        state: LockState,
+        alwaysAllowed: Set<String>,
+        launchable: Set<String>,
+    ): Boolean {
         if (!state.locked) return false
         if (packageName in alwaysAllowed || isNeverBlocked(packageName)) return false
 
+        val chosen = packageName in state.packages || (state.wholePhone && packageName in launchable)
         if (packageName in STRICT_BLOCKED) {
-            if (!state.strict) return packageName in state.packages
+            if (!state.strict && !chosen) return false
+            // Even when locked, the screens that get the phone online stay open.
             val screen = className?.lowercase() ?: return true
             return CONNECTIVITY_HINTS.none { screen.contains(it) }
         }
-        return state.wholePhone || packageName in state.packages
+        return chosen
     }
 }

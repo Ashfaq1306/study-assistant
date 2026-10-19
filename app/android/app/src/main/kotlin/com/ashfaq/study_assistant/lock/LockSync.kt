@@ -30,6 +30,7 @@ object LockSync {
         val body = JSONObject()
             .put("protectionOn", protectionOn)
             .put("usageAccess", hasUsageAccess(context))
+            .put("shortcutOn", AppLockService.isShortcutOn(context))
             .put("appVersion", appVersion(context))
         val now = System.currentTimeMillis()
         val sendApps = now - store.lastAppsSentAt > APPS_EVERY_MS
@@ -61,8 +62,16 @@ object LockSync {
                     Result.Updated(LockState.fromJson(json))
                 }
                 401 -> {
-                    store.forget()
-                    Result.Unregistered
+                    // Only a definite "this phone is unknown" ends enforcement, never a
+                    // proxy or deploy hiccup that happens to answer 401.
+                    val body = connection.errorStream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                    val errorCode = runCatching { JSONObject(body).getJSONObject("error").getString("code") }.getOrNull()
+                    if (errorCode == "DEVICE_UNAUTHORIZED") {
+                        store.forget()
+                        Result.Unregistered
+                    } else {
+                        Result.Failed
+                    }
                 }
                 else -> {
                     Log.w(TAG, "heartbeat HTTP $code")

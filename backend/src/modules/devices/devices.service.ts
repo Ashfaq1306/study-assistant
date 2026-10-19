@@ -15,6 +15,7 @@ export const RegisterDeviceBody = z.object({
 export const HeartbeatBody = z.object({
   protectionOn: z.boolean(),
   usageAccess: z.boolean().default(false),
+  shortcutOn: z.boolean().default(false),
   appVersion: z.string().trim().max(40).optional(),
   installedApps: z
     .array(z.object({ package: packageName.refine((p) => p !== '*'), label: z.string().trim().min(1).max(80) }))
@@ -29,6 +30,7 @@ export interface DeviceView {
   appVersion: string | null;
   protectionOn: boolean;
   usageAccess: boolean;
+  shortcutOn: boolean;
   lastSeenAt: string;
   installedApps: { package: string; label: string }[];
 }
@@ -82,6 +84,7 @@ export class DevicesService {
       data: {
         protectionOn: input.protectionOn,
         usageAccess: input.usageAccess,
+        shortcutOn: input.shortcutOn,
         appVersion: input.appVersion ?? device.appVersion,
         ...(input.installedApps ? { installedApps: JSON.stringify(input.installedApps) } : {}),
         lastSeenAt: this.clock(),
@@ -119,6 +122,7 @@ export function toView(d: Device): DeviceView {
     appVersion: d.appVersion,
     protectionOn: d.protectionOn,
     usageAccess: d.usageAccess,
+    shortcutOn: d.shortcutOn,
     lastSeenAt: d.lastSeenAt.toISOString(),
     installedApps: JSON.parse(d.installedApps) as { package: string; label: string }[],
   };

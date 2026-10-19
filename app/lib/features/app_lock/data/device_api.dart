@@ -61,11 +61,16 @@ class DeviceApi {
     return (deviceId: json['deviceId']! as String, deviceToken: json['deviceToken']! as String);
   }
 
+  Future<DeviceLockState> state(String deviceToken) async => DeviceLockState.fromJson(
+    await _client.get('/v1/device/state', authenticated: false, headers: {'X-Device-Token': deviceToken}),
+  );
+
   Future<DeviceLockState> heartbeat(
     String deviceToken, {
     required bool protectionOn,
     required bool usageAccess,
     required String appVersion,
+    bool shortcutOn = false,
     List<({String packageName, String label})>? installedApps,
   }) async {
     final json = await _client.post(
@@ -75,6 +80,7 @@ class DeviceApi {
       data: {
         'protectionOn': protectionOn,
         'usageAccess': usageAccess,
+        'shortcutOn': shortcutOn,
         'appVersion': appVersion,
         if (installedApps != null)
           'installedApps': [
