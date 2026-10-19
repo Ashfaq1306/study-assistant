@@ -15,6 +15,7 @@ import '../../../core/widgets/page_shell.dart';
 import '../../../core/widgets/timer_ring.dart';
 import '../application/study_providers.dart';
 import '../domain/study_session.dart';
+import 'widgets/study_photos.dart';
 
 /// The running session: a countdown while studying, then the way to the exam.
 class ActiveSessionScreen extends ConsumerStatefulWidget {
@@ -28,6 +29,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
   Timer? _ticker;
   bool _finishing = false;
   bool _refreshedAtZero = false;
+  bool _uploading = false;
 
   @override
   void initState() {
@@ -61,6 +63,29 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
       if (mounted) showSnack(context, e.message);
     } finally {
       if (mounted) setState(() => _finishing = false);
+    }
+  }
+
+  Future<void> _addPhoto(StudySession session) async {
+    final bytes = await pickStudyPhoto(context);
+    if (bytes == null || !mounted) return;
+    setState(() => _uploading = true);
+    try {
+      await ref.read(studyApiProvider).addPhoto(session.id, bytes, mime: imageMime(bytes));
+      await ref.read(activeSessionProvider.notifier).refresh();
+    } on ApiException catch (e) {
+      if (mounted) showSnack(context, e.message);
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  Future<void> _removePhoto(StudySession session, String photoId) async {
+    try {
+      await ref.read(studyApiProvider).removePhoto(session.id, photoId);
+      await ref.read(activeSessionProvider.notifier).refresh();
+    } on ApiException catch (e) {
+      if (mounted) showSnack(context, e.message);
     }
   }
 
@@ -144,6 +169,13 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
             ),
           ),
           const SizedBox(height: 16),
+          _PlanCard(
+            session: session,
+            uploading: _uploading,
+            onAdd: () => _addPhoto(session),
+            onRemove: (id) => _removePhoto(session, id),
+          ),
+          const SizedBox(height: 16),
           Button3D(
             label: 'Ask the AI helper',
             icon: Icons.smart_toy_rounded,
@@ -203,6 +235,52 @@ class _NoSession extends StatelessWidget {
         const SizedBox(height: 24),
         Button3D(label: 'Back home', onPressed: onHome),
       ],
+    );
+  }
+}
+
+/// The student's plan and photos of the material; photos can change until the timer ends.
+class _PlanCard extends StatelessWidget {
+  const _PlanCard({required this.session, required this.uploading, required this.onAdd, required this.onRemove});
+
+  final StudySession session;
+  final bool uploading;
+  final VoidCallback onAdd;
+  final ValueChanged<String> onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClayCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.edit_note_rounded, color: AppColors.violet),
+              SizedBox(width: 8),
+              Text(
+                'Your plan',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.ink),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            session.notes.isEmpty ? 'Add photos of your pages: your quiz will ask about them.' : session.notes,
+            style: const TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w600, height: 1.35),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              for (final id in session.photoIds) ServerPhotoThumb(photoId: id, size: 72, onRemove: () => onRemove(id)),
+              if (session.photoIds.length < maxStudyPhotos) AddPhotoTile(onTap: onAdd, size: 72, busy: uploading),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

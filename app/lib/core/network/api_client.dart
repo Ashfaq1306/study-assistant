@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'dart:async';
 
 import 'package:dio/dio.dart';
@@ -60,7 +62,19 @@ class ApiClient {
 
   Future<Json> patch(String path, {Object? data}) => _send(() => _dio.patch<Object?>(path, data: data));
 
-  Future<void> delete(String path) => _send(() => _dio.delete<Object?>(path));
+  Future<Json> put(String path, {Object? data}) => _send(() => _dio.put<Object?>(path, data: data));
+
+  Future<Json> delete(String path) => _send(() => _dio.delete<Object?>(path));
+
+  /// Raw bytes, e.g. a photo. Signed in like any other request.
+  Future<Uint8List> getBytes(String path) async {
+    try {
+      final res = await _dio.get<List<int>>(path, options: _auth(true).copyWith(responseType: ResponseType.bytes));
+      return Uint8List.fromList(res.data ?? const []);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
 
   static Options _auth(bool authenticated, [Map<String, String>? headers, Duration? timeout]) =>
       Options(extra: {_AuthInterceptor.authKey: authenticated}, headers: headers, receiveTimeout: timeout);

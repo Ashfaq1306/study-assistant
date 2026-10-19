@@ -102,7 +102,8 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with WidgetsBindi
                 icon: Icons.accessibility_new_rounded,
                 title: 'Allow app lock',
                 body:
-                    'Opens Accessibility settings. Choose "Study Assistant app lock" and switch it on. '
+                    'Opens Accessibility settings. Choose "Installed apps" (or "Downloaded apps"), then '
+                    '"Study Assistant app lock", and switch it on. '
                     'It only checks which app is open on screen, never what you type or what is inside apps. '
                     'Your list of installed apps is shared with your linked parent so they can choose apps to lock.',
                 done: s.protectionOn,
@@ -147,8 +148,9 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with WidgetsBindi
                       ),
                       const SizedBox(height: 6),
                       const Text(
-                        'Open App info, tap the three dots at the top right, choose "Allow restricted settings", '
-                        'then come back and try step 1 again.',
+                        'Android protects this switch for apps not installed from the Play Store. '
+                        'Tap "Open App info" below, tap the three dots (top right), choose "Allow restricted settings" '
+                        'and confirm with your PIN or fingerprint. Then come back and do step 1 again.',
                         style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.ink),
                       ),
                       const SizedBox(height: 10),

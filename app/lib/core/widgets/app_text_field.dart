@@ -25,6 +25,8 @@ class AppTextField extends StatefulWidget {
     this.autofocus = false,
     this.readOnly = false,
     this.onTap,
+    this.maxLines = 1,
+    this.maxLength,
   });
 
   final String label;
@@ -46,6 +48,10 @@ class AppTextField extends StatefulWidget {
   final bool autofocus;
   final bool readOnly;
   final VoidCallback? onTap;
+
+  /// More than 1 for notes; the field grows up to this many lines.
+  final int maxLines;
+  final int? maxLength;
 
   @override
   State<AppTextField> createState() => _AppTextFieldState();
@@ -78,6 +84,9 @@ class _AppTextFieldState extends State<AppTextField> {
           inputFormatters: widget.inputFormatters,
           onChanged: widget.onChanged,
           onFieldSubmitted: widget.onSubmitted,
+          minLines: 1,
+          maxLines: widget.obscure ? 1 : widget.maxLines,
+          maxLength: widget.maxLength,
           textCapitalization: widget.textCapitalization,
           autofocus: widget.autofocus,
           readOnly: widget.readOnly,

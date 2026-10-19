@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../../app/providers.dart';
 import '../../../app/routes.dart';
 import '../../../core/config/remote_config.dart';
 import '../../../core/network/api_exception.dart';
@@ -22,6 +24,7 @@ import '../application/study_providers.dart';
 import '../data/study_api.dart';
 import '../domain/study_session.dart';
 import 'widgets/exam_settings_editor.dart';
+import 'widgets/study_photos.dart';
 
 /// Plan a study session: what, how long, and the exam that unlocks the apps.
 class StartSessionScreen extends ConsumerStatefulWidget {
@@ -37,15 +40,20 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
   final _pages = PageController();
   final _topics = TextEditingController();
   final _customSubject = TextEditingController();
+  final _notes = TextEditingController();
+
+  /// Photos of the study material, uploaded once the session starts.
+  final List<Uint8List> _photos = [];
 
   int _step = 0;
   String? _subject;
   bool _otherSubject = false;
   int _minutes = 25;
+  // A short, easy quiz by default; students can make it longer or harder.
   ExamSettings _exam = const ExamSettings(
-    questionCount: 10,
-    totalMarks: 50,
-    passMarks: 30,
+    questionCount: 5,
+    totalMarks: 10,
+    passMarks: 5,
     questionTypes: [QuestionType.mcq, QuestionType.trueFalse],
   );
   Set<String> _apps = {};
@@ -77,6 +85,7 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
     _pages.dispose();
     _topics.dispose();
     _customSubject.dispose();
+    _notes.dispose();
     super.dispose();
   }
 
@@ -106,12 +115,13 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
       _error = null;
     });
     try {
-      await ref
+      final session = await ref
           .read(activeSessionProvider.notifier)
           .start(
             StartSessionRequest(
               subject: _chosenSubject,
               topics: _topics.text,
+              notes: _notes.text,
               plannedMinutes: _minutes,
               exam: _exam,
               lockedApps: _apps.toList(),
@@ -119,6 +129,7 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
             ),
           );
       unawaited(SharedPreferences.getInstance().then((p) => p.setStringList(_lastAppsKey, _apps.toList())));
+      if (_photos.isNotEmpty) await _uploadPhotos(session.id);
       // Hand the new lock to the blocker straight away.
       unawaited(ref.read(appLockProvider.notifier).refresh());
       if (mounted) context.pushReplacement(Routes.studySession);
@@ -134,6 +145,30 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  /// The session has started: a photo that fails to upload can be added again from the timer.
+  Future<void> _uploadPhotos(String sessionId) async {
+    var failed = 0;
+    for (final bytes in _photos) {
+      try {
+        await ref.read(studyApiProvider).addPhoto(sessionId, bytes, mime: imageMime(bytes));
+      } on ApiException {
+        failed++;
+      }
+    }
+    await ref.read(activeSessionProvider.notifier).refresh();
+    if (failed > 0 && mounted) {
+      showSnack(
+        context,
+        "${failed == 1 ? 'A photo' : '$failed photos'} didn't upload. You can add them on the timer screen.",
+      );
+    }
+  }
+
+  Future<void> _addPhoto() async {
+    final bytes = await pickStudyPhoto(context);
+    if (bytes != null && mounted) setState(() => _photos.add(bytes));
   }
 
   @override
@@ -197,8 +232,33 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
           hint: 'e.g. Chapter 3: Fractions and decimals',
           icon: Icons.topic_rounded,
           textCapitalization: TextCapitalization.sentences,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) => _nextFromWhat(),
+        ),
+        const SizedBox(height: 20),
+        AppTextField(
+          label: 'Your plan (optional)',
+          controller: _notes,
+          hint: 'e.g. Read pages 12-14, then practise 5 sums',
+          icon: Icons.edit_note_rounded,
+          textCapitalization: TextCapitalization.sentences,
+          textInputAction: TextInputAction.newline,
+          maxLines: 4,
+          maxLength: 1000,
+        ),
+        const SizedBox(height: 12),
+        const FieldLabel('Photos of what you will study (optional)'),
+        const Text(
+          'Snap your book pages or notes. Your quiz will ask about them.',
+          style: TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            for (final (i, bytes) in _photos.indexed)
+              PhotoThumb(image: MemoryImage(bytes), onRemove: () => setState(() => _photos.removeAt(i))),
+            if (_photos.length < maxStudyPhotos) AddPhotoTile(onTap: _addPhoto),
+          ],
         ),
         if (_whatError != null) ...[const SizedBox(height: 16), MessageBanner.error(_whatError!)],
         const SizedBox(height: 28),
@@ -306,13 +366,47 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
             ),
           ),
         ),
+        if (_lockNotReady) ...[
+          const SizedBox(height: 16),
+          ClayCard(
+            color: AppColors.coralSoft,
+            glow: AppColors.coralDeep,
+            padding: const EdgeInsets.all(16),
+            onTap: _setUpAppLock,
+            child: const Row(
+              children: [
+                Icon(Icons.shield_outlined, color: AppColors.coralDeep),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'App lock is off on this phone. Tap to turn it on, so these apps really get blocked.',
+                    style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.coralDeep),
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded, color: AppColors.coralDeep),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 28),
         Button3D(label: 'Continue', onPressed: () => _goTo(4)),
       ],
     );
   }
 
+  /// Locked apps need the blocker: without it a session would only be a timer.
+  bool get _lockNotReady {
+    final status = ref.watch(appLockProvider).value;
+    return _apps.isNotEmpty && status != null && status.supported && !status.ready;
+  }
+
+  Future<void> _setUpAppLock() async {
+    await context.push(Routes.appLock);
+    if (mounted) await ref.read(appLockProvider.notifier).refresh();
+  }
+
   Widget _reviewPage() {
+    final lockOff = _lockNotReady;
     return WizardPage(
       icon: Icons.rocket_launch_rounded,
       title: 'Ready?',
@@ -324,6 +418,14 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
             children: [
               _SummaryRow(icon: Icons.menu_book_rounded, label: 'Subject', value: _chosenSubject),
               _SummaryRow(icon: Icons.topic_rounded, label: 'Topics', value: _topics.text.trim()),
+              if (_notes.text.trim().isNotEmpty)
+                _SummaryRow(icon: Icons.edit_note_rounded, label: 'Plan', value: _notes.text.trim()),
+              if (_photos.isNotEmpty)
+                _SummaryRow(
+                  icon: Icons.photo_library_rounded,
+                  label: 'Photos',
+                  value: '${_photos.length} for your quiz',
+                ),
               _SummaryRow(icon: Icons.timer_rounded, label: 'Study time', value: '$_minutes minutes'),
               _SummaryRow(
                 icon: Icons.quiz_rounded,
@@ -342,30 +444,24 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
             ],
           ),
         ),
-        if (_apps.isNotEmpty && !(ref.watch(appLockProvider).value?.ready ?? true)) ...[
+        if (lockOff) ...[
           const SizedBox(height: 16),
-          ClayCard(
-            color: AppColors.coralSoft,
-            glow: AppColors.coralDeep,
-            padding: const EdgeInsets.all(16),
-            onTap: () => context.push(Routes.appLock),
-            child: const Row(
-              children: [
-                Icon(Icons.shield_outlined, color: AppColors.coralDeep),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'App lock is off, so your apps will not be blocked. Tap to turn it on.',
-                    style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.coralDeep),
-                  ),
-                ),
-              ],
-            ),
+          const MessageBanner.error(
+            'App lock is off on this phone, so nothing would be blocked. Turn it on first: it takes a minute.',
           ),
         ],
         if (_error != null) ...[const SizedBox(height: 16), MessageBanner.error(_error!.message)],
         const SizedBox(height: 28),
-        Button3D(label: 'Start studying', icon: Icons.play_arrow_rounded, loading: _loading, onPressed: _start),
+        if (lockOff) ...[
+          Button3D(label: 'Turn on App lock', icon: Icons.shield_rounded, onPressed: _setUpAppLock),
+          const SizedBox(height: 12),
+          Button3D.secondary(
+            label: 'Study without locking apps',
+            icon: Icons.lock_open_rounded,
+            onPressed: () => setState(() => _apps = {}),
+          ),
+        ] else
+          Button3D(label: 'Start studying', icon: Icons.play_arrow_rounded, loading: _loading, onPressed: _start),
       ],
     );
   }
