@@ -49,15 +49,21 @@ class ApiClient {
   Future<Json> get(String path, {bool authenticated = true, Map<String, String>? headers}) =>
       _send(() => _dio.get<Object?>(path, options: _auth(authenticated, headers)));
 
-  Future<Json> post(String path, {Object? data, bool authenticated = true, Map<String, String>? headers}) =>
-      _send(() => _dio.post<Object?>(path, data: data ?? const {}, options: _auth(authenticated, headers)));
+  /// [timeout] overrides the default wait, e.g. for AI calls that take a while.
+  Future<Json> post(
+    String path, {
+    Object? data,
+    bool authenticated = true,
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) => _send(() => _dio.post<Object?>(path, data: data ?? const {}, options: _auth(authenticated, headers, timeout)));
 
   Future<Json> patch(String path, {Object? data}) => _send(() => _dio.patch<Object?>(path, data: data));
 
   Future<void> delete(String path) => _send(() => _dio.delete<Object?>(path));
 
-  static Options _auth(bool authenticated, [Map<String, String>? headers]) =>
-      Options(extra: {_AuthInterceptor.authKey: authenticated}, headers: headers);
+  static Options _auth(bool authenticated, [Map<String, String>? headers, Duration? timeout]) =>
+      Options(extra: {_AuthInterceptor.authKey: authenticated}, headers: headers, receiveTimeout: timeout);
 
   Future<Json> _send(Future<Response<Object?>> Function() request) async {
     try {

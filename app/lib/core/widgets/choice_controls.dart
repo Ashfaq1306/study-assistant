@@ -52,9 +52,11 @@ class ChoicePill extends StatelessWidget {
                 Icon(icon, size: 18, color: selected ? Colors.white : color),
                 const SizedBox(width: 6),
               ],
-              Text(
-                label,
-                style: TextStyle(fontWeight: FontWeight.w800, color: selected ? Colors.white : AppColors.ink),
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(fontWeight: FontWeight.w800, color: selected ? Colors.white : AppColors.ink),
+                ),
               ),
             ],
           ),

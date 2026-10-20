@@ -39,3 +39,6 @@ npm-debug.log*
 .flutter-plugins-dependencies
 build/
 doc/api/
+
+# Local agent worktrees
+.claude/worktrees/

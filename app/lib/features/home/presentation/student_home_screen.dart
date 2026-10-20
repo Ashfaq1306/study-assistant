@@ -105,11 +105,12 @@ class StudentHomeScreen extends ConsumerWidget {
                 color: AppColors.violet,
                 onTap: () => context.push(Routes.appLock),
               ),
-              const FeatureTile(
+              FeatureTile(
                 icon: Icons.smart_toy_rounded,
                 title: 'AI helper',
                 subtitle: 'Ask anything about your lesson',
                 color: AppColors.sky,
+                onTap: () => context.push(Routes.tutor),
               ),
               FeatureTile(
                 icon: Icons.family_restroom_rounded,

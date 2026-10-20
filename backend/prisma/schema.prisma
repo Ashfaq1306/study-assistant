@@ -33,6 +33,13 @@ enum SessionStatus {
   CANCELLED
 }
 
+enum ExamStatus {
+  ACTIVE
+  SUBMITTED
+  /// Not submitted in time; counts as a failed attempt.
+  EXPIRED
+}
+
 enum Difficulty {
   EASY
   MEDIUM
@@ -69,6 +76,8 @@ model User {
   parentLinks   FamilyLink[]   @relation("StudentLinks")
   studySessions StudySession[]
   devices       Device[]
+  exams         Exam[]
+  aiUsage       AiUsage[]
 }
 
 model OtpCode {
@@ -169,7 +178,8 @@ model StudySession {
   studyEndedAt       DateTime?
   completedAt        DateTime?
 
-  student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  exams   Exam[]
 
   @@index([studentId, status])
   @@index([studentId, startedAt])
@@ -206,4 +216,51 @@ model Device {
   student User @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
+}
+
+/// An unlock exam. Questions and answers stay on the server; the app only
+/// sees the answers after submitting.
+model Exam {
+  id          String     @id @default(cuid())
+  studentId   String
+  sessionId   String?
+  subject     String
+  topics      String
+  difficulty  Difficulty
+  totalMarks  Int
+  passMarks   Int
+  /// JSON array of questions with their answers and marks.
+  questions   String
+  /// AI, PRACTICE (built-in bank when AI is off) or PARENT.
+  source      String
+  status      ExamStatus @default(ACTIVE)
+  /// studentId:target while ACTIVE, cleared when submitted or expired: at most one running exam per target.
+  activeKey   String?    @unique
+  /// JSON map of questionId -> answer, once submitted.
+  answers     String?
+  /// JSON array of per-question results, once submitted.
+  results     String?
+  score       Float?
+  passed      Boolean?
+  createdAt   DateTime   @default(now())
+  expiresAt   DateTime
+  submittedAt DateTime?
+
+  student User          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  session StudySession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, createdAt])
+  @@index([sessionId])
+}
+
+/// One row per AI call, for daily limits and admin statistics.
+model AiUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, kind, createdAt])
 }

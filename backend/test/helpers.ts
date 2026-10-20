@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import type { FastifyInstance } from 'fastify';
 import { buildApp } from '../src/app.js';
 import { loadEnv } from '../src/config/env.js';
+import type { AiProvider } from '../src/modules/ai/ai.types.js';
 import type { Notifier, OutboundMessage } from '../src/modules/notify/notifier.js';
 
 export const env = loadEnv({
@@ -51,6 +52,8 @@ export interface TestContext {
 
 export async function resetDatabase(): Promise<void> {
   await prisma.$transaction([
+    prisma.aiUsage.deleteMany(),
+    prisma.exam.deleteMany(),
     prisma.device.deleteMany(),
     prisma.studySession.deleteMany(),
     prisma.appSetting.deleteMany(),
@@ -64,7 +67,7 @@ export async function resetDatabase(): Promise<void> {
 }
 
 export async function createTestApp(
-  options: { rateLimit?: boolean; nodeEnv?: typeof env.NODE_ENV; exposeDevCodes?: boolean } = {},
+  options: { rateLimit?: boolean; nodeEnv?: typeof env.NODE_ENV; exposeDevCodes?: boolean; ai?: AiProvider } = {},
 ): Promise<TestContext> {
   const notifier = new FakeNotifier();
   const clock = new TestClock();
@@ -77,6 +80,7 @@ export async function createTestApp(
     prisma,
     notifier,
     clock: clock.fn,
+    ai: options.ai,
     rateLimit: options.rateLimit ?? false,
     logger: false,
   });

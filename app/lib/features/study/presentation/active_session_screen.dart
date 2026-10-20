@@ -143,7 +143,15 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          Button3D(
+            label: 'Ask the AI helper',
+            icon: Icons.smart_toy_rounded,
+            color: AppColors.sky,
+            edgeColor: AppColors.skyDeep,
+            onPressed: () => context.push(Routes.tutor),
+          ),
+          const SizedBox(height: 12),
           Button3D.secondary(
             label: canFinish
                 ? 'I am done, take the exam'

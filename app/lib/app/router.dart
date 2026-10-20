@@ -21,6 +21,7 @@ import '../features/home/presentation/student_home_screen.dart';
 import '../features/study/presentation/active_session_screen.dart';
 import '../features/study/presentation/start_session_screen.dart';
 import '../features/study/presentation/stats_screen.dart';
+import '../features/tutor/tutor_screen.dart';
 import 'routes.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -57,6 +58,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'stats', builder: (_, _) => const StatsScreen()),
           GoRoute(path: 'exam', builder: (_, _) => const ExamScreen()),
           GoRoute(path: 'app-lock', builder: (_, _) => const AppLockScreen()),
+          GoRoute(path: 'tutor', builder: (_, _) => const TutorScreen()),
         ],
       ),
       GoRoute(
