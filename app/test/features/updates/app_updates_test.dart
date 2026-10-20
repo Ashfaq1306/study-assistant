@@ -31,6 +31,19 @@ void main() {
     expect(update?.downloadUrl, 'https://example.com/v0.5.0-b6/study-assistant.apk');
   });
 
+  test("picks the APK built for this phone's chip, never another chip's", () {
+    final release = {
+      'tag_name': 'v0.5.0-b9',
+      'draft': false,
+      'assets': [
+        for (final abi in ['armeabi-v7a', 'arm64-v8a', 'x86_64'])
+          {'name': 'study-assistant-0.5.0-b9-$abi.apk', 'browser_download_url': 'https://x/$abi.apk'},
+      ],
+    };
+    expect(newestUpdate([release], 4, abi: 'arm64-v8a')?.downloadUrl, 'https://x/arm64-v8a.apk');
+    expect(newestUpdate([release], 4, abi: 'riscv64'), isNull);
+  });
+
   test('nothing to do when this build is the newest', () {
     expect(newestUpdate([_release('v0.4.0-b4')], 4), isNull);
     expect(newestUpdate([], 1), isNull);

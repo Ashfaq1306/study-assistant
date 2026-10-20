@@ -23,17 +23,24 @@ class AppUpdate {
   return match == null ? null : (version: match.group(1)!, build: int.parse(match.group(2)!));
 }
 
+/// APKs built for one kind of phone chip end like "-arm64-v8a.apk".
+final _abiApk = RegExp(r'-(arm64-v8a|armeabi-v7a|x86_64)\.apk$');
+
 /// The newest release with an APK, newer than [currentBuild]; null if up to date.
-AppUpdate? newestUpdate(List<Object?> releases, int currentBuild) {
+/// Prefers the APK built for this phone's [abi]; never picks another chip's.
+AppUpdate? newestUpdate(List<Object?> releases, int currentBuild, {String abi = ''}) {
   AppUpdate? best;
   for (final r in releases.whereType<Map<String, Object?>>()) {
     if (r['draft'] == true) continue;
     final tag = parseReleaseTag(r['tag_name'] as String? ?? '');
     if (tag == null || tag.build <= currentBuild || (best != null && tag.build <= best.build)) continue;
-    final apk = (r['assets'] as List<Object?>? ?? const [])
-        .whereType<Map<String, Object?>>()
-        .where((a) => (a['name'] as String? ?? '').endsWith('.apk'))
-        .firstOrNull;
+    final apks = [
+      for (final a in (r['assets'] as List<Object?>? ?? const []).whereType<Map<String, Object?>>())
+        if ((a['name'] as String? ?? '').endsWith('.apk')) a,
+    ];
+    final apk =
+        apks.where((a) => abi.isNotEmpty && (a['name']! as String).endsWith('-$abi.apk')).firstOrNull ??
+        apks.where((a) => !_abiApk.hasMatch(a['name']! as String)).firstOrNull;
     if (apk == null) continue;
     best = AppUpdate(
       build: tag.build,
@@ -59,7 +66,9 @@ class AppUpdates {
 
   Future<bool> canSelfUpdate() async => _android && (await _channel.invokeMethod<bool>('canSelfUpdate') ?? false);
 
-  Future<int> currentBuild() async => (await _channel.invokeMethod<int>('versionCode')) ?? 0;
+  /// The pubspec build number. Per-chip APKs add the chip as thousands
+  /// (arm64-v8a build 5 has version code 2005), so only the last three digits count.
+  Future<int> currentBuild() async => ((await _channel.invokeMethod<int>('versionCode')) ?? 0) % 1000;
 
   /// Null when this build is the newest (or updates are not possible here).
   Future<AppUpdate?> check() async {
@@ -69,7 +78,8 @@ class AppUpdates {
       queryParameters: {'per_page': 10},
       options: Options(headers: {'Accept': 'application/vnd.github+json'}),
     );
-    return newestUpdate(res.data ?? const [], await currentBuild());
+    final abi = await _channel.invokeMethod<String>('abi') ?? '';
+    return newestUpdate(res.data ?? const [], await currentBuild(), abi: abi);
   }
 
   /// Downloads the build, then opens Android's install screen.

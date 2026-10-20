@@ -21,12 +21,18 @@ if gh release view "$tag" >/dev/null 2>&1; then
   exit 1
 fi
 
-flutter build apk --debug --dart-define=API_BASE_URL="$API_BASE_URL"
-apk="build/study-assistant-${version}-b${build}.apk"
-cp build/app/outputs/flutter-apk/app-debug.apk "$apk"
+# Profile mode: compiled ahead of time (fast, about 20 MB per chip) yet still a
+# test build (home-network HTTP and self-update, see android/app/src/profile).
+flutter build apk --profile --split-per-abi --dart-define=API_BASE_URL="$API_BASE_URL"
+apks=()
+for abi in arm64-v8a armeabi-v7a x86_64; do
+  out="build/study-assistant-${version}-b${build}-${abi}.apk"
+  cp "build/app/outputs/flutter-apk/app-${abi}-profile.apk" "$out"
+  apks+=("$out")
+done
 
 git push --quiet origin HEAD
-gh release create "$tag" "$apk" \
+gh release create "$tag" "${apks[@]}" \
   --prerelease \
   --target "$(git rev-parse HEAD)" \
   --title "Test build ${version} (${build})" \

@@ -1,7 +1,7 @@
 name: study_assistant
 description: "Study Assistant: focus, lock distractions, unlock by passing your exam."
 publish_to: 'none'
-version: 0.4.0+4
+version: 0.4.0+5
 
 environment:
   sdk: ^3.13.5

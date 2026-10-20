@@ -55,6 +55,8 @@ class AppLockChannel(private val activity: Activity) : MethodChannel.MethodCallH
 
             "canSelfUpdate" -> result.success(updateAuthority() != null)
 
+            "abi" -> result.success(Build.SUPPORTED_ABIS.firstOrNull() ?: "")
+
             "installApk" -> {
                 val authority = updateAuthority()
                 val path = call.argument<String>("path")

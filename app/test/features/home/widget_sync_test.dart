@@ -21,17 +21,14 @@ StudySession _session(SessionStatus status) => StudySession(
   studiedMinutes: 0,
 );
 
-WidgetSnapshot _snap({
-  AuthState? auth,
-  StudySession? session,
-  List<({String kind, String title})> locks = const [],
-}) => widgetSnapshot(
-  auth: auth ?? AuthSignedIn(testUser()),
-  session: session,
-  todayMinutes: 42,
-  streakDays: 3,
-  parentLocks: locks,
-);
+WidgetSnapshot _snap({AuthState? auth, StudySession? session, List<({String kind, String title})> locks = const []}) =>
+    widgetSnapshot(
+      auth: auth ?? AuthSignedIn(testUser()),
+      session: session,
+      todayMinutes: 42,
+      streakDays: 3,
+      parentLocks: locks,
+    );
 
 void main() {
   test('studying shows the subject and counts down to the end', () {
