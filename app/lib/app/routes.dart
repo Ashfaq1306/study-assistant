@@ -16,6 +16,9 @@ abstract final class Routes {
   static const stats = '/home/stats';
   static const exam = '/home/exam';
   static const tutor = '/home/tutor';
+  static const calendar = '/home/calendar';
+  static const calendarEdit = '/home/calendar/edit';
+  static const calendarImport = '/home/calendar/import';
   static const parentHome = '/parent';
   static const addChild = '/parent/add-child';
   static const appLock = '/home/app-lock';

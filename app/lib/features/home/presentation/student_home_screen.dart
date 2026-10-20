@@ -17,6 +17,7 @@ import '../../study/domain/study_session.dart';
 import '../../study/presentation/stats_screen.dart';
 import 'home_widgets.dart';
 import '../../updates/update_card.dart';
+import '../../calendar/presentation/next_up_card.dart';
 
 class StudentHomeScreen extends ConsumerWidget {
   const StudentHomeScreen({super.key});
@@ -53,6 +54,7 @@ class StudentHomeScreen extends ConsumerWidget {
             _ActiveCard(session: active)
           else
             _StartCard(onStart: () => context.push(Routes.studyNew)),
+          const NextUpCard(),
           const SizedBox(height: 18),
           Row(
             children: [
@@ -106,6 +108,13 @@ class StudentHomeScreen extends ConsumerWidget {
                 },
                 color: AppColors.violet,
                 onTap: () => context.push(Routes.appLock),
+              ),
+              FeatureTile(
+                icon: Icons.calendar_month_rounded,
+                title: 'Calendar',
+                subtitle: 'Exams, classes and reminders',
+                color: AppColors.coralDeep,
+                onTap: () => context.push(Routes.calendar),
               ),
               FeatureTile(
                 icon: Icons.smart_toy_rounded,

@@ -60,6 +60,9 @@ flowchart LR
 | 🔒 | App blocker: lock chosen apps or the whole phone; strict mode blocks Settings and uninstalls; calls and Wi-Fi always work | ✅ Done |
 | 📝 | AI-generated exams on what you studied: multiple choice, true/false and short answers, timed, graded with feedback; pass mark ≥ 50% | ✅ Done |
 | 🤖 | AI study helper chat (pauses during exams, daily limit) | ✅ Done |
+| 📅 | Calendar: exams, weekly classes, assignments and holidays with phone reminders; the AI imports a school or university academic calendar from a PDF, photo or text | ✅ Done |
+| 🌗 | Light and dark mode, accent colours, 3D opening screens, home-screen widget | ✅ Done |
+| 🔄 | Test builds update themselves from GitHub Releases | ✅ Done |
 | 📊 | Parent dashboard: screen time, remote block, parent-written questions | 🔜 Phase 5 |
 | 🛠️ | Admin panel (users, content, settings, analytics) | 🔜 Phase 6 |
 

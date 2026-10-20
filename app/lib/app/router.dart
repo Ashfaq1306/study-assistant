@@ -21,6 +21,10 @@ import '../features/home/presentation/student_home_screen.dart';
 import '../features/study/presentation/active_session_screen.dart';
 import '../features/study/presentation/start_session_screen.dart';
 import '../features/study/presentation/stats_screen.dart';
+import '../features/calendar/domain/calendar_event.dart';
+import '../features/calendar/presentation/calendar_screen.dart';
+import '../features/calendar/presentation/event_editor_screen.dart';
+import '../features/calendar/presentation/import_calendar_screen.dart';
 import '../features/settings/appearance_screen.dart';
 import '../features/tutor/tutor_screen.dart';
 import 'routes.dart';
@@ -60,6 +64,21 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'exam', builder: (_, _) => const ExamScreen()),
           GoRoute(path: 'app-lock', builder: (_, _) => const AppLockScreen()),
           GoRoute(path: 'tutor', builder: (_, _) => const TutorScreen()),
+          GoRoute(
+            path: 'calendar',
+            builder: (_, _) => const CalendarScreen(),
+            routes: [
+              GoRoute(
+                path: 'edit',
+                builder: (_, state) => EventEditorScreen(
+                  event:
+                      state.extra as CalendarEvent? ??
+                      CalendarEvent(kind: CalendarKind.exam, title: '', startsAt: DateTime.now()),
+                ),
+              ),
+              GoRoute(path: 'import', builder: (_, _) => const ImportCalendarScreen()),
+            ],
+          ),
         ],
       ),
       GoRoute(

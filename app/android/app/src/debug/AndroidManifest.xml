@@ -9,8 +9,6 @@
          Releases (silently when Android allows it, otherwise Android asks). Never in Play builds:
          Google Play restricts this permission. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
-    <!-- Keeps the update check scheduled after the phone restarts. -->
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application>
         <!-- Automatic updates for test builds (see update/AutoUpdater.kt). -->

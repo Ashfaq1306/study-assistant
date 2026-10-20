@@ -93,3 +93,19 @@ Every response carries `X-Server-Time`, so clients can run countdowns on server 
 - **Passing** (`score ≥ passMarks`) finishes the session and unlocks its apps. A fail keeps them locked; a new exam can start after `examRetryCooldownSeconds`, with fresh questions.
 - **Source:** `AI` when `ANTHROPIC_API_KEY` is set, otherwise `PRACTICE` (a built-in, checked question bank plus arithmetic). If the AI fails mid-request, the exam falls back to practice questions instead of erroring.
 - **Errors:** `EXAM_NOT_READY` (still studying), `EXAM_COOLDOWN` (`details.retryAt`), `EXAM_EXPIRED`, `ALREADY_PASSED`, `AI_OFF` (helper not set up, or switched off by the admin), `EXAM_IN_PROGRESS` (the helper pauses during an exam), `TUTOR_LIMIT` (`tutorDailyLimit` questions per rolling 24 h).
+
+## Calendar: `/v1/calendar` (any signed-in account)
+| Method | Path | Body | Success |
+| --- | --- | --- | --- |
+| GET | `/v1/calendar` | | `{ events }` |
+| POST | `/v1/calendar` | `event` | `201 event` |
+| PUT | `/v1/calendar/:id` | `event` | `event` |
+| DELETE | `/v1/calendar/:id` | | `204` |
+| POST | `/v1/calendar/bulk` | `{ events[] }` (up to 300) | `201 { events }` |
+| POST | `/v1/calendar/import` | `text?`, `file?: { mime, data (base64) }`, `utcOffsetMinutes` | `{ events }` (drafts, not saved) |
+
+`event` = `{ kind: EXAM | CLASS | ASSIGNMENT | HOLIDAY | EVENT, title, subject?, location?, notes?, startsAt, endsAt?, allDay?, weekly?, repeatUntil?, reminders?: minutes[] }` (times are ISO 8601 with an offset).
+
+- **Reminders** default to 1 day + 1 hour before exams, 15 minutes before classes, 1 day before assignments, none for holidays. The phone schedules them as notifications for the next 30 days, so they work offline.
+- **Weekly** items (classes) repeat on the start's weekday until `repeatUntil`; the phone expands them.
+- **Import** reads an academic calendar, exam routine or timetable (PDF or JPEG/PNG/WebP up to 8 MB, or text up to 20,000 characters) with the AI. Dates and times are read as the phone's local time (`utcOffsetMinutes`). The student reviews the drafts, then saves them with `/bulk`. Errors: `AI_OFF`, `AI_UNAVAILABLE`, `BAD_FILE`, `NOTHING_FOUND`. A calendar holds up to 2000 items (`CALENDAR_FULL`).
