@@ -10,6 +10,7 @@ import '../../../core/widgets/clay_card.dart';
 import '../../../core/widgets/feedback.dart';
 import '../../../core/widgets/page_shell.dart';
 import '../../../core/widgets/pencil_3d.dart';
+import '../../app_lock/application/app_lock_controller.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../study/application/study_providers.dart';
 import '../../study/domain/study_session.dart';
@@ -93,17 +94,23 @@ class StudentHomeScreen extends ConsumerWidget {
                 color: AppColors.mintDeep,
                 onTap: () => context.push(Routes.stats),
               ),
-              const FeatureTile(
+              FeatureTile(
                 icon: Icons.lock_rounded,
                 title: 'App lock',
-                subtitle: 'Block apps while you study',
+                subtitle: switch (ref.watch(appLockProvider).value) {
+                  final s? when !s.supported => 'Needs an Android phone',
+                  final s? when s.protectionOn => 'On: ready to lock apps',
+                  _ => 'Off: tap to turn it on',
+                },
                 color: AppColors.violet,
+                onTap: () => context.push(Routes.appLock),
               ),
-              const FeatureTile(
+              FeatureTile(
                 icon: Icons.smart_toy_rounded,
                 title: 'AI helper',
                 subtitle: 'Ask anything about your lesson',
                 color: AppColors.sky,
+                onTap: () => context.push(Routes.tutor),
               ),
               FeatureTile(
                 icon: Icons.family_restroom_rounded,

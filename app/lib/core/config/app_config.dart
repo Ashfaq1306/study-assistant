@@ -9,6 +9,9 @@ abstract final class AppConfig {
 
   static const appName = 'Study Assistant';
 
+  /// Keep in step with the version in pubspec.yaml.
+  static const appVersion = '0.3.0';
+
   /// Must match PARENTAL_CONTROL_AGE on the server.
   static const parentalControlAge = 15;
 }

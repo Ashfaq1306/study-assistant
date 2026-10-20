@@ -1,7 +1,7 @@
 name: study_assistant
 description: "Study Assistant: focus, lock distractions, unlock by passing your exam."
 publish_to: 'none'
-version: 0.1.0+1
+version: 0.3.0+3
 
 environment:
   sdk: ^3.13.5
@@ -21,6 +21,7 @@ dependencies:
   # Parent pairing: student shows a QR, parent scans it
   qr_flutter: ^4.1.0
   mobile_scanner: ^7.4.2
+  shared_preferences: ^2.5.6
 
 dev_dependencies:
   flutter_test:

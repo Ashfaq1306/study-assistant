@@ -57,9 +57,9 @@ flowchart LR
 | 👨‍👩‍👧 | Parent ↔ student linking by QR (required under 15) | ✅ Done |
 | 🎨 | 3D design system: spinning 3D pencil mascot, chunky 3D buttons, clay cards | ✅ Done |
 | ⏱️ | Study sessions: subject and topics, timer on server time, finish-early rule, stats, streaks and history | ✅ Done |
-| 🔒 | App blocker (Android accessibility and usage-access service) | 🔜 Phase 3 |
-| 📝 | AI-generated exams, custom pattern and marks, pass mark ≥ 50% | 🔜 Phase 4 |
-| 🤖 | AI study helper | 🔜 Phase 4 |
+| 🔒 | App blocker: lock chosen apps or the whole phone; strict mode blocks Settings and uninstalls; calls and Wi-Fi always work | ✅ Done |
+| 📝 | AI-generated exams on what you studied: multiple choice, true/false and short answers, timed, graded with feedback; pass mark ≥ 50% | ✅ Done |
+| 🤖 | AI study helper chat (pauses during exams, daily limit) | ✅ Done |
 | 📊 | Parent dashboard: screen time, remote block, parent-written questions | 🔜 Phase 5 |
 | 🛠️ | Admin panel (users, content, settings, analytics) | 🔜 Phase 6 |
 
@@ -99,7 +99,7 @@ flutter run                      # add --release to see real speed
 ```
 
 ### Production settings
-- **API:** set `NODE_ENV=production`, `TRUST_PROXY` to the number of proxies in front of the API (rate limits depend on the real client IP), a Postgres `DATABASE_URL` (and change the Prisma `provider`), real secrets, `EMAIL_PROVIDER=smtp` with `SMTP_*`, and `SMS_PROVIDER=twilio` with `TWILIO_*`. Console providers are refused in production.
+- **API:** set `NODE_ENV=production`, `TRUST_PROXY` to the number of proxies in front of the API (rate limits depend on the real client IP), a Postgres `DATABASE_URL` (and change the Prisma `provider`), real secrets, `ANTHROPIC_API_KEY` (from console.anthropic.com; without it exams use built-in practice questions and the helper is off), `EMAIL_PROVIDER=smtp` with `SMTP_*`, and `SMS_PROVIDER=twilio` with `TWILIO_*`. Console providers are refused in production.
 - **App:** `flutter build apk --release --dart-define=API_BASE_URL=https://your-api.example.com`
 
 ## Testing

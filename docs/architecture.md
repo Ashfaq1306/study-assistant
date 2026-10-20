@@ -49,5 +49,25 @@ Every error is `{ "error": { "code": "OTP_INVALID", "message": "That code is not
 | `PAIRING_CODE_INVALID` / `ALREADY_LINKED` / `TOO_MANY_PARENTS` | Family linking |
 | `UNAUTHORIZED` / `FORBIDDEN` / `RATE_LIMITED` | Access control |
 
+## App blocker (Android)
+- **The server decides.** A phone registers with `POST /v1/devices` and gets its own device token. `GET /v1/device/state` (or the heartbeat) returns what to block: the running session's apps, a parent's lock, or the whole phone (`*`).
+- **The phone enforces.** `AppLockService` is an accessibility service that only listens for window changes; it never reads screen content. When a locked app comes to the front, it goes home and opens Study Assistant's lock screen. A re-check catches apps that open a second window while starting.
+- **Sync** runs natively every minute, so a lock starts and ends even when the app is closed. Offline, the last known state keeps applying; staying locked is the safe default.
+- **Never blocked:** this app, the launcher, the keyboard, the phone dialer, in-call screens and emergency apps.
+- **Strict mode** (always on for under-15s) also blocks Settings, app stores, the uninstaller and the permission controller. Wi-Fi, mobile data and the Internet panel stay reachable so the student can get online for the exam. Only real activity windows decide, because splash windows say nothing about which screen is opening.
+- **No escape hatches:**
+  - Signing out keeps the lock.
+  - Signing in as another account cannot replace a running lock (the server is asked, not a cached flag).
+  - A phone cannot be removed from the account while it is locked (`409 LOCK_ACTIVE`).
+  - Only the server's `DEVICE_UNAUTHORIZED` makes a phone forget its token; any other 401 keeps the lock.
+- **Already-open apps:** while a lock is on and the screen is on, every visible app window (full screen, split screen, pop-up) is re-checked every 1.5 s; a window that survives going home is retried after 6 s instead of in a loop. The service reads only which package owns each window, never what is inside it.
+- **Safety:** whole-phone mode only blocks apps with a launcher icon, so emergency (cell broadcast) alerts, Wi-Fi sign-in (captive portal) pages and the SIM toolkit always work. The service catches its own errors: a crash would unbind it and end every lock.
+- **Accessibility shortcut:** if the student turns on a shortcut for the service (volume keys, accessibility button, quick setting), it could switch the lock off without Settings. The app detects this, shows "turn off the shortcut", reports `shortcutOn` to the server, and treats protection as not ready.
+- **Known limits** (an accessibility-based blocker can't prevent these without device-owner rights):
+  - Rebooting into Android safe mode starts no third-party services. The server sees heartbeats stop and `protectionOn` go false; parent alerts for this come with parent controls (phase 5).
+  - A video already floating in picture-in-picture when a lock starts is not closed; the lock screen comes up behind it.
+  - Calls come first: while the dialer or an in-call screen is the focused window, the re-check pauses, so a locked app in the other split-screen half waits until the call screen loses focus (opening it there is still blocked).
+  - Settings screens are judged by the last screen seen in Settings, which is right on phones (one Settings task); two Settings windows side by side on a large screen could be judged by the other one.
+
 ## The 3D look
 There is no 3D engine. `Pencil3D` is a hand-built mesh (an 18-sided eraser and ferrule, a hexagonal body, a sharpened cone and a graphite tip) projected with perspective in a `CustomPainter`. It uses back-face culling, painter's-algorithm depth sorting and Blinn-Phong shading tinted violet. Buttons (`Button3D`) have a physical bottom edge that sinks on press, and cards (`ClayCard`) use soft coloured "clay" shadows.

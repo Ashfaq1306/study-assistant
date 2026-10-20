@@ -57,6 +57,11 @@ const EnvSchema = z
     SMTP_PASS: optional,
     SMTP_FROM: z.string().default('Study Assistant <no-reply@example.com>'),
     SMS_PROVIDER: z.enum(['console', 'twilio']).default('console'),
+    /** Claude API key for AI exams and the study helper. Unset = built-in practice questions. */
+    ANTHROPIC_API_KEY: optional,
+    AI_MODEL: z.string().default('claude-opus-5-5'),
+    AI_EXAM_EFFORT: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).default('medium'),
+    AI_TUTOR_EFFORT: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).default('low'),
     TWILIO_ACCOUNT_SID: optional,
     TWILIO_AUTH_TOKEN: optional,
     TWILIO_FROM: optional,
