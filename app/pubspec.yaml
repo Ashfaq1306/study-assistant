@@ -1,7 +1,7 @@
 name: study_assistant
 description: "Study Assistant: focus, lock distractions, unlock by passing your exam."
 publish_to: 'none'
-version: 0.3.0+3
+version: 0.4.0+4
 
 environment:
   sdk: ^3.13.5
@@ -23,6 +23,7 @@ dependencies:
   mobile_scanner: ^7.4.2
   shared_preferences: ^2.5.6
   image_picker: ^1.2.4
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:

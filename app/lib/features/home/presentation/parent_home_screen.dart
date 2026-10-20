@@ -13,6 +13,7 @@ import '../../auth/application/auth_controller.dart';
 import '../../family/application/family_providers.dart';
 import '../../family/data/family_api.dart';
 import 'home_widgets.dart';
+import '../../updates/update_card.dart';
 
 class ParentHomeScreen extends ConsumerWidget {
   const ParentHomeScreen({super.key});
@@ -31,6 +32,7 @@ class ParentHomeScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           HomeHeader(greeting: 'Hi ${auth.user.firstName}!', subtitle: "Let's help your child shine."),
+          const UpdateCard(),
           const SizedBox(height: 22),
           Text('Your children', style: text.titleLarge),
           const SizedBox(height: 12),

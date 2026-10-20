@@ -48,6 +48,29 @@ class AppLockChannel(private val activity: Activity) : MethodChannel.MethodCallH
                 result.success(null)
             }
 
+            "versionCode" -> {
+                val info = activity.packageManager.getPackageInfo(activity.packageName, 0)
+                result.success(if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else @Suppress("DEPRECATION") info.versionCode.toLong())
+            }
+
+            "canSelfUpdate" -> result.success(updateAuthority() != null)
+
+            "installApk" -> {
+                val authority = updateAuthority()
+                val path = call.argument<String>("path")
+                if (authority == null || path == null) {
+                    result.success(false)
+                } else {
+                    // Android shows its own install confirmation; nothing installs silently.
+                    val uri = androidx.core.content.FileProvider.getUriForFile(activity, authority, java.io.File(path))
+                    val intent = Intent(Intent.ACTION_VIEW)
+                        .setDataAndType(uri, "application/vnd.android.package-archive")
+                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                    activity.startActivity(intent)
+                    result.success(true)
+                }
+            }
+
             "pinWidget" -> {
                 result.success(StudyWidget.requestPin(activity))
             }
@@ -118,5 +141,11 @@ class AppLockChannel(private val activity: Activity) : MethodChannel.MethodCallH
         } catch (_: Exception) {
             result.success(false)
         }
+    }
+
+    /** The FileProvider for downloaded updates; only test builds declare it. */
+    private fun updateAuthority(): String? {
+        val authority = "${activity.packageName}.updates"
+        return if (activity.packageManager.resolveContentProvider(authority, 0) != null) authority else null
     }
 }

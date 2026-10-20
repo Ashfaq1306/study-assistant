@@ -16,6 +16,7 @@ import '../../study/application/study_providers.dart';
 import '../../study/domain/study_session.dart';
 import '../../study/presentation/stats_screen.dart';
 import 'home_widgets.dart';
+import '../../updates/update_card.dart';
 
 class StudentHomeScreen extends ConsumerWidget {
   const StudentHomeScreen({super.key});
@@ -38,6 +39,7 @@ class StudentHomeScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           HomeHeader(greeting: 'Hi ${user.firstName}!', subtitle: 'Ready to learn something today?'),
+          const UpdateCard(),
           if (announcement != null && announcement.isNotEmpty) ...[
             const SizedBox(height: 16),
             MessageBanner.info(announcement),
