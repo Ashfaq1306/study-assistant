@@ -21,7 +21,7 @@ String _before(int minutes) {
   if (minutes == 0) return 'Now';
   if (minutes % 1440 == 0) return minutes == 1440 ? 'Tomorrow' : 'In ${minutes ~/ 1440} days';
   if (minutes % 60 == 0) return minutes == 60 ? 'In 1 hour' : 'In ${minutes ~/ 60} hours';
-  return 'In $minutes minutes';
+  return minutes == 1 ? 'In 1 minute' : 'In $minutes minutes';
 }
 
 /// The reminders due between [now] and the window's end, soonest first.
