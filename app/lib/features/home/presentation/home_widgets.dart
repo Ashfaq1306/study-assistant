@@ -21,7 +21,7 @@ class HomeHeader extends ConsumerWidget {
     final text = Theme.of(context).textTheme;
     return Row(
       children: [
-        const AppLogo(size: 52),
+        const AppLogo(size: 58),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
