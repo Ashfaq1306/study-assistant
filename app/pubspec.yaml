@@ -1,7 +1,7 @@
 name: study_assistant
 description: "Study Assistant: focus, lock distractions, unlock by passing your exam."
 publish_to: 'none'
-version: 0.4.0+5
+version: 0.4.1+6
 
 environment:
   sdk: ^3.13.5
@@ -41,6 +41,8 @@ flutter_launcher_icons:
   adaptive_icon_background: assets/icon/app_icon_background.png
   adaptive_icon_foreground: assets/icon/app_icon_foreground.png
   adaptive_icon_monochrome: assets/icon/app_icon_monochrome.png
+  # The mark is sized in tool/icon/render_icon_test.dart; no extra padding here.
+  adaptive_icon_foreground_inset: 0
 
 flutter:
   uses-material-design: true

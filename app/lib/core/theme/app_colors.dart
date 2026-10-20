@@ -109,7 +109,7 @@ class AppPalette {
       inkFaint: const Color(0xFF7F7AA6),
       line: const Color(0xFF332F55),
       cloud: const Color(0xFF0D0B1C),
-      card: const Color(0xFF1B1832),
+      card: const Color(0xFF231E40),
       glass: Colors.white.withValues(alpha: 0.07),
       glassEdge: Colors.white.withValues(alpha: 0.14),
       backdrop: const [Color(0xFF0D0B1C), Color(0xFF151033)],

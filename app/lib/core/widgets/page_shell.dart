@@ -66,20 +66,80 @@ class PageShell extends StatelessWidget {
   }
 }
 
-class RoundBackButton extends StatelessWidget {
+class RoundBackButton extends StatefulWidget {
   const RoundBackButton({super.key, this.onPressed});
 
   final VoidCallback? onPressed;
 
   @override
+  State<RoundBackButton> createState() => _RoundBackButtonState();
+}
+
+/// A round 3D button that sinks into its rim when pressed.
+class _RoundBackButtonState extends State<RoundBackButton> {
+  static const _size = 48.0;
+  static const _depth = 4.0;
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.isDark ? AppColors.glass : AppColors.card,
-      shape: CircleBorder(side: BorderSide(color: AppColors.isDark ? AppColors.glassEdge : AppColors.line, width: 1.5)),
-      child: IconButton(
-        tooltip: 'Back',
-        icon: Icon(Icons.arrow_back_rounded, color: AppColors.ink),
-        onPressed: onPressed ?? () => Navigator.of(context).maybePop(),
+    final rim = AppColors.isDark ? Color.lerp(AppColors.card, Colors.black, 0.45)! : const Color(0xFFE2DDF7);
+    return Semantics(
+      button: true,
+      label: 'Back',
+      child: GestureDetector(
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        onTap: widget.onPressed ?? () => Navigator.of(context).maybePop(),
+        child: Tooltip(
+          message: 'Back',
+          child: SizedBox(
+            width: _size,
+            height: _size + _depth,
+            child: Stack(
+              children: [
+                Positioned(
+                  top: _depth,
+                  left: 0,
+                  right: 0,
+                  height: _size,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: rim,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.violet.withValues(alpha: 0.18),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 70),
+                  top: _pressed ? _depth : 0,
+                  left: 0,
+                  right: 0,
+                  height: _size,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.card,
+                      border: Border.all(
+                        color: AppColors.isDark ? Colors.white.withValues(alpha: 0.08) : Colors.white,
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Icon(Icons.arrow_back_rounded, color: AppColors.ink),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
