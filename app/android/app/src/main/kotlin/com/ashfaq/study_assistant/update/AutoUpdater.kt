@@ -39,12 +39,18 @@ object AutoUpdater {
 
     data class Update(val build: Int, val version: String, val url: String, val name: String)
 
-    /** Only test builds can install packages. */
-    fun enabled(context: Context): Boolean =
-        context.packageManager.checkPermission(
-            android.Manifest.permission.REQUEST_INSTALL_PACKAGES,
+    /**
+     * Only test builds declare the install permission. (It is an app-op
+     * permission, so Android never reports it as "granted"; whether installs are
+     * allowed is the user's "install unknown apps" switch.)
+     */
+    fun enabled(context: Context): Boolean {
+        val info = context.packageManager.getPackageInfo(
             context.packageName,
-        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            android.content.pm.PackageManager.GET_PERMISSIONS,
+        )
+        return info.requestedPermissions?.contains(android.Manifest.permission.REQUEST_INSTALL_PACKAGES) == true
+    }
 
     /** The pubspec build number (split APKs add the chip as thousands). */
     fun currentBuild(context: Context): Int {
