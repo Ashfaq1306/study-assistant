@@ -37,6 +37,8 @@ class LockedScreen extends ConsumerWidget {
     final lockedNames = [for (final p in lock?.packages ?? const <String>[]) labels[p] ?? p.split('.').last]..sort();
     final platform = ref.read(appLockPlatformProvider);
     final pending = session?.status == SessionStatus.examPending;
+    final parentLock = reasons.where((r) => r.kind == 'PARENT').firstOrNull;
+    final sessionLocked = reasons.any((r) => r.kind == 'SESSION');
 
     return PopScope(
       canPop: false,
@@ -117,13 +119,21 @@ class LockedScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
+                        if (signedInStudent && r.kind == 'PARENT' && sessionLocked)
+                          TextButton(onPressed: () => context.go(Routes.lockExam(r.id)), child: const Text('Quiz')),
                       ],
                     ),
                   ),
                 ),
             ],
             const SizedBox(height: 24),
-            if (signedInStudent)
+            if (signedInStudent && parentLock != null && !sessionLocked)
+              Button3D(
+                label: 'Take the quiz to unlock',
+                icon: Icons.quiz_rounded,
+                onPressed: () => context.go(Routes.lockExam(parentLock.id)),
+              )
+            else if (signedInStudent)
               Button3D(
                 label: pending ? 'Take my exam' : 'Go to my study session',
                 icon: pending ? Icons.quiz_rounded : Icons.timer_rounded,

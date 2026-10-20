@@ -38,10 +38,13 @@ final commonDistractions = {
 
 /// Choose which apps to lock (or the whole phone).
 class AppPicker extends ConsumerStatefulWidget {
-  const AppPicker({super.key, required this.selected, required this.onChanged});
+  const AppPicker({super.key, required this.selected, required this.onChanged, this.apps});
 
   final Set<String> selected;
   final ValueChanged<Set<String>> onChanged;
+
+  /// Another phone's apps (a parent locking a child's phone). Null lists this phone's.
+  final List<InstalledApp>? apps;
 
   @override
   ConsumerState<AppPicker> createState() => _AppPickerState();
@@ -64,7 +67,7 @@ class _AppPickerState extends ConsumerState<AppPicker> {
 
   @override
   Widget build(BuildContext context) {
-    final apps = ref.watch(installedAppsProvider);
+    final apps = widget.apps == null ? ref.watch(installedAppsProvider) : AsyncData(widget.apps!);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -119,7 +122,11 @@ class _AppPickerState extends ConsumerState<AppPicker> {
 
   Widget _list(List<InstalledApp> list) {
     if (list.isEmpty) {
-      return const MessageBanner.info('App lock works on Android phones. You can still study and take the exam.');
+      return MessageBanner.info(
+        widget.apps == null
+            ? 'App lock works on Android phones. You can still study and take the exam.'
+            : 'No app list yet. Open Study Assistant on the child’s phone once, or lock the whole phone.',
+      );
     }
     final installedDistractions = list.where((a) => commonDistractions.contains(a.packageName)).toList();
     final q = _query.toLowerCase();

@@ -63,7 +63,7 @@ flowchart LR
 | 📅 | Calendar: exams, weekly classes, assignments and holidays with phone reminders; the AI imports a school or university academic calendar from a PDF, photo or text | ✅ Done |
 | 🌗 | Light and dark mode, accent colours, 3D opening screens, home-screen widget | ✅ Done |
 | 🔄 | Test builds update themselves from GitHub Releases | ✅ Done |
-| 📊 | Parent dashboard: screen time, remote block, parent-written questions | 🔜 Phase 5 |
+| 📊 | Parent dashboard: each child at a glance, screen time, study time, exams, app-lock status, remote locks unlocked by a quiz, parent-written questions, alerts | ✅ Done |
 | 🛠️ | Admin panel (users, content, settings, analytics) | 🔜 Phase 6 |
 
 ## Tech stack

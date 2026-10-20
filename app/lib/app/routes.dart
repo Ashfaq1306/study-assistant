@@ -15,12 +15,21 @@ abstract final class Routes {
   static const studySession = '/home/session';
   static const stats = '/home/stats';
   static const exam = '/home/exam';
+
+  /// The quiz that lifts a parent's lock.
+  static String lockExam(String lockId) => '$exam?lock=${Uri.encodeQueryComponent(lockId)}';
   static const tutor = '/home/tutor';
   static const calendar = '/home/calendar';
   static const calendarEdit = '/home/calendar/edit';
   static const calendarImport = '/home/calendar/import';
   static const parentHome = '/parent';
   static const addChild = '/parent/add-child';
+  static const questionSets = '/parent/questions';
+  static const questionSetEdit = '/parent/questions/edit';
+  static const parentAlerts = '/parent/alerts';
+
+  /// A linked child's dashboard; `/lock` under it adds a lock.
+  static String child(String id) => '/parent/child/$id';
   static const appLock = '/home/app-lock';
 
   /// Settings shared by students and parents.

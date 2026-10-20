@@ -13,6 +13,10 @@ class ExamApi {
   Future<Exam> startForSession(String sessionId) async =>
       Exam.fromJson(await _client.post('/v1/sessions/$sessionId/exam', timeout: _aiTimeout));
 
+  /// The quiz that lifts a lock a parent set.
+  Future<Exam> startForLock(String lockId) async =>
+      Exam.fromJson(await _client.post('/v1/locks/$lockId/exam', timeout: _aiTimeout));
+
   Future<Exam> submit(String examId, Map<String, String> answers) async =>
       Exam.fromJson(await _client.post('/v1/exams/$examId/submit', data: {'answers': answers}, timeout: _aiTimeout));
 

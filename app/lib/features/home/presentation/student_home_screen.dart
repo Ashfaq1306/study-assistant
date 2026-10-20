@@ -17,6 +17,7 @@ import '../../study/domain/study_session.dart';
 import '../../study/presentation/stats_screen.dart';
 import 'home_widgets.dart';
 import '../../updates/update_card.dart';
+import '../../parent/presentation/parent_locks_card.dart';
 import '../../calendar/presentation/next_up_card.dart';
 
 class StudentHomeScreen extends ConsumerWidget {
@@ -54,6 +55,7 @@ class StudentHomeScreen extends ConsumerWidget {
             _ActiveCard(session: active)
           else
             _StartCard(onStart: () => context.push(Routes.studyNew)),
+          const ParentLocksCard(),
           const NextUpCard(),
           const SizedBox(height: 18),
           Row(

@@ -25,9 +25,12 @@ import '../domain/exam.dart';
 /// Answers typed so far, per exam, so leaving the screen does not lose them.
 final _draftAnswersProvider = Provider<Map<String, Map<String, String>>>((ref) => {});
 
-/// The unlock exam for the running study session.
+/// The unlock exam for the running study session, or for a parent's lock.
 class ExamScreen extends ConsumerStatefulWidget {
-  const ExamScreen({super.key});
+  const ExamScreen({super.key, this.lockId});
+
+  /// A parent's lock to lift instead of the study session's.
+  final String? lockId;
 
   @override
   ConsumerState<ExamScreen> createState() => _ExamScreenState();
@@ -67,9 +70,12 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       _error = null;
       _retryAt = null;
     });
-    final session = ref.read(activeSessionProvider).value ?? await ref.read(activeSessionProvider.future);
+    final lockId = widget.lockId;
+    final session = lockId != null
+        ? null
+        : ref.read(activeSessionProvider).value ?? await ref.read(activeSessionProvider.future);
     if (!mounted) return;
-    if (session == null || session.status != SessionStatus.examPending) {
+    if (lockId == null && (session == null || session.status != SessionStatus.examPending)) {
       setState(() {
         _loading = false;
         _error = const ApiException(code: 'NO_EXAM', message: 'There is no exam waiting. Start a study session first.');
@@ -77,7 +83,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       return;
     }
     try {
-      final exam = await ref.read(examApiProvider).startForSession(session.id);
+      final api = ref.read(examApiProvider);
+      final exam = lockId != null ? await api.startForLock(lockId) : await api.startForSession(session!.id);
       if (mounted) setState(() => _exam = exam);
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -187,7 +194,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     final exam = _exam;
     if (_loading) return const _Writing();
     if (exam == null) return _problem();
-    if (exam.result != null) return _ResultView(exam: exam, onRetry: _retry);
+    if (exam.result != null) return _ResultView(exam: exam, onRetry: _retry, forLock: widget.lockId != null);
     if (exam.status != ExamStatus.active) return const _Writing(marking: true);
     return _taking(exam);
   }
@@ -532,10 +539,11 @@ class _ShortAnswerState extends State<_ShortAnswer> {
 
 /// Score, pass/fail, and a review of every question with the right answer.
 class _ResultView extends ConsumerWidget {
-  const _ResultView({required this.exam, required this.onRetry});
+  const _ResultView({required this.exam, required this.onRetry, this.forLock = false});
 
   final Exam exam;
   final VoidCallback onRetry;
+  final bool forLock;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -603,7 +611,7 @@ class _ResultView extends ConsumerWidget {
                   onPressed: () => context.push(Routes.tutor),
                 ),
               ],
-              if (!result.passed) ...[
+              if (!result.passed && !forLock) ...[
                 const SizedBox(height: 12),
                 Button3D.secondary(
                   label: 'Back to my session',

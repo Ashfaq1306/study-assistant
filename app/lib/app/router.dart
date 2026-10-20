@@ -17,6 +17,12 @@ import '../features/family/presentation/add_child_screen.dart';
 import '../features/family/presentation/family_screen.dart';
 import '../features/family/presentation/link_parent_screen.dart';
 import '../features/home/presentation/parent_home_screen.dart';
+import '../features/parent/domain/parent_models.dart';
+import '../features/parent/presentation/alerts_screen.dart';
+import '../features/parent/presentation/child_screen.dart';
+import '../features/parent/presentation/lock_editor_screen.dart';
+import '../features/parent/presentation/question_set_editor_screen.dart';
+import '../features/parent/presentation/question_sets_screen.dart';
 import '../features/home/presentation/student_home_screen.dart';
 import '../features/study/presentation/active_session_screen.dart';
 import '../features/study/presentation/start_session_screen.dart';
@@ -61,7 +67,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: 'study', builder: (_, _) => const StartSessionScreen()),
           GoRoute(path: 'session', builder: (_, _) => const ActiveSessionScreen()),
           GoRoute(path: 'stats', builder: (_, _) => const StatsScreen()),
-          GoRoute(path: 'exam', builder: (_, _) => const ExamScreen()),
+          GoRoute(
+            path: 'exam',
+            builder: (_, s) => ExamScreen(lockId: s.uri.queryParameters['lock']),
+          ),
           GoRoute(path: 'app-lock', builder: (_, _) => const AppLockScreen()),
           GoRoute(path: 'tutor', builder: (_, _) => const TutorScreen()),
           GoRoute(
@@ -84,7 +93,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.parentHome,
         pageBuilder: (_, s) => _fade(s, const ParentHomeScreen()),
-        routes: [GoRoute(path: 'add-child', builder: (_, _) => const AddChildScreen())],
+        routes: [
+          GoRoute(path: 'add-child', builder: (_, _) => const AddChildScreen()),
+          GoRoute(path: 'alerts', builder: (_, _) => const AlertsScreen()),
+          GoRoute(
+            path: 'questions',
+            builder: (_, _) => const QuestionSetsScreen(),
+            routes: [
+              GoRoute(
+                path: 'edit',
+                builder: (_, s) => QuestionSetEditorScreen(set: s.extra as QuestionSet?),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: 'child/:id',
+            builder: (_, s) => ChildScreen(childId: s.pathParameters['id']!),
+            routes: [
+              GoRoute(
+                path: 'lock',
+                builder: (_, s) => LockEditorScreen(childId: s.pathParameters['id']!),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(path: Routes.appearance, builder: (_, _) => const AppearanceScreen()),
     ],
