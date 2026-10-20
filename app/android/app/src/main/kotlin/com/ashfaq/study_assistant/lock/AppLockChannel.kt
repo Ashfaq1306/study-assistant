@@ -9,6 +9,7 @@ import android.os.Looper
 import android.provider.Settings
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import com.ashfaq.study_assistant.widget.StudyWidget
 import org.json.JSONObject
 import java.util.concurrent.Executors
 
@@ -38,6 +39,21 @@ class AppLockChannel(private val activity: Activity) : MethodChannel.MethodCallH
                 store.ownerUserId = call.argument<String>("userId")
                 store.lastAppsSentAt = 0
                 AppLockService.instance?.syncNow()
+                result.success(null)
+            }
+
+            "updateWidget" -> {
+                @Suppress("UNCHECKED_CAST")
+                StudyWidget.save(activity, call.arguments as? Map<String, Any?> ?: emptyMap())
+                result.success(null)
+            }
+
+            "pinWidget" -> {
+                result.success(StudyWidget.requestPin(activity))
+            }
+
+            "clearWidget" -> {
+                StudyWidget.clear(activity)
                 result.success(null)
             }
 

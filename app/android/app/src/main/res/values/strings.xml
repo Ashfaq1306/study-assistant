@@ -2,4 +2,8 @@
 <resources>
     <string name="app_lock_service_label">Study Assistant app lock</string>
     <string name="app_lock_service_description">Study Assistant uses this to lock the apps you choose while you study, and opens your exam when you try to use them. It only checks which app is open on screen. It never reads what you type or what is inside other apps. Your list of installed apps is shared with your linked parent, so they can choose apps to lock.</string>
+    <string name="app_name_short">Study Assistant</string>
+    <string name="widget_description">Your study time, streak and running session at a glance.</string>
+    <string name="widget_today">Today</string>
+    <string name="widget_streak">Day streak</string>
 </resources>

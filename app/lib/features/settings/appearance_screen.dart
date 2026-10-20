@@ -8,6 +8,7 @@ import '../../core/widgets/clay_card.dart';
 import '../../core/widgets/feedback.dart';
 import '../../core/widgets/page_shell.dart';
 import '../../core/widgets/wizard.dart';
+import '../app_lock/application/app_lock_controller.dart';
 
 /// Light, dark or follow the phone, and the accent colour.
 class AppearanceScreen extends ConsumerWidget {
@@ -60,6 +61,38 @@ class AppearanceScreen extends ConsumerWidget {
                   onTap: () => controller.setAccent(accent),
                 ),
             ],
+          ),
+          const SizedBox(height: 24),
+          const FieldLabel('Home-screen widget'),
+          ClayCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Row(
+                  children: [
+                    IconBadge(Icons.widgets_rounded, size: 46),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'See your study time, streak and running timer right on your home screen.',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Button3D.secondary(
+                  label: 'Add to home screen',
+                  icon: Icons.add_to_home_screen_rounded,
+                  onPressed: () async {
+                    final ok = await ref.read(appLockPlatformProvider).pinWidget();
+                    if (!ok && context.mounted) {
+                      showSnack(context, 'Long-press your home screen, tap Widgets, then find Study Assistant.');
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
           const MessageBanner.info('Dark mode is easier on the eyes at night and saves battery on most phones.'),

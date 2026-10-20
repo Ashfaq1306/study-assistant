@@ -8,6 +8,7 @@ import '../core/theme/app_colors.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/appearance.dart';
 import '../features/app_lock/application/app_lock_controller.dart';
+import '../features/home/application/widget_sync.dart';
 import '../features/study/application/study_providers.dart';
 import 'router.dart';
 import 'routes.dart';
@@ -69,6 +70,7 @@ class _StudyAssistantAppState extends ConsumerState<StudyAssistantApp> with Widg
   @override
   Widget build(BuildContext context) {
     final appearance = ref.watch(appearanceProvider);
+    ref.watch(widgetSyncProvider);
     final palette = appearance.palette(View.of(context).platformDispatcher.platformBrightness);
     AppColors.use(palette);
     // Colours are read while widgets build, so a new palette rebuilds the whole

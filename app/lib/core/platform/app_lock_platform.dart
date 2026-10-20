@@ -90,6 +90,26 @@ class AppLockPlatform {
 
   Future<void> syncNow() => _invoke('syncNow');
 
+  /// Asks the launcher to add the home-screen widget. False when the launcher can't.
+  Future<bool> pinWidget() async => isSupported && (await _channel.invokeMethod<bool>('pinWidget') ?? false);
+
+  /// Redraws the home-screen widget. [mode] is idle, studying, exam, locked or signedOut.
+  Future<void> updateWidget({
+    required String mode,
+    String title = '',
+    String subtitle = '',
+    DateTime? endsAt,
+    int todayMinutes = 0,
+    int streakDays = 0,
+  }) => _invoke('updateWidget', {
+    'mode': mode,
+    'title': title,
+    'subtitle': subtitle,
+    'endsAt': endsAt?.millisecondsSinceEpoch ?? 0,
+    'todayMinutes': todayMinutes,
+    'streakDays': streakDays,
+  });
+
   /// Launchable apps; icons are only loaded when [withIcons] (for the picker).
   Future<List<InstalledApp>> installedApps({bool withIcons = true}) async {
     if (!isSupported) return const [];
