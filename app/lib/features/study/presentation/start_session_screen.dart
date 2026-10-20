@@ -246,7 +246,7 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
         ),
         const SizedBox(height: 12),
         const FieldLabel('Photos of what you will study (optional)'),
-        const Text(
+        Text(
           'Snap your book pages or notes. Your quiz will ask about them.',
           style: TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w600),
         ),
@@ -279,9 +279,9 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
             children: [
               Text(
                 '$_minutes',
-                style: const TextStyle(fontSize: 64, fontWeight: FontWeight.w900, height: 1, color: AppColors.ink),
+                style: TextStyle(fontSize: 64, fontWeight: FontWeight.w900, height: 1, color: AppColors.ink),
               ),
-              const Text(
+              Text(
                 'minutes',
                 style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.inkSoft),
               ),
@@ -373,10 +373,10 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
             glow: AppColors.coralDeep,
             padding: const EdgeInsets.all(16),
             onTap: _setUpAppLock,
-            child: const Row(
+            child: Row(
               children: [
                 Icon(Icons.shield_outlined, color: AppColors.coralDeep),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'App lock is off on this phone. Tap to turn it on, so these apps really get blocked.',
@@ -487,13 +487,13 @@ class _SummaryRow extends StatelessWidget {
             width: 92,
             child: Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.inkSoft),
+              style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.inkSoft),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink),
+              style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink),
             ),
           ),
         ],

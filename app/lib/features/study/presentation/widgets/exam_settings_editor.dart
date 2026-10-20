@@ -61,7 +61,7 @@ class ExamSettingsEditor extends StatelessWidget {
                 max: maxQuestions,
                 onChanged: (v) => _emit(count: v),
               ),
-              const Divider(height: 24, color: AppColors.line),
+              Divider(height: 24, color: AppColors.line),
               NumberStepper(
                 label: 'Total marks',
                 value: value.totalMarks,
@@ -80,7 +80,7 @@ class ExamSettingsEditor extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Pass mark',
                       style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink),
@@ -88,7 +88,7 @@ class ExamSettingsEditor extends StatelessWidget {
                   ),
                   Text(
                     '${value.passMarks} / ${value.totalMarks}',
-                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppColors.ink),
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppColors.ink),
                   ),
                   const SizedBox(width: 8),
                   Container(
@@ -96,7 +96,7 @@ class ExamSettingsEditor extends StatelessWidget {
                     decoration: BoxDecoration(color: AppColors.mintSoft, borderRadius: BorderRadius.circular(20)),
                     child: Text(
                       '${value.passPercent}%',
-                      style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.mintDeep),
+                      style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.mintDeep),
                     ),
                   ),
                 ],
@@ -111,7 +111,7 @@ class ExamSettingsEditor extends StatelessWidget {
               ),
               Text(
                 'You need at least $minPassPercent% to pass. Aim higher if you like!',
-                style: const TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w600, fontSize: 13),
+                style: TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w600, fontSize: 13),
               ),
             ],
           ),

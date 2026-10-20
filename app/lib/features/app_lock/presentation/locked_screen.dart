@@ -84,7 +84,7 @@ class LockedScreen extends ConsumerWidget {
                 children: [
                   for (final name in lockedNames)
                     Chip(
-                      avatar: const Icon(Icons.lock_rounded, size: 16, color: AppColors.violet),
+                      avatar: Icon(Icons.lock_rounded, size: 16, color: AppColors.violet),
                       label: Text(name, style: const TextStyle(fontWeight: FontWeight.w700)),
                     ),
                 ],
@@ -111,7 +111,7 @@ class LockedScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 r.kind == 'PARENT' ? 'Locked by your parent' : 'Study session',
-                                style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.inkSoft),
+                                style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.inkSoft),
                               ),
                               Text(r.title, style: text.titleMedium),
                             ],

@@ -44,7 +44,7 @@ class WelcomeScreen extends StatelessWidget {
             style: text.bodyLarge?.copyWith(color: AppColors.inkSoft),
           ),
           const SizedBox(height: 20),
-          const Wrap(
+          Wrap(
             alignment: WrapAlignment.center,
             spacing: 8,
             runSpacing: 8,
@@ -88,7 +88,7 @@ class _Chip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink),
+            style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink),
           ),
         ],
       ),

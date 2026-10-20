@@ -59,7 +59,7 @@ class ParentHomeScreen extends ConsumerWidget {
           const SizedBox(height: 26),
           Text('Parent tools', style: text.titleLarge),
           const SizedBox(height: 12),
-          const FeatureGrid(
+          FeatureGrid(
             children: [
               FeatureTile(
                 icon: Icons.insights_rounded,
@@ -101,7 +101,7 @@ class _NoChildren extends StatelessWidget {
     return ClayCard(
       child: Column(
         children: [
-          const IconBadge(Icons.child_care_rounded, size: 64, color: AppColors.sky),
+          IconBadge(Icons.child_care_rounded, size: 64, color: AppColors.sky),
           const SizedBox(height: 8),
           Text('No child linked yet', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
@@ -127,7 +127,7 @@ class _ChildCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          const IconBadge(Icons.backpack_rounded, size: 52, color: AppColors.sky),
+          IconBadge(Icons.backpack_rounded, size: 52, color: AppColors.sky),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -138,7 +138,7 @@ class _ChildCard extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.verified_rounded, color: AppColors.mintDeep),
+          Icon(Icons.verified_rounded, color: AppColors.mintDeep),
         ],
       ),
     );

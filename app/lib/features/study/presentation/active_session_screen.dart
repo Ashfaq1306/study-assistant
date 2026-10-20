@@ -139,11 +139,11 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                 ),
                 Text(
                   studying ? _clock(left) : 'Done!',
-                  style: const TextStyle(fontSize: 46, fontWeight: FontWeight.w900, color: AppColors.ink, height: 1.1),
+                  style: TextStyle(fontSize: 46, fontWeight: FontWeight.w900, color: AppColors.ink, height: 1.1),
                 ),
                 Text(
                   studying ? 'left to focus' : 'Time for your exam',
-                  style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.inkSoft),
+                  style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.inkSoft),
                 ),
               ],
             ),
@@ -162,7 +162,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                     session.lockedApps.isEmpty
                         ? 'Stay focused. Put your phone face down and study!'
                         : '${session.lockedApps.length} apps are locked until you pass your exam.',
-                    style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink),
+                    style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink),
                   ),
                 ),
               ],
@@ -203,7 +203,7 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
             icon: Icons.quiz_rounded,
             color: AppColors.sunshine,
             edgeColor: AppColors.sunshineDeep,
-            foreground: AppColors.ink,
+            foreground: AppColors.onBright,
             onPressed: () => context.push(Routes.exam),
           ),
         ],
@@ -229,7 +229,7 @@ class _NoSession extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        const IconBadge(Icons.check_circle_rounded, size: 80, color: AppColors.mintDeep),
+        IconBadge(Icons.check_circle_rounded, size: 80, color: AppColors.mintDeep),
         const SizedBox(height: 16),
         Text('No session running', style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 24),
@@ -255,10 +255,10 @@ class _PlanCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.edit_note_rounded, color: AppColors.violet),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
                 'Your plan',
                 style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.ink),
@@ -268,7 +268,7 @@ class _PlanCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             session.notes.isEmpty ? 'Add photos of your pages: your quiz will ask about them.' : session.notes,
-            style: const TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w600, height: 1.35),
+            style: TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w600, height: 1.35),
           ),
           const SizedBox(height: 12),
           Wrap(

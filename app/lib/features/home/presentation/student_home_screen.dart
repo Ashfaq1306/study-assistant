@@ -140,12 +140,12 @@ class _RetryBanner extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onRetry,
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
               Icon(Icons.wifi_off_rounded, color: AppColors.coralDeep),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   "Couldn't check your study session. Tap to try again.",
@@ -169,8 +169,8 @@ class _StartCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     return ClayCard(
-      color: AppColors.violet,
-      glow: AppColors.violetDeep,
+      color: AppColors.hero,
+      glow: AppColors.hero,
       padding: const EdgeInsets.fromLTRB(22, 18, 12, 22),
       child: Row(
         children: [
@@ -191,7 +191,7 @@ class _StartCard extends StatelessWidget {
                   height: 50,
                   color: AppColors.sunshine,
                   edgeColor: AppColors.sunshineDeep,
-                  foreground: AppColors.ink,
+                  foreground: AppColors.onBright,
                   onPressed: onStart,
                 ),
               ],

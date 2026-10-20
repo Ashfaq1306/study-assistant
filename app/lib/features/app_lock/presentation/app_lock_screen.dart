@@ -134,10 +134,10 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with WidgetsBindi
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
                           Icon(Icons.help_rounded, color: AppColors.sunshineDeep),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Switch greyed out ("Restricted setting")?',
@@ -147,7 +147,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with WidgetsBindi
                         ],
                       ),
                       const SizedBox(height: 6),
-                      const Text(
+                      Text(
                         'Android protects this switch for apps not installed from the Play Store. '
                         'Tap "Open App info" below, tap the three dots (top right), choose "Allow restricted settings" '
                         'and confirm with your PIN or fingerprint. Then come back and do step 1 again.',
@@ -228,7 +228,7 @@ class _Step extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
-              if (done) const Icon(Icons.check_circle_rounded, color: AppColors.mintDeep),
+              if (done) Icon(Icons.check_circle_rounded, color: AppColors.mintDeep),
             ],
           ),
           const SizedBox(height: 8),

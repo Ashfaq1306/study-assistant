@@ -123,13 +123,13 @@ class _ParentTile extends ConsumerWidget {
       glow: AppColors.mint,
       child: Row(
         children: [
-          const IconBadge(Icons.family_restroom_rounded, size: 48, color: AppColors.mintDeep),
+          IconBadge(Icons.family_restroom_rounded, size: 48, color: AppColors.mintDeep),
           const SizedBox(width: 14),
           Expanded(child: Text(link.personName, style: Theme.of(context).textTheme.titleMedium)),
           if (canRemove)
             IconButton(
               tooltip: 'Unlink',
-              icon: const Icon(Icons.link_off_rounded, color: AppColors.coralDeep),
+              icon: Icon(Icons.link_off_rounded, color: AppColors.coralDeep),
               onPressed: () => _remove(context, ref),
             ),
         ],

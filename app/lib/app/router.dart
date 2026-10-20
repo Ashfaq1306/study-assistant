@@ -21,6 +21,7 @@ import '../features/home/presentation/student_home_screen.dart';
 import '../features/study/presentation/active_session_screen.dart';
 import '../features/study/presentation/start_session_screen.dart';
 import '../features/study/presentation/stats_screen.dart';
+import '../features/settings/appearance_screen.dart';
 import '../features/tutor/tutor_screen.dart';
 import 'routes.dart';
 
@@ -66,6 +67,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         pageBuilder: (_, s) => _fade(s, const ParentHomeScreen()),
         routes: [GoRoute(path: 'add-child', builder: (_, _) => const AddChildScreen())],
       ),
+      GoRoute(path: Routes.appearance, builder: (_, _) => const AppearanceScreen()),
     ],
   );
 

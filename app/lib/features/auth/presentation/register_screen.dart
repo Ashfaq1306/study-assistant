@@ -406,7 +406,7 @@ class _RoleCard extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               child: selected
                   ? Icon(Icons.check_circle_rounded, key: const ValueKey(true), color: color, size: 30)
-                  : const Icon(Icons.circle_outlined, key: ValueKey(false), color: AppColors.line, size: 30),
+                  : Icon(Icons.circle_outlined, key: const ValueKey(false), color: AppColors.line, size: 30),
             ),
           ],
         ),

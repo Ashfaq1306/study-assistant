@@ -4,28 +4,22 @@ import '../theme/app_colors.dart';
 
 /// Inline message box for errors and hints inside forms.
 class MessageBanner extends StatelessWidget {
-  const MessageBanner.error(this.message, {super.key})
-    : color = AppColors.coralSoft,
-      foreground = AppColors.coralDeep,
-      icon = Icons.error_rounded;
+  const MessageBanner.error(this.message, {super.key}) : _kind = _BannerKind.error;
 
-  const MessageBanner.info(this.message, {super.key})
-    : color = AppColors.skySoft,
-      foreground = AppColors.skyDeep,
-      icon = Icons.info_rounded;
+  const MessageBanner.info(this.message, {super.key}) : _kind = _BannerKind.info;
 
-  const MessageBanner.success(this.message, {super.key})
-    : color = AppColors.mintSoft,
-      foreground = AppColors.mintDeep,
-      icon = Icons.check_circle_rounded;
+  const MessageBanner.success(this.message, {super.key}) : _kind = _BannerKind.success;
 
   final String message;
-  final Color color;
-  final Color foreground;
-  final IconData icon;
+  final _BannerKind _kind;
 
   @override
   Widget build(BuildContext context) {
+    final (color, foreground, icon) = switch (_kind) {
+      _BannerKind.error => (AppColors.coralSoft, AppColors.coralDeep, Icons.error_rounded),
+      _BannerKind.info => (AppColors.skySoft, AppColors.skyDeep, Icons.info_rounded),
+      _BannerKind.success => (AppColors.mintSoft, AppColors.mintDeep, Icons.check_circle_rounded),
+    };
     return Semantics(
       liveRegion: true,
       child: Container(
@@ -49,17 +43,22 @@ class MessageBanner extends StatelessWidget {
   }
 }
 
+enum _BannerKind { error, info, success }
+
 /// A raised, softly shaded circle holding an icon in [color]. The app's
 /// friendly illustration style: icons everywhere, never emoji.
 class IconBadge extends StatelessWidget {
-  const IconBadge(this.icon, {super.key, this.color = AppColors.violet, this.size = 56});
+  const IconBadge(this.icon, {super.key, this.color, this.size = 56});
 
   final IconData icon;
-  final Color color;
+
+  /// The theme accent when null.
+  final Color? color;
   final double size;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? AppColors.violet;
     return ExcludeSemantics(
       child: Container(
         width: size,
@@ -70,14 +69,23 @@ class IconBadge extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color.lerp(color, Colors.white, 0.86)!, Color.lerp(color, Colors.white, 0.72)!],
+            colors: AppColors.isDark
+                ? [color.withValues(alpha: 0.32), color.withValues(alpha: 0.16)]
+                : [Color.lerp(color, Colors.white, 0.86)!, Color.lerp(color, Colors.white, 0.72)!],
           ),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.9), width: size * 0.03),
+          border: Border.all(
+            color: AppColors.isDark ? color.withValues(alpha: 0.45) : Colors.white.withValues(alpha: 0.9),
+            width: size * 0.03,
+          ),
           boxShadow: [
             BoxShadow(color: color.withValues(alpha: 0.22), blurRadius: size * 0.22, offset: Offset(0, size * 0.1)),
           ],
         ),
-        child: Icon(icon, size: size * 0.5, color: Color.lerp(color, AppColors.ink, 0.12)),
+        child: Icon(
+          icon,
+          size: size * 0.5,
+          color: AppColors.isDark ? Color.lerp(color, Colors.white, 0.25) : Color.lerp(color, AppColors.ink, 0.12),
+        ),
       ),
     );
   }

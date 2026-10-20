@@ -105,7 +105,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 alignment: WrapAlignment.center,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     'New here?',
                     style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.inkSoft),
                   ),

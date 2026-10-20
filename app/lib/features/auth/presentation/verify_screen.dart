@@ -116,7 +116,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
               children: [
                 TextSpan(
                   text: where,
-                  style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.ink),
+                  style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.ink),
                 ),
                 const TextSpan(text: '. It works for 10 minutes.'),
               ],

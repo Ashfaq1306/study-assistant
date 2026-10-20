@@ -69,7 +69,7 @@ class _AppTextFieldState extends State<AppTextField> {
           padding: const EdgeInsets.only(left: 6, bottom: 8),
           child: Text(
             widget.label,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.ink),
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.ink),
           ),
         ),
         TextFormField(
@@ -91,7 +91,7 @@ class _AppTextFieldState extends State<AppTextField> {
           autofocus: widget.autofocus,
           readOnly: widget.readOnly,
           onTap: widget.onTap,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.ink),
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.ink),
           decoration: InputDecoration(
             hintText: widget.hint,
             errorText: widget.errorText,

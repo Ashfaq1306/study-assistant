@@ -11,17 +11,20 @@ class ChoicePill extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.icon,
-    this.color = AppColors.violet,
+    this.color,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
   final IconData? icon;
-  final Color color;
+
+  /// The theme accent when null.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? AppColors.hero;
     return Semantics(
       button: true,
       selected: selected,
@@ -94,7 +97,7 @@ class NumberStepper extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink),
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: AppColors.ink),
           ),
         ),
         _RoundButton(
@@ -107,7 +110,7 @@ class NumberStepper extends StatelessWidget {
           child: Text(
             '$value$suffix',
             textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppColors.ink),
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppColors.ink),
           ),
         ),
         _RoundButton(
@@ -174,7 +177,7 @@ class WeekBars extends StatelessWidget {
                   children: [
                     Text(
                       d.minutes > 0 ? '${d.minutes}' : '',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.inkSoft),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.inkSoft),
                     ),
                     const SizedBox(height: 4),
                     AnimatedContainer(

@@ -12,7 +12,7 @@ import '../application/app_lock_controller.dart';
 const wholePhone = '*';
 
 /// Popular time-wasters, preselected by "Pick distractions" when installed.
-const commonDistractions = {
+final commonDistractions = {
   'com.google.android.youtube',
   'com.facebook.katana',
   'com.facebook.lite',
@@ -233,12 +233,12 @@ class _ModeCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.ink),
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: AppColors.ink),
             ),
             const SizedBox(height: 2),
             Text(
               body,
-              style: const TextStyle(fontWeight: FontWeight.w600, color: AppColors.inkSoft, height: 1.3),
+              style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.inkSoft, height: 1.3),
             ),
           ],
         ),

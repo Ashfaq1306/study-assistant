@@ -292,7 +292,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
             ],
             Text(
               'Question ${_index + 1} of ${exam.questions.length} · pass ${exam.passMarks}/${exam.totalMarks}',
-              style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.inkSoft),
+              style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.inkSoft),
             ),
             const SizedBox(height: 8),
             ClipRRect(
@@ -419,7 +419,7 @@ class _QuestionCard extends StatelessWidget {
             children: [
               Text(
                 'Q$number · ${question.marks} ${question.marks == 1 ? 'mark' : 'marks'} · ${question.type.label}',
-                style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.violet),
+                style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.violet),
               ),
               const SizedBox(height: 8),
               Text(question.prompt, style: Theme.of(context).textTheme.titleLarge?.copyWith(height: 1.3)),
@@ -475,7 +475,7 @@ class _Option extends StatelessWidget {
               height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: selected ? AppColors.violet : AppColors.violetSoft,
+                color: selected ? AppColors.hero : AppColors.violetSoft,
                 shape: BoxShape.circle,
               ),
               child: icon != null
@@ -489,7 +489,7 @@ class _Option extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.ink),
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.ink),
               ),
             ),
           ],
@@ -562,7 +562,7 @@ class _ResultView extends ConsumerWidget {
                     children: [
                       Text(
                         '${_fmt(result.score)}/${exam.totalMarks}',
-                        style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: AppColors.ink),
+                        style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: AppColors.ink),
                       ),
                       Text(
                         result.passed ? 'Passed!' : 'Not yet',
@@ -593,7 +593,7 @@ class _ResultView extends ConsumerWidget {
                   icon: Icons.refresh_rounded,
                   color: AppColors.sunshine,
                   edgeColor: AppColors.sunshineDeep,
-                  foreground: AppColors.ink,
+                  foreground: AppColors.onBright,
                   onPressed: onRetry,
                 ),
                 const SizedBox(height: 12),
@@ -667,7 +667,7 @@ class _ReviewTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Question $number',
-                  style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.ink),
+                  style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.ink),
                 ),
               ),
               Text(
@@ -679,27 +679,27 @@ class _ReviewTile extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             question.prompt,
-            style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink),
+            style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink),
           ),
           const SizedBox(height: 8),
           Text(
             'Your answer: ${_given()}',
-            style: const TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w600),
+            style: TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w600),
           ),
           if (!result.correct)
             Text(
               'Right answer: ${result.correctAnswer}',
-              style: const TextStyle(color: AppColors.mintDeep, fontWeight: FontWeight.w800),
+              style: TextStyle(color: AppColors.mintDeep, fontWeight: FontWeight.w800),
             ),
           if (result.explanation.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text(result.explanation, style: const TextStyle(color: AppColors.inkSoft)),
+            Text(result.explanation, style: TextStyle(color: AppColors.inkSoft)),
           ],
           if (question.type == QuestionType.short && result.feedback.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
               result.feedback,
-              style: const TextStyle(color: AppColors.violet, fontWeight: FontWeight.w700),
+              style: TextStyle(color: AppColors.violet, fontWeight: FontWeight.w700),
             ),
           ],
         ],

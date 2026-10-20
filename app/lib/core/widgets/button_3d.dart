@@ -3,22 +3,22 @@ import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
 
-/// A chunky button with a visible bottom edge that sinks when pressed,
-/// like a real key. The signature control of the app.
+/// A chunky, glossy button with a physical bottom edge that sinks when pressed.
+/// Colours default to the current theme's accent.
 class Button3D extends StatefulWidget {
   const Button3D({
     super.key,
     required this.label,
     required this.onPressed,
     this.icon,
-    this.color = AppColors.violet,
-    this.edgeColor = AppColors.violetDeep,
-    this.foreground = Colors.white,
+    this.color,
+    this.edgeColor,
+    this.foreground,
     this.loading = false,
     this.height = 58,
-  });
+  }) : _secondary = false;
 
-  /// White face with a soft edge, for secondary actions.
+  /// A frosted face with a soft edge, for secondary actions.
   const Button3D.secondary({
     super.key,
     required this.label,
@@ -26,21 +26,33 @@ class Button3D extends StatefulWidget {
     this.icon,
     this.loading = false,
     this.height = 58,
-  }) : color = AppColors.card,
-       edgeColor = AppColors.line,
-       foreground = AppColors.violet;
+  }) : color = null,
+       edgeColor = null,
+       foreground = null,
+       _secondary = true;
 
   final String label;
   final VoidCallback? onPressed;
   final IconData? icon;
-  final Color color;
-  final Color edgeColor;
-  final Color foreground;
+
+  /// Face colour; the theme accent when null.
+  final Color? color;
+
+  /// Bottom edge; a deeper shade of the face when null.
+  final Color? edgeColor;
+  final Color? foreground;
   final bool loading;
   final double height;
+  final bool _secondary;
 
   @override
   State<Button3D> createState() => _Button3DState();
+}
+
+/// A darker shade of [color], for the 3D edge.
+Color deeper(Color color, [double amount = 0.16]) {
+  final hsl = HSLColor.fromColor(color);
+  return hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0)).toColor();
 }
 
 class _Button3DState extends State<Button3D> {
@@ -56,8 +68,17 @@ class _Button3DState extends State<Button3D> {
 
   @override
   Widget build(BuildContext context) {
-    final face = _enabled ? widget.color : Color.lerp(widget.color, AppColors.line, 0.55)!;
-    final edge = _enabled ? widget.edgeColor : AppColors.line;
+    final secondary = widget._secondary;
+    final base = widget.color ?? (secondary ? AppColors.card : AppColors.hero);
+    final face = _enabled ? base : Color.lerp(base, AppColors.line, 0.55)!;
+    final edge = !_enabled
+        ? AppColors.line
+        : secondary
+        ? AppColors.line
+        : (AppColors.isDark ? deeper(face, 0.2) : (widget.edgeColor ?? deeper(face)));
+    final foreground = !_enabled
+        ? AppColors.inkFaint
+        : widget.foreground ?? (secondary ? AppColors.violet : Colors.white);
     final offset = _pressed ? _depth : 0.0;
 
     return Semantics(
@@ -82,7 +103,14 @@ class _Button3DState extends State<Button3D> {
               Positioned.fill(
                 top: _depth,
                 child: DecoratedBox(
-                  decoration: BoxDecoration(color: edge, borderRadius: BorderRadius.circular(_radius)),
+                  decoration: BoxDecoration(
+                    color: edge,
+                    borderRadius: BorderRadius.circular(_radius),
+                    boxShadow: [
+                      if (_enabled && !secondary)
+                        BoxShadow(color: face.withValues(alpha: 0.35), blurRadius: 18, offset: const Offset(0, 8)),
+                    ],
+                  ),
                 ),
               ),
               AnimatedPositioned(
@@ -98,11 +126,35 @@ class _Button3DState extends State<Button3D> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color.lerp(face, Colors.white, 0.12)!, face],
+                      colors: [Color.lerp(face, Colors.white, secondary ? 0.04 : 0.16)!, face],
                     ),
-                    border: widget.color == AppColors.card ? Border.all(color: AppColors.line, width: 1.5) : null,
+                    border: secondary
+                        ? Border.all(color: AppColors.isDark ? AppColors.glassEdge : AppColors.line, width: 1.5)
+                        : null,
                   ),
-                  child: Center(child: _content(_enabled ? widget.foreground : AppColors.inkFaint)),
+                  child: Stack(
+                    children: [
+                      // Gloss: a soft highlight across the top half.
+                      if (!secondary && _enabled)
+                        Positioned(
+                          left: 10,
+                          right: 10,
+                          top: 3,
+                          height: widget.height * 0.42,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(_radius - 4),
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Colors.white.withValues(alpha: 0.28), Colors.white.withValues(alpha: 0)],
+                              ),
+                            ),
+                          ),
+                        ),
+                      Center(child: _content(foreground)),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -116,18 +168,23 @@ class _Button3DState extends State<Button3D> {
     if (widget.loading) {
       return SizedBox.square(dimension: 24, child: CircularProgressIndicator(strokeWidth: 3, color: color));
     }
-    final label = Text(
-      widget.label,
-      style: TextStyle(fontFamily: 'Nunito', fontSize: 17, fontWeight: FontWeight.w900, color: color),
+    final label = Flexible(
+      child: Text(
+        widget.label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(fontFamily: 'Nunito', fontSize: 17, fontWeight: FontWeight.w900, color: color),
+      ),
     );
-    if (widget.icon == null) return label;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(widget.icon, color: color, size: 22),
-        const SizedBox(width: 10),
-        label,
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.icon != null) ...[Icon(widget.icon, color: color, size: 22), const SizedBox(width: 10)],
+          label,
+        ],
+      ),
     );
   }
 }

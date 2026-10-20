@@ -20,6 +20,9 @@ abstract final class Routes {
   static const addChild = '/parent/add-child';
   static const appLock = '/home/app-lock';
 
+  /// Settings shared by students and parents.
+  static const appearance = '/settings/appearance';
+
   /// Shown over a locked app. Reachable in every sign-in state.
   static const locked = '/locked';
 
@@ -47,6 +50,7 @@ String? guardRoute(AuthState auth, String location) {
       if (location == Routes.splash || location == Routes.linkParent || Routes.signedOutOnly.contains(location)) {
         return home;
       }
+      if (location.startsWith('/settings/')) return null;
       final inParentArea = location == Routes.parentHome || location.startsWith('${Routes.parentHome}/');
       if (inParentArea != user.isParent) return home;
       return null;
