@@ -10,7 +10,7 @@ abstract final class AppConfig {
   static const appName = 'Study Assistant';
 
   /// Keep in step with the version in pubspec.yaml.
-  static const appVersion = '0.6.0';
+  static const appVersion = '0.6.1';
 
   /// Test builds are published as GitHub Releases here (tags like v0.4.0-b4).
   static const updateRepo = 'Ashfaq1306/study-assistant';

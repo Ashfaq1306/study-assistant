@@ -9,6 +9,8 @@
          Releases (silently when Android allows it, otherwise Android asks). Never in Play builds:
          Google Play restricts this permission. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <!-- Lets the self-updater install a newer build of this same app without asking each time. -->
+    <uses-permission android:name="android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION"/>
 
     <application>
         <!-- Automatic updates for test builds (see update/AutoUpdater.kt). -->

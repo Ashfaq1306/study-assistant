@@ -22,8 +22,8 @@ import java.util.concurrent.TimeUnit
 /**
  * Test builds keep themselves up to date from GitHub Releases. A background job
  * checks every few hours; a newer build for this phone's chip is downloaded and
- * installed through Android's PackageInstaller. When this app installed the
- * current version itself (or was installed with itself as the installer),
+ * installed through Android's PackageInstaller. When this app is its own
+ * installer of record and the running build holds UPDATE_PACKAGES_WITHOUT_USER_ACTION,
  * Android 12+ lets the update go through without asking; otherwise Android shows
  * its own confirmation the next time the app is open.
  *
