@@ -82,6 +82,34 @@ export interface TutorContext {
   topics?: string;
 }
 
+/** An item the AI found in an academic calendar or timetable. */
+export const ExtractedEventSchema = z.object({
+  kind: z.enum(['EXAM', 'CLASS', 'ASSIGNMENT', 'HOLIDAY', 'EVENT']),
+  title: z.string(),
+  subject: z.string(),
+  /** YYYY-MM-DD. For a weekly class with no date, the first date it happens on or after today. */
+  date: z.string(),
+  /** YYYY-MM-DD for multi-day items (holidays, exam weeks), else "". */
+  endDate: z.string(),
+  /** HH:MM (24h) or "" for all-day items. */
+  startTime: z.string(),
+  endTime: z.string(),
+  /** True for timetable classes that repeat every week. */
+  weekly: z.boolean(),
+  location: z.string(),
+});
+export type ExtractedEvent = z.infer<typeof ExtractedEventSchema>;
+export const ExtractedCalendarSchema = z.object({ events: z.array(ExtractedEventSchema) });
+
+export interface CalendarSource {
+  /** Pasted text, if any. */
+  text?: string;
+  /** A PDF or photo of the calendar or timetable. */
+  file?: { mediaType: 'application/pdf' | 'image/jpeg' | 'image/png' | 'image/webp'; data: string };
+  /** The student's local date (YYYY-MM-DD), to place undated weekly classes. */
+  today: string;
+}
+
 /** The AI behind exams and the study helper. */
 export interface AiProvider {
   /** 'AI' for a real model, 'PRACTICE' for the built-in fallback. */
@@ -89,6 +117,8 @@ export interface AiProvider {
   generateExam(spec: ExamSpec): Promise<GeneratedQuestion[]>;
   gradeShortAnswers(items: ShortAnswerToGrade[]): Promise<ShortAnswerGrade[]>;
   tutor(messages: TutorMessage[], context: TutorContext): Promise<string>;
+  /** Reads an academic calendar, exam routine or class timetable. */
+  extractCalendar(source: CalendarSource): Promise<ExtractedEvent[]>;
 }
 
 export class AiUnavailableError extends Error {

@@ -79,19 +79,20 @@ model User {
 
   otpCodes      OtpCode[]
   sessions      Session[]
-  pairingCodes  PairingCode[]  @relation("PairingStudent")
-  childLinks    FamilyLink[]   @relation("ParentLinks")
-  parentLinks   FamilyLink[]   @relation("StudentLinks")
+  pairingCodes  PairingCode[]   @relation("PairingStudent")
+  childLinks    FamilyLink[]    @relation("ParentLinks")
+  parentLinks   FamilyLink[]    @relation("StudentLinks")
   studySessions StudySession[]
   devices       Device[]
   exams         Exam[]
   aiUsage       AiUsage[]
-  locksSet      ParentLock[]   @relation("LocksSetByParent")
-  locksOn       ParentLock[]   @relation("LocksOnStudent")
+  locksSet      ParentLock[]    @relation("LocksSetByParent")
+  locksOn       ParentLock[]    @relation("LocksOnStudent")
   questionSets  QuestionSet[]
   usageDays     UsageDay[]
   notifications Notification[]
   studyPhotos   StudyPhoto[]
+  calendar      CalendarEvent[]
 }
 
 model OtpCode {
@@ -388,4 +389,41 @@ model StudyPhoto {
   session StudySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
+}
+
+enum CalendarKind {
+  EXAM
+  CLASS
+  ASSIGNMENT
+  HOLIDAY
+  EVENT
+}
+
+/// Something on the student's calendar. Weekly items (classes) are stored once
+/// and expanded on the phone, which also schedules the reminders.
+model CalendarEvent {
+  id          String       @id @default(cuid())
+  userId      String
+  kind        CalendarKind
+  title       String
+  subject     String       @default("")
+  location    String       @default("")
+  notes       String       @default("")
+  /// The (first) start. All-day items start at local midnight.
+  startsAt    DateTime
+  endsAt      DateTime?
+  allDay      Boolean      @default(false)
+  /// Repeats every week on the start's weekday, until repeatUntil (if set).
+  weekly      Boolean      @default(false)
+  repeatUntil DateTime?
+  /// JSON array of minutes before the start to remind, e.g. [1440, 60].
+  reminders   String       @default("[]")
+  /// MANUAL, or IMPORT when read from an academic calendar.
+  source      String       @default("MANUAL")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startsAt])
 }

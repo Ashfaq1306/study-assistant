@@ -22,6 +22,10 @@ class RecordingAi implements AiProvider {
   gradeShortAnswers() {
     return Promise.resolve([]);
   }
+  extractCalendar() {
+    return Promise.resolve([]);
+  }
+
   tutor() {
     return Promise.resolve('Hi');
   }

@@ -187,6 +187,10 @@ export class PracticeProvider implements AiProvider {
     );
   }
 
+  extractCalendar(): Promise<never> {
+    return Promise.reject(new AiUnavailableError('Reading calendars needs the AI. Ask the app admin to switch it on.'));
+  }
+
   tutor(): Promise<string> {
     return Promise.reject(new AiUnavailableError('The AI study helper is not switched on yet. Ask the app admin to set it up.'));
   }

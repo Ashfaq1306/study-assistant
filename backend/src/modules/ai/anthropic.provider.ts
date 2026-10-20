@@ -2,12 +2,23 @@ import Anthropic from '@anthropic-ai/sdk';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
 import type { FastifyBaseLogger } from 'fastify';
 import type { z } from 'zod';
-import { cleanQuestions, examPrompt, GRADING_SYSTEM, gradingPrompt, snapGrades, tutorSystem } from './ai.prompts.js';
+import {
+  calendarPrompt,
+  cleanQuestions,
+  examPrompt,
+  GRADING_SYSTEM,
+  gradingPrompt,
+  snapGrades,
+  tutorSystem,
+} from './ai.prompts.js';
 import {
   AiExamSchema,
   AiGradesSchema,
   AiUnavailableError,
+  ExtractedCalendarSchema,
   type AiProvider,
+  type CalendarSource,
+  type ExtractedEvent,
   type ExamSpec,
   type GeneratedQuestion,
   type ShortAnswerGrade,
@@ -60,6 +71,20 @@ export class AnthropicProvider implements AiProvider {
     if (items.length === 0) return [];
     const { grades } = await this.json(AiGradesSchema, GRADING_SYSTEM, gradingPrompt(items), 'low', 'grading');
     return snapGrades(grades);
+  }
+
+  async extractCalendar(source: CalendarSource): Promise<ExtractedEvent[]> {
+    const file = source.file;
+    const content: Anthropic.Beta.BetaContentBlockParam[] = [
+      ...(file?.mediaType === 'application/pdf'
+        ? [{ type: 'document' as const, source: { type: 'base64' as const, media_type: 'application/pdf' as const, data: file.data } }]
+        : file
+          ? [{ type: 'image' as const, source: { type: 'base64' as const, media_type: file.mediaType, data: file.data } }]
+          : []),
+      { type: 'text' as const, text: calendarPrompt(source) },
+    ];
+    const { events } = await this.json(ExtractedCalendarSchema, undefined, content, this.options.examEffort, 'calendar');
+    return events;
   }
 
   async tutor(messages: TutorMessage[], context: TutorContext): Promise<string> {

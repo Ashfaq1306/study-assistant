@@ -52,6 +52,10 @@ class FakeAi implements AiProvider {
     );
   }
 
+  extractCalendar() {
+    return Promise.resolve([]);
+  }
+
   tutor(messages: TutorMessage[]): Promise<string> {
     this.tutorCalls.push(messages);
     return Promise.resolve('Plants use sunlight to make food. What do they need besides sunlight?');

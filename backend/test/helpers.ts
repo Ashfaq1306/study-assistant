@@ -54,6 +54,7 @@ export async function resetDatabase(): Promise<void> {
   await prisma.$transaction([
     prisma.aiUsage.deleteMany(),
     prisma.notification.deleteMany(),
+    prisma.calendarEvent.deleteMany(),
     prisma.usageDay.deleteMany(),
     prisma.exam.deleteMany(),
     prisma.studyPhoto.deleteMany(),

@@ -20,6 +20,10 @@ class FakeAi implements AiProvider {
   gradeShortAnswers(items: ShortAnswerToGrade[]) {
     return Promise.resolve(items.map((i) => ({ id: i.id, score: 1, feedback: 'Good' })));
   }
+  extractCalendar() {
+    return Promise.resolve([]);
+  }
+
   tutor(): Promise<string> {
     return Promise.resolve('Hello');
   }

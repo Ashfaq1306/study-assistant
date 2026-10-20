@@ -11,6 +11,8 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 import { AuthService } from './modules/auth/auth.service.js';
 import { OtpService } from './modules/auth/otp.service.js';
 import { ACCESS_TOKEN_TTL_SECONDS, TokenService } from './modules/auth/token.service.js';
+import { calendarRoutes } from './modules/calendar/calendar.routes.js';
+import { CalendarService } from './modules/calendar/calendar.service.js';
 import { configRoutes } from './modules/config/config.routes.js';
 import { ConfigService } from './modules/config/config.service.js';
 import { deviceSyncRoutes, devicesRoutes } from './modules/devices/devices.routes.js';
@@ -142,6 +144,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const photos = new PhotosService(prisma, clock);
   const exams = new ExamsService(prisma, ai, config, sessions, notifications, photos, clock, app.log);
   const parent = new ParentService(prisma, sessions, usage, config, notifications, clock);
+  const calendar = new CalendarService(prisma, ai, config, clock);
   const tutor = new TutorService(prisma, ai, config, sessions, exams, clock);
 
   app.get('/health', () => ({ status: 'ok' }));
@@ -158,6 +161,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(parentRoutes(prisma, parent), { prefix: '/v1/parent' });
   await app.register(studentLockRoutes(prisma, parent, exams), { prefix: '/v1/locks' });
   await app.register(notificationsRoutes(prisma, notifications), { prefix: '/v1/notifications' });
+  await app.register(calendarRoutes(prisma, calendar), { prefix: '/v1/calendar' });
 
   return app;
 }
