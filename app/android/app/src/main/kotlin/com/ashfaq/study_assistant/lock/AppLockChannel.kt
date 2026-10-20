@@ -9,6 +9,7 @@ import android.os.Looper
 import android.provider.Settings
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import com.ashfaq.study_assistant.update.AutoUpdater
 import com.ashfaq.study_assistant.widget.StudyWidget
 import org.json.JSONObject
 import java.util.concurrent.Executors
@@ -53,24 +54,30 @@ class AppLockChannel(private val activity: Activity) : MethodChannel.MethodCallH
                 result.success(if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else @Suppress("DEPRECATION") info.versionCode.toLong())
             }
 
-            "canSelfUpdate" -> result.success(updateAuthority() != null)
+            "canSelfUpdate" -> result.success(AutoUpdater.enabled(activity))
 
             "abi" -> result.success(Build.SUPPORTED_ABIS.firstOrNull() ?: "")
 
             "installApk" -> {
-                val authority = updateAuthority()
                 val path = call.argument<String>("path")
-                if (authority == null || path == null) {
+                if (!AutoUpdater.enabled(activity) || path == null) {
                     result.success(false)
                 } else {
-                    // Android shows its own install confirmation; nothing installs silently.
-                    val uri = androidx.core.content.FileProvider.getUriForFile(activity, authority, java.io.File(path))
-                    val intent = Intent(Intent.ACTION_VIEW)
-                        .setDataAndType(uri, "application/vnd.android.package-archive")
-                        .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-                    activity.startActivity(intent)
-                    result.success(true)
+                    // Through PackageInstaller, so this app becomes the installer of
+                    // record and later updates can install without asking.
+                    executor.execute {
+                        val ok = try {
+                            AutoUpdater.install(activity, java.io.File(path))
+                        } catch (_: Exception) {
+                            false
+                        }
+                        main.post { result.success(ok) }
+                    }
                 }
+            }
+
+            "autoUpdate" -> {
+                AutoUpdater.runAsync(activity) { started -> main.post { result.success(started) } }
             }
 
             "pinWidget" -> {
@@ -143,11 +150,5 @@ class AppLockChannel(private val activity: Activity) : MethodChannel.MethodCallH
         } catch (_: Exception) {
             result.success(false)
         }
-    }
-
-    /** The FileProvider for downloaded updates; only test builds declare it. */
-    private fun updateAuthority(): String? {
-        val authority = "${activity.packageName}.updates"
-        return if (activity.packageManager.resolveContentProvider(authority, 0) != null) authority else null
     }
 }

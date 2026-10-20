@@ -6,19 +6,21 @@
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <!-- Test (debug and profile) builds only: install a newer test build downloaded from GitHub
-         Releases (the user confirms every install). Never in Play builds:
+         Releases (silently when Android allows it, otherwise Android asks). Never in Play builds:
          Google Play restricts this permission. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES"/>
+    <!-- Keeps the update check scheduled after the phone restarts. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application>
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.updates"
+        <!-- Automatic updates for test builds (see update/AutoUpdater.kt). -->
+        <service
+            android:name="com.ashfaq.study_assistant.update.UpdateJobService"
             android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/update_paths" />
-        </provider>
+            android:permission="android.permission.BIND_JOB_SERVICE" />
+        <receiver
+            android:name="com.ashfaq.study_assistant.update.UpdateStatusReceiver"
+            android:exported="false" />
+
     </application>
 </manifest>

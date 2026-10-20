@@ -103,14 +103,7 @@ class _Button3DState extends State<Button3D> {
               Positioned.fill(
                 top: _depth,
                 child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: edge,
-                    borderRadius: BorderRadius.circular(_radius),
-                    boxShadow: [
-                      if (_enabled && !secondary)
-                        BoxShadow(color: face.withValues(alpha: 0.35), blurRadius: 18, offset: const Offset(0, 8)),
-                    ],
-                  ),
+                  decoration: BoxDecoration(color: edge, borderRadius: BorderRadius.circular(_radius)),
                 ),
               ),
               AnimatedPositioned(
@@ -126,35 +119,13 @@ class _Button3DState extends State<Button3D> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color.lerp(face, Colors.white, secondary ? 0.04 : 0.16)!, face],
+                      colors: [Color.lerp(face, Colors.white, secondary ? 0.0 : 0.12)!, face],
                     ),
                     border: secondary
                         ? Border.all(color: AppColors.isDark ? AppColors.glassEdge : AppColors.line, width: 1.5)
                         : null,
                   ),
-                  child: Stack(
-                    children: [
-                      // Gloss: a soft highlight across the top half.
-                      if (!secondary && _enabled)
-                        Positioned(
-                          left: 10,
-                          right: 10,
-                          top: 3,
-                          height: widget.height * 0.42,
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(_radius - 4),
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [Colors.white.withValues(alpha: 0.28), Colors.white.withValues(alpha: 0)],
-                              ),
-                            ),
-                          ),
-                        ),
-                      Center(child: _content(foreground)),
-                    ],
-                  ),
+                  child: Center(child: _content(foreground)),
                 ),
               ),
             ],
