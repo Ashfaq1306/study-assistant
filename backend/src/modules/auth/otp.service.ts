@@ -32,10 +32,26 @@ export class OtpService {
     private readonly log: FastifyBaseLogger,
     /** Never true in production: see buildApp. */
     private readonly exposeDevCodes = false,
+    /** Channels that can really deliver a code (SMS is off without an SMS provider). */
+    readonly channels: readonly OtpChannel[] = ['EMAIL', 'SMS'],
   ) {}
+
+  /** Refuses a channel this server cannot send on, before anything is changed. */
+  assertChannel(channel: OtpChannel): void {
+    if (!this.channels.includes(channel)) {
+      throw new AppError(
+        400,
+        'OTP_CHANNEL_OFF',
+        channel === 'SMS'
+          ? "Codes by text message aren't available yet. Please use your email."
+          : "Codes by email aren't available yet. Please use your mobile number.",
+      );
+    }
+  }
 
   /** Sends a fresh code, invalidating any earlier unused code for the same purpose. */
   async issue(user: Recipient, purpose: OtpPurpose, channel: OtpChannel): Promise<OtpIssued> {
+    this.assertChannel(channel);
     const to = channel === 'EMAIL' ? user.email : user.phone;
     if (!to) {
       throw new AppError(

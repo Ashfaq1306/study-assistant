@@ -1,9 +1,10 @@
+import type { OtpChannel } from '@prisma/client';
 import type { FastifyPluginAsync } from 'fastify';
 import type { ConfigService } from './config.service.js';
 
 /** Public, read-only settings the app needs before and after sign-in. */
 export const configRoutes =
-  (config: ConfigService): FastifyPluginAsync =>
+  (config: ConfigService, otpChannels: readonly OtpChannel[] = ['EMAIL', 'SMS']): FastifyPluginAsync =>
   async (app) => {
     app.get('/', async () => {
       const s = await config.get();
@@ -17,6 +18,8 @@ export const configRoutes =
         examRetryCooldownSeconds: s.examRetryCooldownSeconds,
         aiEnabled: s.aiEnabled,
         announcement: s.announcement,
+        /** How sign-up codes can be sent: the app hides the others. */
+        otpChannels,
       };
     });
   };

@@ -56,6 +56,7 @@ export class AuthService {
 
     // Check everything that can refuse the request before changing anything,
     // so a refused signup leaves any earlier pending one untouched.
+    this.otp.assertChannel(input.otpChannel);
     const holders = await this.findClaims(input.email, input.phone);
     await this.otp.assertCanSend(input.otpChannel === 'EMAIL' ? input.email! : input.phone!);
     await this.releaseUnverifiedClaims(holders, input.email, input.phone);
@@ -131,7 +132,7 @@ export class AuthService {
       try {
         verification = await this.otp.issue(user, 'VERIFY_ACCOUNT', user.otpChannel);
       } catch (err) {
-        if (!(err instanceof AppError && err.statusCode === 429)) throw err;
+        if (!(err instanceof AppError && (err.statusCode === 429 || err.code === 'OTP_CHANNEL_OFF'))) throw err;
       }
       throw new AppError(403, 'ACCOUNT_NOT_VERIFIED', 'Enter the code we sent you to open your account.', {
         userId: user.id,
@@ -148,6 +149,8 @@ export class AuthService {
    * which emails or numbers have accounts.
    */
   async forgotPassword(identifier: string): Promise<{ sent: true; devCode?: string }> {
+    // Depends only on what was typed, so it says nothing about which accounts exist.
+    this.otp.assertChannel(identifier.includes('@') ? 'EMAIL' : 'SMS');
     const user = await this.findByIdentifier(identifier);
     if (user?.verifiedAt && !user.disabledAt) {
       try {
@@ -180,7 +183,8 @@ export class AuthService {
     return { user: await this.users.getProfile(user.id), tokens };
   }
 
-  logout(refreshToken: string): Promise<void> {
+  /** Returns the account that signed out, if the session was still open. */
+  logout(refreshToken: string): Promise<string | null> {
     return this.tokens.revoke(refreshToken);
   }
 

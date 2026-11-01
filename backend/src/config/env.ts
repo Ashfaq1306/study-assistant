@@ -56,7 +56,7 @@ const EnvSchema = z
     SMTP_USER: optional,
     SMTP_PASS: optional,
     SMTP_FROM: z.string().default('Study Assistant <no-reply@example.com>'),
-    SMS_PROVIDER: z.enum(['console', 'twilio']).default('console'),
+    SMS_PROVIDER: z.enum(['console', 'twilio', 'none']).default('console'),
     /** Claude API key for AI exams and the study helper. Unset = built-in practice questions. */
     /** auto: Claude if ANTHROPIC_API_KEY is set, else Gemini if GEMINI_API_KEY is set, else practice questions. */
     AI_PROVIDER: z.enum(['auto', 'anthropic', 'gemini']).default('auto'),
@@ -71,6 +71,8 @@ const EnvSchema = z
     AI_MODEL: z.string().default('claude-opus-5-5'),
     AI_EXAM_EFFORT: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).default('medium'),
     AI_TUTOR_EFFORT: z.enum(['low', 'medium', 'high', 'xhigh', 'max']).default('low'),
+    /** Folder with the web admin panel, served at /admin/ (relative to the working directory). Empty = off. */
+    ADMIN_PANEL_DIR: z.string().trim().default('../admin'),
     TWILIO_ACCOUNT_SID: optional,
     TWILIO_AUTH_TOKEN: optional,
     TWILIO_FROM: optional,

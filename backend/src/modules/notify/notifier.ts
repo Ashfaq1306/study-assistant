@@ -70,6 +70,13 @@ export class TwilioSmsNotifier implements Notifier {
   }
 }
 
+/** A channel with no provider. OtpService refuses it before anything is sent, so this is a backstop. */
+export class OffNotifier implements Notifier {
+  send(message: OutboundMessage): Promise<void> {
+    return Promise.reject(new Error(`no provider for ${message.channel}`));
+  }
+}
+
 /** Routes each message to the email or SMS provider. */
 export class ChannelNotifier implements Notifier {
   constructor(
@@ -88,6 +95,8 @@ export function createNotifier(env: Env, log: FastifyBaseLogger): Notifier {
   const sms =
     env.SMS_PROVIDER === 'twilio'
       ? new TwilioSmsNotifier(env.TWILIO_ACCOUNT_SID!, env.TWILIO_AUTH_TOKEN!, env.TWILIO_FROM!)
-      : consoleNotifier;
+      : env.SMS_PROVIDER === 'none'
+        ? new OffNotifier()
+        : consoleNotifier;
   return new ChannelNotifier(email, sms);
 }

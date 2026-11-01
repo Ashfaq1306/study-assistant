@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/routes.dart';
+import '../../../core/config/remote_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/button_3d.dart';
@@ -91,6 +92,8 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
     final text = Theme.of(context).textTheme;
     final where = _delivery?.destination ?? (_channel == OtpChannel.email ? 'your email' : 'your phone');
     final other = _channel == OtpChannel.email ? OtpChannel.sms : OtpChannel.email;
+    final config = ref.watch(remoteConfigProvider).value ?? const RemoteConfig();
+    final offersOther = other == OtpChannel.sms ? config.smsCodes : config.emailCodes;
 
     return PageShell(
       child: Column(
@@ -137,7 +140,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
           Center(
             child: ResendButton(availableAt: _resendAt, onResend: _resend),
           ),
-          if (pending.otherChannelAvailable)
+          if (pending.otherChannelAvailable && offersOther)
             Center(
               child: TextButton(
                 onPressed: () => _resend(channel: other),
