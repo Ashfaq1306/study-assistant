@@ -80,7 +80,12 @@ export class ConfigService {
 
   /** Validates and stores a partial update. Returns the full new settings. */
   async update(patch: Partial<Settings>): Promise<Settings> {
-    const valid = SettingsSchema.partial().parse(patch);
+    // zod fills in defaults even for a partial schema: keep only the keys that were sent, or
+    // changing one setting would quietly reset every other one to its default.
+    const parsed = SettingsSchema.partial().parse(patch);
+    const valid = Object.fromEntries(
+      Object.entries(parsed).filter(([key]) => Object.hasOwn(patch, key)),
+    ) as Partial<Settings>;
     const current = await this.get();
     const min = valid.minStudyMinutes ?? current.minStudyMinutes;
     const max = valid.maxStudyMinutes ?? current.maxStudyMinutes;
