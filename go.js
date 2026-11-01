@@ -15,11 +15,14 @@ export async function serverAddress() {
   return url.origin;
 }
 
-/** Checks the server answers before sending the browser there. */
+/**
+ * Checks the server's address resolves and answers before sending the browser there.
+ * The API sends no CORS headers, so this is an opaque request: it only fails when nothing answers.
+ */
 export async function reachable(origin) {
   try {
-    const res = await fetch(`${origin}/health`, { cache: 'no-store' });
-    return res.ok;
+    await fetch(`${origin}/health`, { cache: 'no-store', mode: 'no-cors' });
+    return true;
   } catch {
     return false;
   }
