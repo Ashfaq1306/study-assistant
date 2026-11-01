@@ -157,7 +157,10 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const tutor = new TutorService(prisma, ai, config, sessions, exams, clock);
   const admin = new AdminService(prisma, config, sessions, notifications, activity, tokens, clock);
 
-  app.get('/health', () => ({ status: 'ok' }));
+  // Public and harmless: other sites (the GitHub Pages link to the Control Room) may check it's up.
+  app.get('/health', (_request, reply) =>
+    reply.header('cross-origin-resource-policy', 'cross-origin').send({ status: 'ok' }),
+  );
   await app.register(authRoutes(auth, activity), { prefix: '/v1/auth' });
   await app.register(usersRoutes(prisma, users), { prefix: '/v1/me' });
   await app.register(familyRoutes(prisma, family), { prefix: '/v1/family' });

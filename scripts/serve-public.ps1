@@ -37,6 +37,17 @@ function Log([string]$message) {
   Write-Host $line
 }
 
+function Save-OldLog([string]$name) {
+  # Start-Process can only overwrite, so keep the previous run's log (the last 10 per kind).
+  $path = Join-Path $logDir $name
+  if (-not (Test-Path $path) -or (Get-Item $path).Length -eq 0) { return }
+  $stamp = (Get-Item $path).LastWriteTime.ToString('yyyyMMdd-HHmmss')
+  Move-Item $path (Join-Path $logDir ("{0}.{1}{2}" -f [IO.Path]::GetFileNameWithoutExtension($name), $stamp, [IO.Path]::GetExtension($name))) -Force
+  $pattern = '{0}.*{1}' -f [IO.Path]::GetFileNameWithoutExtension($name), [IO.Path]::GetExtension($name)
+  Get-ChildItem $logDir -Filter $pattern | Where-Object { $_.Name -ne $name } |
+    Sort-Object LastWriteTime -Descending | Select-Object -Skip 10 | Remove-Item -Force
+}
+
 function Find-Exe([string]$name, [string[]]$fallbacks) {
   $cmd = Get-Command $name -ErrorAction SilentlyContinue
   if ($cmd) { return $cmd.Source }
@@ -67,6 +78,8 @@ function Start-Api {
     Push-Location $backend
     try { & npm run build | Out-Null } finally { Pop-Location }
   }
+  Save-OldLog 'api.log'
+  Save-OldLog 'api.err.log'
   Log 'Starting the API'
   $script:api = Start-Process -FilePath $node -WorkingDirectory $backend -WindowStyle Hidden -PassThru `
     -ArgumentList '--env-file-if-exists=.env', 'dist/server.js' `
@@ -80,8 +93,8 @@ function Start-Api {
 
 function Start-Tunnel {
   if ($script:tunnel -and -not $script:tunnel.HasExited) { Stop-Process -Id $script:tunnel.Id -Force -ErrorAction SilentlyContinue }
+  Save-OldLog 'tunnel.log'
   $tunnelLog = Join-Path $logDir 'tunnel.log'
-  Remove-Item $tunnelLog -ErrorAction SilentlyContinue
   Log 'Opening a Cloudflare quick tunnel'
   $script:tunnel = Start-Process -FilePath $cloudflared -WindowStyle Hidden -PassThru `
     -ArgumentList 'tunnel', '--no-autoupdate', '--url', "http://127.0.0.1:$Port" `

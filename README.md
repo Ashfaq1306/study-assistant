@@ -106,6 +106,8 @@ flutter run                      # add --release to see real speed
 ```
 
 ### 3. Use it from any network (your computer as the server)
+**Control Room from anywhere:** https://ashfaq1306.github.io/study-assistant/admin/ always forwards to the server's current address (the page lives on the `gh-pages` branch).
+
 The phone talks to `https://…trycloudflare.com`, so it works on any Wi-Fi or mobile data, as long as this computer is on and online.
 ```powershell
 winget install Cloudflare.cloudflared        # once
