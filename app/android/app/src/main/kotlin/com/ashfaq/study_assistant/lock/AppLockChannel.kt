@@ -36,6 +36,7 @@ class AppLockChannel(private val activity: Activity) : MethodChannel.MethodCallH
 
             "configure" -> {
                 store.apiBaseUrl = call.argument<String>("baseUrl")
+                store.discoveryUrl = call.argument<String>("discoveryUrl")?.takeIf { it.isNotBlank() }
                 store.deviceToken = call.argument<String>("deviceToken")
                 store.ownerUserId = call.argument<String>("userId")
                 store.lastAppsSentAt = 0

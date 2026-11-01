@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_config.dart';
 import '../core/network/api_client.dart';
+import '../core/network/api_endpoint.dart';
 import '../core/network/server_clock.dart';
 import '../core/storage/token_store.dart';
 import '../features/auth/data/auth_api.dart';
@@ -12,9 +13,22 @@ import '../features/study/data/study_api.dart';
 /// App-wide dependencies. Tests override these with fakes.
 final tokenStoreProvider = Provider<TokenStore>((ref) => SecureTokenStore());
 
-final apiClientProvider = Provider<ApiClient>(
-  (ref) => ApiClient(baseUrl: AppConfig.apiBaseUrl, store: ref.watch(tokenStoreProvider)),
-);
+/// The API's current address. `main()` overrides this with one that has read its cache.
+final apiEndpointProvider = Provider<ApiEndpoint>((ref) {
+  final endpoint = ApiEndpoint(fallback: AppConfig.apiBaseUrl);
+  ref.onDispose(endpoint.dispose);
+  return endpoint;
+});
+
+final apiClientProvider = Provider<ApiClient>((ref) {
+  final client = ApiClient(
+    baseUrl: AppConfig.apiBaseUrl,
+    store: ref.watch(tokenStoreProvider),
+    endpoint: ref.watch(apiEndpointProvider),
+  );
+  ref.onDispose(client.dispose);
+  return client;
+});
 
 final authApiProvider = Provider<AuthApi>((ref) => AuthApi(ref.watch(apiClientProvider)));
 

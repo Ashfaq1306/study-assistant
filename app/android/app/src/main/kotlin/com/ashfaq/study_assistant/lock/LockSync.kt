@@ -7,6 +7,7 @@ import android.os.Process
 import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -22,11 +23,52 @@ object LockSync {
         data object Failed : Result
     }
 
-    /** Sends a heartbeat and stores the lock state it returns. Blocking: call off the main thread. */
+    /** How often the discovery file may be read while the server is unreachable. */
+    private const val DISCOVERY_GAP_MS = 2 * 60 * 1000L
+
+    /**
+     * Sends a heartbeat and stores the lock state it returns. Blocking: call off the main thread.
+     * If the server can't be reached and its address may have changed (a tunnel restarted while the
+     * app was closed), the address is looked up again and the heartbeat retried once.
+     */
     fun heartbeat(context: Context, store: LockStore, protectionOn: Boolean): Result {
         val base = store.apiBaseUrl ?: return Result.Failed
         val token = store.deviceToken ?: return Result.Failed
+        heartbeatAt(context, store, protectionOn, base, token)?.let { return it }
+        val moved = rediscover(store) ?: return Result.Failed
+        return heartbeatAt(context, store, protectionOn, moved, token) ?: Result.Failed
+    }
 
+    /** Reads the discovery file. Returns the new address if it changed, else null. */
+    private fun rediscover(store: LockStore): String? {
+        val discovery = store.discoveryUrl ?: return null
+        val now = System.currentTimeMillis()
+        if (now - store.lastDiscoveryAt < DISCOVERY_GAP_MS) return null
+        store.lastDiscoveryAt = now
+        var connection: HttpURLConnection? = null
+        return try {
+            connection = (URL("$discovery?t=$now").openConnection() as HttpURLConnection).apply {
+                connectTimeout = 8_000
+                readTimeout = 8_000
+            }
+            if (connection.responseCode !in 200..299) return null
+            val url = JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
+                .optString("apiBaseUrl").trimEnd('/')
+            // Only HTTPS from the file: it can never downgrade the sync to plain HTTP.
+            if (!url.startsWith("https://") || url == store.apiBaseUrl) return null
+            store.apiBaseUrl = url
+            Log.i(TAG, "API moved to $url")
+            url
+        } catch (e: Exception) {
+            Log.w(TAG, "discovery failed: ${e.message}")
+            null
+        } finally {
+            connection?.disconnect()
+        }
+    }
+
+    /** One heartbeat to [base]. Null when the server could not be reached at all. */
+    private fun heartbeatAt(context: Context, store: LockStore, protectionOn: Boolean, base: String, token: String): Result? {
         val body = JSONObject()
             .put("protectionOn", protectionOn)
             .put("usageAccess", hasUsageAccess(context))
@@ -75,9 +117,15 @@ object LockSync {
                 }
                 else -> {
                     Log.w(TAG, "heartbeat HTTP $code")
-                    Result.Failed
+                    // Cloudflare answering for a tunnel whose computer is gone.
+                    val viaCloudflare = connection.getHeaderField("Server")?.contains("cloudflare") == true
+                    if (viaCloudflare && code in setOf(502, 503, 530)) null else Result.Failed
                 }
             }
+        } catch (e: IOException) {
+            // No answer at all (unknown host, refused, timed out): the address may have changed.
+            Log.w(TAG, "heartbeat unreachable: ${e.message}")
+            null
         } catch (e: Exception) {
             // Offline: keep enforcing the last known state.
             Log.w(TAG, "heartbeat failed: ${e.message}")

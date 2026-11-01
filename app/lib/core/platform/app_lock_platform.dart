@@ -5,6 +5,8 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../config/app_config.dart';
+
 class NativeLockStatus {
   const NativeLockStatus({
     required this.protectionOn,
@@ -82,8 +84,11 @@ class AppLockPlatform {
     );
   }
 
-  Future<void> configure({required String baseUrl, required String deviceToken, required String userId}) =>
-      _invoke('configure', {'baseUrl': baseUrl, 'deviceToken': deviceToken, 'userId': userId});
+  /// [discoveryUrl] lets the native sync find the server again if its address changes while the app is closed.
+  Future<void> configure({required String baseUrl, required String deviceToken, required String userId}) => _invoke(
+    'configure',
+    {'baseUrl': baseUrl, 'deviceToken': deviceToken, 'userId': userId, 'discoveryUrl': AppConfig.apiDiscoveryUrl},
+  );
 
   /// Hands the lock state fetched by the app to the blocker right away.
   Future<void> applyState(Map<String, Object?> state) => _invoke('applyState', {'state': jsonEncode(state)});
