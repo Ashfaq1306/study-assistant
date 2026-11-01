@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0b1120" />
+    <title>Study Assistant</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="card">
+      <div class="brand"><span class="mark" aria-hidden="true">◆</span>STUDY ASSISTANT</div>
+      <p class="muted">Study smart. Unlock by learning.</p>
+      <a class="btn" href="admin/">Open the Control Room (admin)</a>
+      <a class="btn ghost" href="https://github.com/Ashfaq1306/study-assistant/releases">Download the Android app</a>
+      <p id="server" class="muted small" role="status">Checking the server…</p>
+    </main>
+    <script type="module">
+      import { serverAddress, reachable } from './go.js';
+      const line = document.getElementById('server');
+      try {
+        const origin = await serverAddress();
+        line.textContent = (await reachable(origin)) ? 'Server: online' : 'Server: not answering (is the computer on?)';
+      } catch {
+        line.textContent = 'Server: address not found';
+      }
+    </script>
+  </body>
+</html>

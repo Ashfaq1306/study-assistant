@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#0b1120" />
+    <title>Control Room · Study Assistant</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
+  <body>
+    <main class="card">
+      <div class="brand"><span class="mark" aria-hidden="true">◆</span>CONTROL ROOM</div>
+      <p id="status" role="status">Finding the server…</p>
+      <p id="help" class="muted" hidden>
+        The server runs on the Study Assistant computer. Make sure that computer is on, awake and online, then
+        <a href="">try again</a>.
+      </p>
+    </main>
+    <script type="module">
+      import { serverAddress, reachable } from '../go.js';
+      const status = document.getElementById('status');
+      const fail = (text) => {
+        status.textContent = text;
+        document.getElementById('help').hidden = false;
+      };
+      try {
+        const origin = await serverAddress();
+        status.textContent = 'Connecting…';
+        if (await reachable(origin)) location.replace(`${origin}/admin/`);
+        else fail('The server is not answering right now.');
+      } catch {
+        fail('Could not find the server address.');
+      }
+    </script>
+  </body>
+</html>
