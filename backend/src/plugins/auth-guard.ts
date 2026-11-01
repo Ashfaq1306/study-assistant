@@ -30,6 +30,10 @@ export function requireAuth(prisma: PrismaClient, roles?: readonly Role[]): preH
     const user = await prisma.user.findUnique({ where: { id: request.user.sub } });
     if (!user || user.disabledAt || !user.verifiedAt) throw unauthorized();
     if (roles && !roles.includes(user.role)) throw forbidden();
+    // "Last active" for the admin panel, written at most every 2 minutes and never awaited.
+    if (!user.lastActiveAt || Date.now() - user.lastActiveAt.getTime() > 2 * 60_000) {
+      prisma.user.update({ where: { id: user.id }, data: { lastActiveAt: new Date() } }).catch(() => undefined);
+    }
     request.authUser = user;
   };
 }

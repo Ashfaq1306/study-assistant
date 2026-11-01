@@ -74,6 +74,8 @@ model User {
   emailVerifiedAt DateTime?
   phoneVerifiedAt DateTime?
   disabledAt      DateTime?
+  /// Last authenticated request (updated at most every 2 minutes). Shown as online / last seen in the admin panel.
+  lastActiveAt    DateTime?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
@@ -93,6 +95,8 @@ model User {
   notifications Notification[]
   studyPhotos   StudyPhoto[]
   calendar      CalendarEvent[]
+  activity      ActivityEvent[] @relation("ActivitySubject")
+  actions       ActivityEvent[] @relation("ActivityActor")
 }
 
 model OtpCode {
@@ -196,6 +200,8 @@ model StudySession {
   /// When studying stopped (timer finished or finished early).
   studyEndedAt       DateTime?
   completedAt        DateTime?
+  /// Set when an admin ended the lock without an exam (status CANCELLED). The time studied still counts.
+  adminUnlockedAt    DateTime?
 
   student User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
   exams   Exam[]
@@ -426,4 +432,29 @@ model CalendarEvent {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, startsAt])
+}
+
+/// Who did what and when: sign-ups, sign-ins, sign-outs, password resets and every admin action.
+/// Read by the admin panel only.
+model ActivityEvent {
+  id        String   @id @default(cuid())
+  /// The account the event is about.
+  userId    String
+  /// SIGNUP, LOGIN, LOGOUT, PASSWORD_RESET, ADMIN_DISABLED, ADMIN_ENABLED, ADMIN_SIGNED_OUT,
+  /// ADMIN_PASSWORD_RESET, ADMIN_UNLOCKED, ADMIN_SETTINGS
+  kind      String
+  /// The admin who did it, for admin actions.
+  actorId   String?
+  ip        String?
+  userAgent String?
+  /// Short human-readable extra, e.g. "2 locks ended".
+  detail    String?
+  createdAt DateTime @default(now())
+
+  user  User  @relation("ActivitySubject", fields: [userId], references: [id], onDelete: Cascade)
+  actor User? @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+  @@index([kind, createdAt])
 }

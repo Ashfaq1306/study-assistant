@@ -7,7 +7,8 @@ export type NotificationKind =
   | 'LOCK_PASSED'
   | 'SESSION_STARTED'
   | 'PROTECTION_OFF'
-  | 'PARENT_LOCK';
+  | 'PARENT_LOCK'
+  | 'ADMIN_UNLOCK';
 
 export interface NotificationView {
   id: string;

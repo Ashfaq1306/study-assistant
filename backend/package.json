@@ -18,6 +18,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
+    "admin": "tsx --env-file-if-exists=.env src/cli/admin.ts",
+    "email:check": "tsx --env-file-if-exists=.env src/cli/check-email.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

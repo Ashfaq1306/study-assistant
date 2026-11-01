@@ -202,8 +202,13 @@ export class SessionsService {
     const now = this.clock();
     const since = new Date(now.getTime() - 60 * DAY);
     const sessions = await this.prisma.studySession.findMany({
-      where: { studentId, status: { not: 'CANCELLED' }, startedAt: { gte: since } },
-      select: { startedAt: true, plannedMinutes: true, studyEndedAt: true, status: true },
+      where: {
+        studentId,
+        startedAt: { gte: since },
+        // A lock an admin ended still counts the time studied.
+        OR: [{ status: { not: 'CANCELLED' } }, { adminUnlockedAt: { not: null } }],
+      },
+      select: { startedAt: true, plannedMinutes: true, studyEndedAt: true, status: true, adminUnlockedAt: true },
     });
     const sessionsCompleted = await this.prisma.studySession.count({ where: { studentId, status: 'PASSED' } });
 
@@ -260,11 +265,12 @@ export class SessionsService {
     return new Date(s.startedAt.getTime() + Math.round((s.plannedMinutes * MINUTE * s.earlyFinishPercent) / 100));
   }
 
-  private studiedMinutes(
-    s: Pick<StudySession, 'startedAt' | 'plannedMinutes' | 'studyEndedAt' | 'status'>,
+  /** Minutes actually studied, up to the planned time. A lock cancelled without study counts 0; one an admin ended counts. */
+  studiedMinutes(
+    s: Pick<StudySession, 'startedAt' | 'plannedMinutes' | 'studyEndedAt' | 'status' | 'adminUnlockedAt'>,
     now: Date,
   ): number {
-    if (s.status === 'CANCELLED') return 0;
+    if (s.status === 'CANCELLED' && !s.adminUnlockedAt) return 0;
     const end = Math.min((s.studyEndedAt ?? now).getTime(), this.endsAt(s).getTime());
     return Math.max(0, Math.floor((end - s.startedAt.getTime()) / MINUTE));
   }

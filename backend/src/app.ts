@@ -2,11 +2,16 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
-import type { PrismaClient } from '@prisma/client';
+import type { OtpChannel, PrismaClient } from '@prisma/client';
+import { resolve } from 'node:path';
 import Fastify, { type FastifyBaseLogger, type FastifyInstance, type FastifyServerOptions } from 'fastify';
 import type { Env } from './config/env.js';
 import { systemClock, type Clock } from './lib/clock.js';
 import { AppError } from './lib/errors.js';
+import { ActivityService } from './modules/activity/activity.service.js';
+import { adminPanel } from './modules/admin/admin-panel.js';
+import { adminRoutes } from './modules/admin/admin.routes.js';
+import { AdminService } from './modules/admin/admin.service.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { AuthService } from './modules/auth/auth.service.js';
 import { OtpService } from './modules/auth/otp.service.js';
@@ -83,7 +88,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     bodyLimit: 256 * 1024,
   });
 
-  await app.register(helmet);
+  // No upgrade-insecure-requests: the admin panel's files are relative, so they already follow the
+  // page's scheme, and a local http:// panel (development, an emulator) must still load them.
+  await app.register(helmet, { contentSecurityPolicy: { directives: { upgradeInsecureRequests: null } } });
   await app.register(cors, { origin: env.CORS_ORIGINS.length > 0 ? env.CORS_ORIGINS : false });
   if (options.rateLimit !== false) {
     await app.register(rateLimit, {
@@ -128,9 +135,11 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   );
 
   const notifier = options.notifier ?? createNotifier(env, app.log);
+  const otpChannels: OtpChannel[] = env.SMS_PROVIDER === 'none' ? ['EMAIL'] : ['EMAIL', 'SMS'];
+  const activity = new ActivityService(prisma, clock, app.log);
   const users = new UsersService(prisma, clock);
   // Local test servers can return OTPs in responses so the app works without email/SMS.
-  const otp = new OtpService(prisma, notifier, env.OTP_SECRET, clock, app.log, env.EXPOSE_DEV_CODES && env.NODE_ENV !== 'production');
+  const otp = new OtpService(prisma, notifier, env.OTP_SECRET, clock, app.log, env.EXPOSE_DEV_CODES && env.NODE_ENV !== 'production', otpChannels);
   const tokens = new TokenService(prisma, (claims) => app.jwt.sign(claims), clock);
   const auth = new AuthService(prisma, otp, tokens, users, clock);
   const family = new FamilyService(prisma, users, env.OTP_SECRET, clock);
@@ -146,12 +155,13 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const parent = new ParentService(prisma, sessions, usage, config, notifications, clock);
   const calendar = new CalendarService(prisma, ai, config, clock);
   const tutor = new TutorService(prisma, ai, config, sessions, exams, clock);
+  const admin = new AdminService(prisma, config, sessions, notifications, activity, tokens, clock);
 
   app.get('/health', () => ({ status: 'ok' }));
-  await app.register(authRoutes(auth), { prefix: '/v1/auth' });
+  await app.register(authRoutes(auth, activity), { prefix: '/v1/auth' });
   await app.register(usersRoutes(prisma, users), { prefix: '/v1/me' });
   await app.register(familyRoutes(prisma, family), { prefix: '/v1/family' });
-  await app.register(configRoutes(config), { prefix: '/v1/config' });
+  await app.register(configRoutes(config, otpChannels), { prefix: '/v1/config' });
   await app.register(sessionsRoutes(prisma, sessions), { prefix: '/v1/sessions' });
   await app.register(sessionPhotosRoutes(prisma, photos), { prefix: '/v1/sessions' });
   await app.register(photoFileRoutes(prisma, photos), { prefix: '/v1/photos' });
@@ -162,6 +172,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(studentLockRoutes(prisma, parent, exams), { prefix: '/v1/locks' });
   await app.register(notificationsRoutes(prisma, notifications), { prefix: '/v1/notifications' });
   await app.register(calendarRoutes(prisma, calendar), { prefix: '/v1/calendar' });
+  await app.register(adminRoutes(prisma, admin), { prefix: '/v1/admin' });
+  if (env.ADMIN_PANEL_DIR) await app.register(adminPanel(resolve(env.ADMIN_PANEL_DIR)));
 
   return app;
 }

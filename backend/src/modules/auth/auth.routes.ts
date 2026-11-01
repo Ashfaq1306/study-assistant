@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { parse } from '../../lib/validate.js';
+import { type ActivityService, requestContext } from '../activity/activity.service.js';
 import type { AuthService } from './auth.service.js';
 import {
   ForgotPasswordBody,
@@ -15,7 +16,7 @@ import {
 const sensitive = { rateLimit: { max: 10, timeWindow: '1 minute' } };
 
 export const authRoutes =
-  (auth: AuthService): FastifyPluginAsync =>
+  (auth: AuthService, activity: ActivityService): FastifyPluginAsync =>
   async (app) => {
     app.post('/register', { config: sensitive }, async (request, reply) => {
       const body = parse(RegisterBody, request.body);
@@ -24,7 +25,9 @@ export const authRoutes =
 
     app.post('/verify', { config: sensitive }, async (request) => {
       const { userId, code } = parse(VerifyAccountBody, request.body);
-      return auth.verifyAccount(userId, code, request.headers['user-agent']);
+      const signedIn = await auth.verifyAccount(userId, code, request.headers['user-agent']);
+      await activity.record(signedIn.user.id, 'SIGNUP', requestContext(request));
+      return signedIn;
     });
 
     app.post('/verify/resend', { config: sensitive }, async (request) => {
@@ -34,7 +37,9 @@ export const authRoutes =
 
     app.post('/login', { config: sensitive }, async (request) => {
       const { identifier, password } = parse(LoginBody, request.body);
-      return auth.login(identifier, password, request.headers['user-agent']);
+      const signedIn = await auth.login(identifier, password, request.headers['user-agent']);
+      await activity.record(signedIn.user.id, 'LOGIN', requestContext(request));
+      return signedIn;
     });
 
     app.post('/password/forgot', { config: sensitive }, async (request) => {
@@ -44,7 +49,9 @@ export const authRoutes =
 
     app.post('/password/reset', { config: sensitive }, async (request) => {
       const { identifier, code, newPassword } = parse(ResetPasswordBody, request.body);
-      return auth.resetPassword(identifier, code, newPassword, request.headers['user-agent']);
+      const signedIn = await auth.resetPassword(identifier, code, newPassword, request.headers['user-agent']);
+      await activity.record(signedIn.user.id, 'PASSWORD_RESET', requestContext(request));
+      return signedIn;
     });
 
     app.post('/refresh', async (request) => {
@@ -54,7 +61,8 @@ export const authRoutes =
 
     app.post('/logout', async (request, reply) => {
       const { refreshToken } = parse(RefreshBody, request.body);
-      await auth.logout(refreshToken);
+      const userId = await auth.logout(refreshToken);
+      if (userId) await activity.record(userId, 'LOGOUT', requestContext(request));
       return reply.code(204).send();
     });
   };

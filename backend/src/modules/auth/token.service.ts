@@ -82,12 +82,15 @@ export class TokenService {
   }
 
   /** Signs out one device. Unknown tokens are ignored so logout always succeeds. */
-  async revoke(refreshToken: string): Promise<void> {
+  /** Ends the session this token belongs to. Returns its account, if the token was known. */
+  async revoke(refreshToken: string): Promise<string | null> {
     const session = await this.prisma.session.findUnique({
       where: { tokenHash: sha256(refreshToken) },
-      select: { familyId: true },
+      select: { familyId: true, userId: true, revokedAt: true },
     });
-    if (session) await this.revokeFamily(session.familyId);
+    if (!session) return null;
+    await this.revokeFamily(session.familyId);
+    return session.revokedAt ? null : session.userId;
   }
 
   async revokeAllForUser(userId: string): Promise<void> {
