@@ -230,3 +230,21 @@ tbody tr:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px;
   .side-foot, .hide-sm { display: none; }
   main { padding: 18px 16px 40px; }
 }
+
+/* Live refresh */
+.live-badge { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 700; padding: 5px 10px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); white-space: nowrap; font-family: var(--mono); }
+.live-badge.on { color: var(--mint); border-color: rgba(52, 211, 153, 0.35); }
+.live-badge.on .dot { animation: pulse 2s ease-in-out infinite; box-shadow: 0 0 8px var(--mint); }
+.live-badge.off { color: var(--amber); border-color: rgba(251, 191, 36, 0.35); }
+.dot.pulse { animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .live-badge.on .dot, .dot.pulse { animation: none; } }
+.head-tools { display: inline-flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.live-card h2 { display: flex; align-items: center; gap: 8px; }
+.list li.clickable { cursor: pointer; border-radius: 6px; padding-left: 6px; padding-right: 6px; }
+.list li.clickable:hover { background: var(--surface-2); }
+.list li.clickable:focus-visible { outline: 2px solid var(--accent); }
+.list .grow { flex: 1 1 200px; min-width: 0; }
+.progress-cell { display: inline-flex; align-items: center; gap: 8px; flex: 0 1 300px; min-width: 200px; }
+.progress-cell .bar-track { flex: 1; min-width: 60px; }

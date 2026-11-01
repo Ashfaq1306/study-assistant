@@ -151,6 +151,7 @@ function revoke(refreshToken) {
 }
 
 function signOut(message) {
+  setLive(null);
   const refreshToken = session?.refreshToken;
   saveSession(null);
   if (!message) revoke(refreshToken);
@@ -170,15 +171,59 @@ function pageHead(title, subtitle, ...right) {
 const loading = () => el('div', { class: 'loading', role: 'status' }, 'Loading…');
 const errorBanner = (message) => el('div', { class: 'banner err', role: 'alert' }, message);
 
-async function load(main, title, fn) {
-  fill(main, pageHead(title), loading());
+/**
+ * Loads a page. A silent load (the live refresh) keeps what is on screen until the new data
+ * is in, and on failure only marks the live badge as offline.
+ */
+async function load(main, title, fn, silent = false) {
+  if (!silent) fill(main, pageHead(title), loading());
   try {
     await fn();
+    liveState.ok = true;
+    liveState.at = new Date();
   } catch (e) {
     if (e.status === 401) return;
+    liveState.ok = false;
+    if (silent) return drawLiveBadges();
     fill(main, pageHead(title), errorBanner(e.message), el('button', { class: 'btn ghost', onclick: () => route() }, 'Try again'));
   }
+  drawLiveBadges();
 }
+
+// ---------- live refresh ----------
+
+/** Every page (and an open account) refreshes itself this often while the tab is visible. */
+const LIVE_MS = 10_000;
+const liveState = { timer: null, fn: null, ok: true, at: null };
+
+/** Runs [fn] every LIVE_MS while the page is visible and no account or dialog is open over it. */
+function setLive(fn) {
+  clearInterval(liveState.timer);
+  liveState.fn = fn;
+  liveState.timer = fn
+    ? setInterval(() => {
+        if (!document.hidden && !document.querySelector('.scrim')) fn();
+      }, LIVE_MS)
+    : null;
+}
+
+/** "● Live · updated 10:42:31", redrawn in place after every refresh. */
+function liveBadge() {
+  return el('span', { class: 'live-badge', 'data-live': '' });
+}
+
+function drawLiveBadges() {
+  for (const badge of document.querySelectorAll('[data-live]')) {
+    const time = liveState.at ? liveState.at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+    badge.className = `live-badge ${liveState.ok ? 'on' : 'off'}`;
+    fill(badge, el('i', { class: 'dot', 'aria-hidden': 'true' }), liveState.ok ? `Live · ${time}` : 'Reconnecting…');
+  }
+}
+
+document.addEventListener('visibilitychange', () => {
+  // Coming back to the tab: refresh at once instead of waiting for the next tick.
+  if (!document.hidden && liveState.fn && !document.querySelector('.scrim')) liveState.fn();
+});
 
 const ROLE_PILL = { STUDENT: 'violet', PARENT: 'mint', ADMIN: 'amber' };
 const rolePill = (role) => el('span', { class: `pill ${ROLE_PILL[role]}` }, role.toLowerCase());
@@ -326,6 +371,7 @@ async function route() {
       return;
     }
   }
+  setLive(null);
   const page = currentPage();
   const main = el('main', { id: 'main' });
   mount(
@@ -401,23 +447,78 @@ function activityChart(days) {
   return svg;
 }
 
-function renderOverview(main) {
+const plural = (n, word) => `${fmt.num(n)} ${word}${n === 1 ? '' : 's'}`;
+
+function liveNow(live) {
+  return el(
+    'section',
+    { class: 'card live-card' },
+    el('h2', {}, el('i', { class: 'dot mint pulse', 'aria-hidden': 'true' }), ' Live now: studying'),
+    live.studying.length === 0
+      ? el('p', { class: 'empty' }, 'Nobody is studying right now.')
+      : el(
+          'ul',
+          { class: 'list' },
+          live.studying.map((s) =>
+            el(
+              'li',
+              { class: 'clickable', tabindex: 0, onclick: () => openUser(s.student.id), onkeydown: (e) => e.key === 'Enter' && openUser(s.student.id) },
+              el('span', { class: 'grow' }, el('strong', {}, s.student.name), ' ', el('span', { class: 'meta' }, `${s.subject} · ${s.topics}`)),
+              el(
+                'span',
+                { class: 'progress-cell' },
+                el('span', { class: 'bar-track' }, el('span', { class: 'bar-fill', style: `width:${Math.min(100, (s.studiedMinutes / Math.max(1, s.plannedMinutes)) * 100)}%` })),
+                el('span', { class: 'meta' }, `${fmt.minutes(s.studiedMinutes)} / ${fmt.minutes(s.plannedMinutes)}`),
+                s.status === 'EXAM_PENDING' ? el('span', { class: 'pill amber' }, 'exam due') : el('span', { class: 'pill violet' }, 'studying'),
+              ),
+            ),
+          ),
+        ),
+  );
+}
+
+function recentActivity(events) {
+  return el(
+    'section',
+    { class: 'card' },
+    el('h2', {}, 'Latest activity'),
+    events.length === 0
+      ? el('p', { class: 'empty' }, 'Nothing yet. Sign-ins and sign-outs appear here as they happen.')
+      : el(
+          'ul',
+          { class: 'list' },
+          events.map((e) =>
+            el(
+              'li',
+              { class: 'clickable', tabindex: 0, onclick: () => openUser(e.user.id), onkeydown: (ev) => ev.key === 'Enter' && openUser(e.user.id) },
+              el('span', {}, el('strong', {}, e.user.name), ' ', eventPill(e.kind)),
+              el('span', { class: 'meta' }, fmt.ago(e.createdAt)),
+            ),
+          ),
+        ),
+    el('div', { class: 'actions' }, el('button', { class: 'btn ghost small', onclick: () => (location.hash = '#/activity') }, 'Full activity log →')),
+  );
+}
+
+function renderOverview(main, silent = false) {
+  if (!silent) setLive(() => renderOverview(main, true));
   load(main, 'Overview', async () => {
     const s = await api('/admin/stats');
     fill(
       main,
-      pageHead('Overview', `Updated ${fmt.dateTime(s.generatedAt)}`, el('button', { class: 'btn ghost', onclick: () => renderOverview(main) }, 'Refresh')),
+      pageHead('Overview', 'Everything updates by itself every 10 seconds', liveBadge()),
       el(
         'div',
         { class: 'tiles' },
-        tile('Online now', fmt.num(s.users.online), `${fmt.num(s.users.signedIn)} account${s.users.signedIn === 1 ? '' : 's'} signed in`, 'mint'),
-        tile('Studied today', fmt.minutes(s.sessions.minutesToday), `${fmt.num(s.sessions.active)} session${s.sessions.active === 1 ? '' : 's'} running`, 'violet'),
-        tile('Accounts', fmt.num(s.users.total), `${fmt.num(s.users.students)} students · ${fmt.num(s.users.parents)} parents`),
-        tile('Exam pass rate', s.exams.passRate === null ? '—' : `${s.exams.passRate}%`, `${fmt.num(s.exams.passed)} of ${fmt.num(s.exams.submitted)} passed`, 'amber'),
+        tile('Online now', fmt.num(s.users.online), `${plural(s.users.signedIn, 'account')} signed in`, 'mint'),
+        tile('Studying now', fmt.num(s.live.studying.length), `${fmt.minutes(s.sessions.minutesToday)} studied today`, 'violet'),
+        tile('Phones online', fmt.num(s.live.phonesOnline), `${plural(s.live.lockedPhones, 'phone')} locked now`, 'amber'),
+        tile('Accounts', fmt.num(s.users.total), `${plural(s.users.students, 'student')} · ${plural(s.users.parents, 'parent')}`),
       ),
+      el('div', { class: 'grid-2' }, liveNow(s.live), recentActivity(s.live.recent)),
       el(
         'div',
-        { class: 'grid-2' },
+        { class: 'grid-2', style: 'margin-top:14px' },
         el('section', { class: 'card' }, el('h2', {}, 'Minutes studied, last 14 days'), activityChart(s.activity)),
         el(
           'section',
@@ -426,6 +527,7 @@ function renderOverview(main) {
           el(
             'dl',
             { class: 'kv' },
+            el('dt', {}, 'Exam pass rate'), el('dd', {}, s.exams.passRate === null ? '—' : `${s.exams.passRate}% (${fmt.num(s.exams.passed)}/${fmt.num(s.exams.submitted)})`),
             el('dt', {}, 'New accounts this week'), el('dd', {}, fmt.num(s.users.newThisWeek)),
             el('dt', {}, 'Parent links'), el('dd', {}, fmt.num(s.users.familyLinks)),
             el('dt', {}, 'Disabled accounts'), el('dd', {}, fmt.num(s.users.disabled)),
@@ -440,7 +542,7 @@ function renderOverview(main) {
         ),
       ),
     );
-  });
+  }, silent);
 }
 
 // ---------- accounts ----------
@@ -470,7 +572,7 @@ function renderUsers(main) {
 
   fill(
     main,
-    pageHead('Accounts', 'Every student, parent and admin. Open one to control it.'),
+    pageHead('Accounts', 'Every student, parent and admin. Open one to control it.', liveBadge()),
     el(
       'section',
       { class: 'card' },
@@ -486,8 +588,8 @@ function renderUsers(main) {
     ),
   );
 
-  async function refresh() {
-    fill(results, loading());
+  async function refresh(silent = false) {
+    if (!silent) fill(results, loading());
     const params = new URLSearchParams({ page: String(usersState.page), pageSize: '25' });
     for (const key of ['q', 'role', 'status', 'presence']) if (usersState[key].trim()) params.set(key, usersState[key].trim());
     try {
@@ -513,6 +615,7 @@ function renderUsers(main) {
                     el('th', {}, 'Role'),
                     el('th', {}, 'Presence'),
                     el('th', {}, 'Last seen'),
+                    el('th', {}, 'Phone'),
                     el('th', { class: 'num' }, 'Studied'),
                     el('th', { class: 'num' }, 'Exams'),
                     el('th', {}, 'Status'),
@@ -529,6 +632,7 @@ function renderUsers(main) {
                       el('td', {}, rolePill(u.role)),
                       el('td', {}, presencePill(u.presence)),
                       el('td', { class: 'muted' }, fmt.ago(u.lastActiveAt)),
+                      el('td', {}, phoneCell(u)),
                       el('td', { class: 'num' }, u.role === 'STUDENT' ? fmt.minutes(u.studyMinutes) : '—'),
                       el('td', { class: 'num' }, u.role === 'STUDENT' ? fmt.num(u.counts.exams) : '—'),
                       el('td', {}, statusPill(u)),
@@ -550,11 +654,28 @@ function renderUsers(main) {
         ),
       );
     } catch (e) {
-      if (e.status !== 401) fill(results, errorBanner(e.message));
+      liveState.ok = e.status === 401;
+      drawLiveBadges();
+      if (e.status !== 401 && !silent) fill(results, errorBanner(e.message));
+      return;
     }
+    liveState.ok = true;
+    liveState.at = new Date();
+    drawLiveBadges();
   }
 
+  setLive(() => refresh(true));
   refresh();
+}
+
+/** A student's phone: online if it synced in the last 3 minutes (it syncs about every minute). */
+function phoneCell(u) {
+  if (u.role !== 'STUDENT') return el('span', { class: 'muted' }, '—');
+  if (!u.phoneSeenAt) return el('span', { class: 'muted' }, 'no phone');
+  const online = Date.now() - new Date(u.phoneSeenAt).getTime() < 3 * 60_000;
+  return online
+    ? el('span', { class: 'pill mint' }, el('i', { class: 'dot mint', 'aria-hidden': 'true' }), 'online')
+    : el('span', { class: 'muted' }, fmt.ago(u.phoneSeenAt));
 }
 
 function section(title, items, render, empty = 'Nothing yet.') {
@@ -582,8 +703,11 @@ function openUser(id, onChange) {
   const body = el('div', { class: 'drawer', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Account details' }, loading());
   const scrim = el('div', { class: 'scrim', onclick: (e) => e.target === scrim && close() }, body);
   const close = () => {
+    clearInterval(liveTimer);
     scrim.remove();
     document.removeEventListener('keydown', onKey);
+    // Back to the page underneath: show what changed meanwhile.
+    liveState.fn?.();
   };
   const onKey = (e) => e.key === 'Escape' && !document.querySelector('.dialog') && close();
   document.addEventListener('keydown', onKey);
@@ -805,13 +929,18 @@ function openUser(id, onChange) {
   }
 
   show();
+  // Live: redraw every 10 s, except while a dialog or a one-time password is on screen.
+  const liveTimer = setInterval(() => {
+    if (!document.hidden && !document.querySelector('.dialog') && !message.hasChildNodes()) show();
+  }, LIVE_MS);
 }
 
 // ---------- study time ----------
 
 let studyDays = 7;
 
-function renderStudy(main) {
+function renderStudy(main, silent = false) {
+  if (!silent) setLive(() => renderStudy(main, true));
   load(main, 'Study time', async () => {
     const data = await api(`/admin/study?days=${studyDays}`);
     const period = select(
@@ -826,7 +955,7 @@ function renderStudy(main) {
     const studied = data.students.filter((s) => s.minutes > 0);
     fill(
       main,
-      pageHead('Study time', 'Who studied how long, and which subjects', period),
+      pageHead('Study time', 'Who studied how long, and which subjects', el('span', { class: 'head-tools' }, liveBadge(), period)),
       el(
         'div',
         { class: 'tiles' },
@@ -876,14 +1005,15 @@ function renderStudy(main) {
         ),
       ),
     );
-  });
+  }, silent);
 }
 
 // ---------- activity log ----------
 
 const activityState = { kind: '', page: 1 };
 
-function renderActivity(main) {
+function renderActivity(main, silent = false) {
+  if (!silent) setLive(() => renderActivity(main, true));
   load(main, 'Activity log', async () => {
     const params = new URLSearchParams({ page: String(activityState.page), pageSize: '50' });
     if (activityState.kind) params.set('kind', activityState.kind);
@@ -900,7 +1030,7 @@ function renderActivity(main) {
     };
     fill(
       main,
-      pageHead('Activity log', 'Who signed in or out, and when, plus every admin action', kind),
+      pageHead('Activity log', 'Who signed in or out, and when, plus every admin action', el('span', { class: 'head-tools' }, liveBadge(), kind)),
       el(
         'section',
         { class: 'card' },
@@ -943,7 +1073,7 @@ function renderActivity(main) {
         ),
       ),
     );
-  });
+  }, silent);
 }
 
 // ---------- settings ----------

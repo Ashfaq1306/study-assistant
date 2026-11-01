@@ -1,6 +1,6 @@
 import type { Prisma, PrismaClient, Role, StudySession } from '@prisma/client';
 import type { Clock } from '../../lib/clock.js';
-import { hashPassword, randomToken } from '../../lib/crypto.js';
+import { hashPassword, readablePassword } from '../../lib/crypto.js';
 import { AppError, notFound } from '../../lib/errors.js';
 import type { ActivityContext, ActivityService } from '../activity/activity.service.js';
 import type { AuthTokens, TokenService } from '../auth/token.service.js';
@@ -14,6 +14,8 @@ const DAY_MS = 24 * 60 * MINUTE;
 export const ACTIVITY_DAYS = 14;
 /** Seen this recently = online. */
 const ONLINE_MS = 5 * MINUTE;
+/** A phone that synced this recently is online (the lock service syncs about every minute). */
+const PHONE_ONLINE_MS = 3 * MINUTE;
 
 export type Presence = 'online' | 'signedIn' | 'signedOut';
 
@@ -180,6 +182,47 @@ export class AdminService {
       devices: { registered: devices, protectionOn: protectedDevices, seenToday: devicesSeen },
       ai: { requestsToday: aiToday },
       activity: [...days.values()],
+      live: await this.live(now),
+    };
+  }
+
+  /** What is happening right now: who is studying, which phones are online or locked, the latest events. */
+  private async live(now: Date) {
+    const phoneSince = new Date(now.getTime() - PHONE_ONLINE_MS);
+    const [running, parentLocked, phonesOnline, recent] = await Promise.all([
+      this.prisma.studySession.findMany({
+        where: { status: { in: ['STUDYING', 'EXAM_PENDING'] } },
+        orderBy: { startedAt: 'desc' },
+        take: 50,
+        include: { student: { select: { id: true, name: true } } },
+      }),
+      this.prisma.parentLock.findMany({
+        where: { status: 'ACTIVE' },
+        select: { studentId: true },
+        distinct: ['studentId'],
+      }),
+      this.prisma.device.count({ where: { revokedAt: null, lastSeenAt: { gte: phoneSince } } }),
+      this.prisma.activityEvent.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 8,
+        select: { id: true, kind: true, detail: true, userAgent: true, createdAt: true, user: { select: { id: true, name: true } }, actor: { select: { name: true } } },
+      }),
+    ]);
+    const lockedStudents = new Set([...running.map((s) => s.studentId), ...parentLocked.map((l) => l.studentId)]);
+    return {
+      studying: running.map((s) => ({
+        sessionId: s.id,
+        student: s.student,
+        subject: s.subject,
+        topics: s.topics,
+        status: s.status,
+        startedAt: s.startedAt,
+        plannedMinutes: s.plannedMinutes,
+        studiedMinutes: this.sessions.studiedMinutes(s, now),
+      })),
+      lockedPhones: lockedStudents.size,
+      phonesOnline,
+      recent: recent.map((e) => ({ ...e, actor: e.actor?.name ?? null })),
     };
   }
 
@@ -211,11 +254,13 @@ export class AdminService {
     ]);
 
     const ids = users.map((u) => u.id);
-    const [live, studies] = await Promise.all([
+    const [live, studies, phones] = await Promise.all([
       this.prisma.session.groupBy({ by: ['userId'], where: { userId: { in: ids }, ...this.liveSessionWhere(now) }, _count: { _all: true } }),
       this.prisma.studySession.findMany({ where: { studentId: { in: ids } }, select: studySelect }),
+      this.prisma.device.groupBy({ by: ['studentId'], where: { studentId: { in: ids }, revokedAt: null }, _max: { lastSeenAt: true } }),
     ]);
     const liveBy = new Map(live.map((l) => [l.userId, l._count._all]));
+    const phoneBy = new Map(phones.map((p) => [p.studentId, p._max.lastSeenAt]));
     const minutesBy = new Map<string, number>();
     for (const s of studies) minutesBy.set(s.studentId, (minutesBy.get(s.studentId) ?? 0) + this.sessions.studiedMinutes(s, now));
 
@@ -228,6 +273,8 @@ export class AdminService {
         presence: this.presence(u.lastActiveAt, liveBy.get(u.id) ?? 0, now),
         signedInDevices: liveBy.get(u.id) ?? 0,
         studyMinutes: minutesBy.get(u.id) ?? 0,
+        /** Last sync from the student's phone (it syncs about every minute, even with the app closed). */
+        phoneSeenAt: phoneBy.get(u.id) ?? null,
       })),
     };
   }
@@ -334,7 +381,7 @@ export class AdminService {
   /** Sets a new random password, shown to the admin once, and signs the account out everywhere. */
   async resetPassword(adminId: string, id: string, context: ActivityContext): Promise<{ password: string }> {
     await this.manageable(id);
-    const password = randomToken(9).replace(/[-_]/g, 'x').slice(0, 12);
+    const password = readablePassword();
     await this.prisma.$transaction([
       this.prisma.user.update({ where: { id }, data: { passwordHash: await hashPassword(password) } }),
       this.revokeAll(id, this.clock()),

@@ -8,7 +8,7 @@
  *   npm run admin -- list
  */
 import { PrismaClient } from '@prisma/client';
-import { hashPassword, randomToken } from '../lib/crypto.js';
+import { hashPassword, readablePassword } from '../lib/crypto.js';
 
 const prisma = new PrismaClient();
 
@@ -17,8 +17,8 @@ const usage = () => {
   process.exit(2);
 };
 
-/** 18 random characters: long enough that it never needs complexity rules. */
-const newPassword = () => randomToken(14).slice(0, 18);
+/** Easy to read and type: no look-alike characters. */
+const newPassword = readablePassword;
 
 async function main(): Promise<void> {
   const [command, rawEmail, name] = process.argv.slice(2);

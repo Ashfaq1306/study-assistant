@@ -143,7 +143,7 @@ describe('password reset by an admin', () => {
   it('gives a new password; the old one stops working', async () => {
     const res = await as(admin).post(`/v1/admin/users/${student.userId}/reset-password`);
     const { password } = res.json<{ password: string }>();
-    expect(password).toHaveLength(12);
+    expect(password).toMatch(/^[a-z2-9]{4}-[a-z2-9]{4}-[a-z2-9]{4}$/);
 
     expect((await login(student)).statusCode).toBe(401);
     expect((await login(student, password)).statusCode).toBe(200);
@@ -164,5 +164,25 @@ describe('panel session', () => {
     const stats = await ctx.app.inject({ method: 'GET', url: '/v1/admin/stats', headers: bearer(tokens.accessToken) });
     expect(stats.statusCode).toBe(200);
     expect((await as(student).post('/v1/admin/panel-session')).statusCode).toBe(403);
+  });
+});
+
+describe('live overview', () => {
+  it('shows who is studying right now and the latest events', async () => {
+    expect((await startSession(student, 'Biology', 40)).statusCode).toBe(201);
+    ctx.clock.advance(15 * 60_000);
+
+    const stats = (await as(admin).get('/v1/admin/stats')).json<{
+      live: {
+        studying: { student: { id: string }; subject: string; studiedMinutes: number; plannedMinutes: number }[];
+        lockedPhones: number;
+        recent: { kind: string }[];
+      };
+    }>();
+    expect(stats.live.studying).toEqual([
+      expect.objectContaining({ student: { id: student.userId, name: 'Nadia' }, subject: 'Biology', studiedMinutes: 15, plannedMinutes: 40 }),
+    ]);
+    expect(stats.live.lockedPhones).toBe(1);
+    expect(stats.live.recent.map((e) => e.kind)).toContain('SIGNUP');
   });
 });
