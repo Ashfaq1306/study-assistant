@@ -17,7 +17,7 @@ class ActiveSessionController extends AsyncNotifier<StudySession?> {
   Future<StudySession?> build() async {
     // Start over whenever a different student signs in, or nobody is.
     final userId = ref.watch(
-      authControllerProvider.select((s) => s is AuthSignedIn && !s.user.isParent ? s.user.id : null),
+      authControllerProvider.select((s) => s is AuthSignedIn && s.user.isStudent ? s.user.id : null),
     );
     if (userId == null) return null;
     return _api.active();

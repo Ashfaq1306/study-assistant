@@ -25,7 +25,7 @@ class LockedScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final text = Theme.of(context).textTheme;
     final auth = ref.watch(authControllerProvider);
-    final signedInStudent = auth is AuthSignedIn && !auth.user.isParent;
+    final signedInStudent = auth is AuthSignedIn && auth.user.isStudent;
     final session = signedInStudent ? ref.watch(activeSessionProvider).value : null;
     final lock = ref.watch(appLockProvider).value?.state;
     final reasons = lock?.reasons ?? const [];

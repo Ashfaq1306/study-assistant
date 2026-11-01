@@ -27,11 +27,11 @@ WidgetSnapshot widgetSnapshot({
   if (auth is! AuthSignedIn) {
     return (mode: 'signedOut', title: '', subtitle: '', endsAt: null, todayMinutes: 0, streakDays: 0);
   }
-  if (auth.user.isParent) {
+  if (!auth.user.isStudent) {
     return (
       mode: 'idle',
       title: '',
-      subtitle: "See your children's progress",
+      subtitle: auth.user.isParent ? "See your children's progress" : 'Control Room',
       endsAt: null,
       todayMinutes: todayMinutes,
       streakDays: streakDays,
@@ -77,7 +77,7 @@ final widgetSyncProvider = Provider<void>((ref) {
 
   void push() {
     final auth = ref.read(authControllerProvider);
-    final student = auth is AuthSignedIn && !auth.user.isParent;
+    final student = auth is AuthSignedIn && auth.user.isStudent;
     final stats = student ? ref.read(studyStatsProvider).value : null;
     final reasons = ref.read(appLockProvider).value?.state.reasons ?? const [];
     final next = widgetSnapshot(

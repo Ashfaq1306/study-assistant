@@ -35,12 +35,15 @@ abstract final class Routes {
   /// Settings shared by students and parents.
   static const appearance = '/settings/appearance';
 
+  /// The admin's Control Room (the web admin panel inside the app). Admin accounts see nothing else.
+  static const admin = '/admin';
+
   /// Shown over a locked app. Reachable in every sign-in state.
   static const locked = '/locked';
 
   static const signedOutOnly = {welcome, login, register, verify, forgotPassword};
 
-  static String homeFor(AppUser user) => user.isParent ? parentHome : home;
+  static String homeFor(AppUser user) => user.isAdmin ? admin : (user.isParent ? parentHome : home);
 }
 
 /// Decides where a navigation may go for the current auth state.
@@ -63,6 +66,7 @@ String? guardRoute(AuthState auth, String location) {
         return home;
       }
       if (location.startsWith('/settings/')) return null;
+      if ((location == Routes.admin) != user.isAdmin) return home;
       final inParentArea = location == Routes.parentHome || location.startsWith('${Routes.parentHome}/');
       if (inParentArea != user.isParent) return home;
       return null;

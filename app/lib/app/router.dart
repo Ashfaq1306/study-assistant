@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/admin/admin_panel_screen.dart';
 import '../features/app_lock/presentation/app_lock_screen.dart';
 import '../features/app_lock/presentation/locked_screen.dart';
 import '../features/auth/application/auth_controller.dart';
@@ -46,6 +47,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) => guardRoute(authListenable.value, state.matchedLocation),
     routes: [
       GoRoute(path: Routes.splash, builder: (_, _) => const SplashScreen()),
+      GoRoute(path: Routes.admin, pageBuilder: (_, s) => _fade(s, const AdminPanelScreen())),
       GoRoute(
         path: Routes.locked,
         pageBuilder: (_, s) => _fade(s, LockedScreen(appLabel: s.uri.queryParameters['app'])),
