@@ -240,7 +240,16 @@ export class AdminService {
     if (query.presence === 'signedIn') where.sessions = { some: this.liveSessionWhere(now) };
     if (query.presence === 'signedOut') where.sessions = { none: this.liveSessionWhere(now) };
     const q = query.q?.trim();
-    if (q) where.OR = [{ name: { contains: q } }, { email: { contains: q.toLowerCase() } }, { phone: { contains: q } }];
+    if (q) {
+      // Postgres compares case-sensitively (SQLite does not): also try the usual spellings of a name.
+      const title = q.toLowerCase().replace(/(^|\s)\p{L}/gu, (c) => c.toUpperCase());
+      const names = [...new Set([q, q.toLowerCase(), q.toUpperCase(), title])];
+      where.OR = [
+        ...names.map((n) => ({ name: { contains: n } })),
+        { email: { contains: q.toLowerCase() } },
+        { phone: { contains: q } },
+      ];
+    }
 
     const [total, users] = await Promise.all([
       this.prisma.user.count({ where }),
