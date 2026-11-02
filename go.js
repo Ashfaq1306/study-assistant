@@ -1,4 +1,4 @@
-// Finds the Study Assistant server's current address and sends the browser there.
+// Finds the Study Mate server's current address and sends the browser there.
 // The server runs on a home computer behind a tunnel whose address changes when it restarts;
 // scripts/serve-public.ps1 keeps the latest one in this gist.
 const ENDPOINT =
