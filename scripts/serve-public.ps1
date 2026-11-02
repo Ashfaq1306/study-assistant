@@ -46,6 +46,9 @@ function Save-OldLog([string]$name) {
   $pattern = '{0}.*{1}' -f [IO.Path]::GetFileNameWithoutExtension($name), [IO.Path]::GetExtension($name)
   Get-ChildItem $logDir -Filter $pattern | Where-Object { $_.Name -ne $name } |
     Sort-Object LastWriteTime -Descending | Select-Object -Skip 10 | Remove-Item -Force
+  # The privacy policy promises server logs (IP addresses, times) are gone within 30 days.
+  Get-ChildItem $logDir -Filter $pattern | Where-Object { $_.Name -ne $name -and $_.LastWriteTime -lt (Get-Date).AddDays(-30) } |
+    Remove-Item -Force
 }
 
 function Find-Exe([string]$name, [string[]]$fallbacks) {

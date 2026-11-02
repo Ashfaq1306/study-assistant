@@ -126,6 +126,9 @@ powershell -ExecutionPolicy Bypass -File scriptsnfigure-server.ps1    # real em
 - **API:** set `NODE_ENV=production`, `TRUST_PROXY` to the number of proxies in front of the API (rate limits depend on the real client IP), a Postgres `DATABASE_URL` (and change the Prisma `provider`), real secrets, `ANTHROPIC_API_KEY` (from console.anthropic.com; without it exams use built-in practice questions and the helper is off), `EMAIL_PROVIDER=smtp` with `SMTP_*`, and `SMS_PROVIDER=twilio` with `TWILIO_*` (or `SMS_PROVIDER=none` for email codes only; the app then hides SMS). Console providers are refused in production.
 - **App:** `flutter build apk --release --dart-define=API_BASE_URL=https://your-api.example.com`
 
+## Launching on Google Play
+Everything for the Play Console (listing text, screenshots, feature graphic, Data safety answers, the Accessibility declaration and a launch checklist) is in [docs/store](docs/store/README.md). Release builds are signed with the upload key named in `app/android/key.properties` (never committed); the privacy policy and account-deletion pages are at https://ashfaq1306.github.io/study-assistant/privacy/ and …/delete-account/.
+
 ## Testing
 ```bash
 cd backend && npm run lint && npm run typecheck && npm test   # API tests

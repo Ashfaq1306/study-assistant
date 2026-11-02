@@ -15,6 +15,7 @@ app/       Flutter 3.47 (Android first), Riverpod 3, go_router 18, dio
   lib/features/<feature>/  data / domain / application / presentation
   lib/app/                 providers, routes + guard, router
   tool/icon/               renders launcher icons from LogoPainter
+  tool/store/              renders the Play feature graphic and icon
 admin/     web admin panel (plain HTML/CSS/JS), served by the API at /admin/
 scripts/   serve-public.ps1 (API + Cloudflare tunnel + address gist), install-autostart, configure-server, publish-test-build
 docs/      architecture notes and assets
