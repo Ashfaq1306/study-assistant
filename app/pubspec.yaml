@@ -30,6 +30,7 @@ dependencies:
   file_picker: ^13.1.0
   intl: ^0.20.3
   webview_flutter: ^4.14.1
+  in_app_update: ^5.0.0
 
 dev_dependencies:
   flutter_test:
