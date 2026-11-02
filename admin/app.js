@@ -351,6 +351,7 @@ const PAGES = {
   users: { label: 'Accounts', icon: '◉', render: renderUsers },
   study: { label: 'Study time', icon: '◷', render: renderStudy },
   activity: { label: 'Activity log', icon: '≡', render: renderActivity },
+  reports: { label: 'Reports', icon: '⚑', render: renderReports },
   settings: { label: 'Settings', icon: '⚙', render: renderSettings },
 };
 
@@ -1071,6 +1072,66 @@ function renderActivity(main, silent = false) {
             el('button', { class: 'btn ghost small', disabled: data.page >= pages, onclick: () => go(1) }, 'Older →'),
           ),
         ),
+      ),
+    );
+  }, silent);
+}
+
+// ---------- reports (AI content flagged by users) ----------
+
+const REPORT_KIND = { TUTOR: 'AI helper answer', EXAM: 'Exam question', CALENDAR: 'Calendar import' };
+const reportsState = { status: 'open' };
+
+function renderReports(main, silent = false) {
+  if (!silent) setLive(() => renderReports(main, true));
+  load(main, 'Reports', async () => {
+    const data = await api(`/admin/reports?status=${reportsState.status}`);
+    const status = select('Show', [['open', 'To review'], ['resolved', 'Done'], ['all', 'All']], reportsState.status, (v) => {
+      reportsState.status = v;
+      renderReports(main);
+    });
+    fill(
+      main,
+      pageHead('Reports', 'AI answers and questions that users flagged as wrong or unsuitable', el('span', { class: 'head-tools' }, liveBadge(), status)),
+      el(
+        'section',
+        { class: 'card' },
+        data.reports.length === 0
+          ? el('p', { class: 'empty' }, reportsState.status === 'open' ? 'Nothing to review. 🎉' : 'No reports here.')
+          : el(
+              'ul',
+              { class: 'list' },
+              data.reports.map((r) =>
+                el(
+                  'li',
+                  { class: 'report' },
+                  el(
+                    'div',
+                    { class: 'grow' },
+                    el('div', {}, el('span', { class: 'pill amber' }, REPORT_KIND[r.kind] ?? r.kind), ' ', el('strong', {}, r.user.name), ' ', el('span', { class: 'meta' }, fmt.dateTime(r.createdAt))),
+                    el('p', { class: 'report-text' }, r.content),
+                    r.reason ? el('p', { class: 'meta' }, 'Reason: ', r.reason) : null,
+                  ),
+                  el(
+                    'button',
+                    {
+                      class: r.resolvedAt ? 'btn ghost small' : 'btn small',
+                      async onclick(e) {
+                        e.target.disabled = true;
+                        try {
+                          await api(`/admin/reports/${encodeURIComponent(r.id)}`, { method: 'PATCH', body: { resolved: !r.resolvedAt } });
+                          renderReports(main, true);
+                        } catch (err) {
+                          toast(err.message, 'err');
+                          e.target.disabled = false;
+                        }
+                      },
+                    },
+                    r.resolvedAt ? 'Reopen' : 'Mark done',
+                  ),
+                ),
+              ),
+            ),
       ),
     );
   }, silent);

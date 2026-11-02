@@ -10,6 +10,7 @@ import { systemClock, type Clock } from './lib/clock.js';
 import { AppError } from './lib/errors.js';
 import { ActivityService } from './modules/activity/activity.service.js';
 import { adminPanel } from './modules/admin/admin-panel.js';
+import { adminReportRoutes, reportRoutes } from './modules/reports/reports.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
 import { AdminService } from './modules/admin/admin.service.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
@@ -175,7 +176,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(studentLockRoutes(prisma, parent, exams), { prefix: '/v1/locks' });
   await app.register(notificationsRoutes(prisma, notifications), { prefix: '/v1/notifications' });
   await app.register(calendarRoutes(prisma, calendar), { prefix: '/v1/calendar' });
+  await app.register(reportRoutes(prisma), { prefix: '/v1/reports' });
   await app.register(adminRoutes(prisma, admin), { prefix: '/v1/admin' });
+  await app.register(adminReportRoutes(prisma), { prefix: '/v1/admin/reports' });
   if (env.ADMIN_PANEL_DIR) await app.register(adminPanel(resolve(env.ADMIN_PANEL_DIR)));
 
   return app;

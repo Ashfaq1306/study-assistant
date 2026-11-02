@@ -1,6 +1,7 @@
 import type { PrismaClient, Role, User } from '@prisma/client';
 import { PARENTAL_CONTROL_AGE, ageOn, toIsoDate } from '../../lib/age.js';
-import { notFound } from '../../lib/errors.js';
+import { verifyPassword } from '../../lib/crypto.js';
+import { AppError, notFound } from '../../lib/errors.js';
 import type { Clock } from '../../lib/clock.js';
 
 export interface PublicUser {
@@ -26,6 +27,40 @@ export class UsersService {
     private readonly prisma: PrismaClient,
     private readonly clock: Clock,
   ) {}
+
+  /**
+   * Deletes the account and everything that belongs to it (study history, photos, exams,
+   * calendar, devices, family links), after the password is confirmed. Google Play requires
+   * this in the app.
+   *
+   * A student cannot delete the account while a lock is running: the phone would forget the
+   * lock, which would be a way around the exam.
+   */
+  async deleteAccount(user: User, password: string): Promise<void> {
+    if (!(await verifyPassword(password, user.passwordHash))) {
+      throw new AppError(400, 'WRONG_PASSWORD', 'That password is not right.', {
+        fields: { password: ['That password is not right.'] },
+      });
+    }
+    if (user.role === 'ADMIN') {
+      throw new AppError(409, 'ADMIN_ACCOUNT', 'Admin accounts are removed on the server.');
+    }
+    if (user.role === 'STUDENT') {
+      const [running, parentLocks] = await Promise.all([
+        this.prisma.studySession.count({ where: { studentId: user.id, status: { in: ['STUDYING', 'EXAM_PENDING'] } } }),
+        this.prisma.parentLock.count({ where: { studentId: user.id, status: 'ACTIVE' } }),
+      ]);
+      if (running + parentLocks > 0) {
+        throw new AppError(
+          409,
+          'LOCK_ACTIVE',
+          'Your apps are locked right now. Pass your exam first, then you can delete your account.',
+        );
+      }
+    }
+    // Every related row is removed with the account (onDelete: Cascade in the schema).
+    await this.prisma.user.delete({ where: { id: user.id } });
+  }
 
   /** Students under 15 must have a parent linked before they can use study features. */
   requiresParentalControl(user: Pick<User, 'role' | 'dateOfBirth'>): boolean {

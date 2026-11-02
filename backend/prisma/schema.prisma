@@ -97,6 +97,7 @@ model User {
   calendar      CalendarEvent[]
   activity      ActivityEvent[] @relation("ActivitySubject")
   actions       ActivityEvent[] @relation("ActivityActor")
+  reports       ContentReport[]
 }
 
 model OtpCode {
@@ -457,4 +458,24 @@ model ActivityEvent {
   @@index([userId, createdAt])
   @@index([createdAt])
   @@index([kind, createdAt])
+}
+
+/// A user's report of an AI answer or question they found wrong or inappropriate (Google Play's
+/// AI-generated content policy). Reviewed in the Control Room.
+model ContentReport {
+  id         String    @id @default(cuid())
+  userId     String
+  /// TUTOR (study helper answer), EXAM (exam question) or CALENDAR (imported calendar item).
+  kind       String
+  /// The reported text, as the user saw it.
+  content    String
+  reason     String?
+  /// What it belongs to, e.g. an exam id.
+  refId      String?
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([resolvedAt, createdAt])
 }
