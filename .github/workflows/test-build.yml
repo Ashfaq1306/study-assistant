@@ -21,6 +21,8 @@ concurrency:
 
 jobs:
   publish:
+    # Waits until the server address is set (Settings → Variables → API_BASE_URL).
+    if: ${{ vars.API_BASE_URL != '' }}
     runs-on: ubuntu-latest
     defaults:
       run:
