@@ -75,7 +75,7 @@ void main() {
       const LogoPainter().paint(canvas, const Size.square(280));
       canvas.restore();
 
-      _text(canvas, 'Study Assistant', const Offset(450, 128), size: 68, weight: FontWeight.w900, color: Colors.white);
+      _text(canvas, 'Study Mate', const Offset(450, 128), size: 68, weight: FontWeight.w900, color: Colors.white);
       _text(
         canvas,
         'Study smart.\nUnlock by learning.',

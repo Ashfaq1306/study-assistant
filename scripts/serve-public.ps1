@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Runs the Study Assistant API on this computer and makes it reachable from any network.
+  Runs the Study Mate API on this computer and makes it reachable from any network.
 
 .DESCRIPTION
   1. Starts the API (backend/dist/server.js) on 127.0.0.1 only, so nothing on the LAN can reach it directly.
@@ -132,7 +132,7 @@ function Publish-Url {
   } finally { Remove-Item $tmp -ErrorAction SilentlyContinue }
 }
 
-Log "Study Assistant public server starting (repo $repo)"
+Log "Study Mate public server starting (repo $repo)"
 Start-Api
 Start-Tunnel
 Publish-Url

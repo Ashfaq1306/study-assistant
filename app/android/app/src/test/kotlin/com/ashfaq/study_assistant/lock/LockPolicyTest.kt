@@ -145,7 +145,7 @@ class LockPolicyTest {
     )
 
     @Test
-    fun `split screen next to Study Assistant does not get around the lock`() {
+    fun `split screen next to Study Mate does not get around the lock`() {
         assertEquals(
             "com.google.android.youtube",
             pick(listOf(win("com.ashfaq.study_assistant", active = true), win("com.google.android.youtube"))),

@@ -9,7 +9,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Scan the QR code on your child's phone to link your accounts.</string>
 	<key>CFBundleDisplayName</key>
-	<string>Study Assistant</string>
+	<string>Study Mate</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

@@ -2,7 +2,7 @@
   "name": "study-assistant-api",
   "version": "0.1.0",
   "private": true,
-  "description": "Study Assistant API: accounts, OTP, family links, AI exams",
+  "description": "Study Mate API: accounts, OTP, family links, AI exams",
   "type": "module",
   "engines": {
     "node": ">=22.12"

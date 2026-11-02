@@ -1,6 +1,6 @@
 ---
 name: qa-tester
-description: QA for Study Assistant. Runs every automated check, exercises the API end to end, drives the app on the emulator or the connected Android phone, adds missing tests, and reports PASS/FAIL with evidence. Use last, after code-reviewer approves and before the PR is opened.
+description: QA for Study Mate. Runs every automated check, exercises the API end to end, drives the app on the emulator or the connected Android phone, adds missing tests, and reports PASS/FAIL with evidence. Use last, after code-reviewer approves and before the PR is opened.
 tools: Read, Write, Edit, Glob, Grep, Bash, PowerShell
 model: sonnet
 ---

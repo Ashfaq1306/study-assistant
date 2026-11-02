@@ -244,7 +244,7 @@ class _ProtectionCard extends StatelessWidget {
       Protection.shortcutOn =>
         'The accessibility shortcut is on, so App lock could be switched off quickly. Ask ${s.firstName} to turn the shortcut off.',
       Protection.stale => 'The phone has not checked in for a while. It may be off or offline.',
-      Protection.noPhone => '${s.firstName} has not opened Study Assistant on a phone yet.',
+      Protection.noPhone => '${s.firstName} has not opened Study Mate on a phone yet.',
     };
     return p.ok ? MessageBanner.success(help) : MessageBanner.error(help);
   }

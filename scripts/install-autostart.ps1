@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Starts the public Study Assistant server (scripts\serve-public.ps1) every time you sign in to Windows,
+  Starts the public Study Mate server (scripts\serve-public.ps1) every time you sign in to Windows,
   and starts it now. Run with -Remove to undo.
 
 .EXAMPLE
@@ -29,7 +29,7 @@ $trigger = New-ScheduledTaskTrigger -AtLogOn -User "$env:USERDOMAIN\$env:USERNAM
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
   -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -MultipleInstances IgnoreNew
 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings `
-  -Description 'Runs the Study Assistant API and its public tunnel (scripts\serve-public.ps1).' | Out-Null
+  -Description 'Runs the Study Mate API and its public tunnel (scripts\serve-public.ps1).' | Out-Null
 Start-ScheduledTask -TaskName $taskName
 Write-Host "Installed '$taskName': it runs at every sign-in and is starting now."
 Write-Host "Logs: $env:LOCALAPPDATA\StudyAssistant\logs"

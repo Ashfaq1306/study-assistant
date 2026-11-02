@@ -3,7 +3,7 @@ description: Take the current task through the full pipeline (junior → senior 
 argument-hint: <what to build or fix>
 ---
 
-Deliver this through the Study Assistant pipeline: $ARGUMENTS
+Deliver this through the Study Mate pipeline: $ARGUMENTS
 
 1. Make sure you are on a feature branch off an up-to-date `main` (`feat/…`, `fix/…`, `chore/…`), never on `main` itself.
 2. **junior-coder:** implement the task with tests. If the task needs a design decision, run **senior-coder** first to plan it, then hand the plan to junior-coder.

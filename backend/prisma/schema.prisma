@@ -1,4 +1,4 @@
-// Study Assistant data model.
+// Study Mate data model.
 // Development uses SQLite. For production switch `provider` to "postgresql"
 // and point DATABASE_URL at your Postgres instance.
 

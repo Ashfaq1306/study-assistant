@@ -19,7 +19,7 @@ import java.util.concurrent.Executors
 
 /**
  * Enforces locks: whenever a blocked app is on screen, it sends the phone home
- * and brings Study Assistant's lock screen up instead.
+ * and brings Study Mate's lock screen up instead.
  *
  * Two triggers: window changes (an app opening), and, while a lock is on, a
  * check of every visible app window every [ENFORCE_EVERY_MS] (catches split

@@ -87,7 +87,7 @@ class AppearanceScreen extends ConsumerWidget {
                   onPressed: () async {
                     final ok = await ref.read(appLockPlatformProvider).pinWidget();
                     if (!ok && context.mounted) {
-                      showSnack(context, 'Long-press your home screen, tap Widgets, then find Study Assistant.');
+                      showSnack(context, 'Long-press your home screen, tap Widgets, then find Study Mate.');
                     }
                   },
                 ),

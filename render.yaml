@@ -25,9 +25,10 @@ services:
         value: 0.0.0.0
       - key: LOG_LEVEL
         value: info
-      # Render's proxy sits in front of the API: trust one hop for the real client IP (rate limits).
+      # Requests pass Cloudflare, then Render's load balancer: trust those two hops so the real
+      # client IP (from Cloudflare's X-Forwarded-For entry) is used for rate limits.
       - key: TRUST_PROXY
-        value: '1'
+        value: '2'
       - key: DATABASE_URL
         fromDatabase:
           name: study-assistant-db

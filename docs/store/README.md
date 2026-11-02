@@ -6,7 +6,7 @@ Regenerate the artwork with `flutter test tool/store/feature_graphic_test.dart` 
 
 ## Store listing
 
-**App name** (30 max): `Study Assistant: Focus & Quiz`
+**App name** (30 max): `Study Mate: Focus & Quiz`
 
 **Short description** (80 max):
 ```
@@ -17,7 +17,7 @@ Lock distracting apps while you study. Pass a quick AI quiz to unlock them.
 ```
 Study smart. Unlock by learning.
 
-Study Assistant helps students stay focused. Choose what you will study, lock the apps that distract you, and win them back by passing a short quiz on exactly what you studied.
+Study Mate helps students stay focused. Choose what you will study, lock the apps that distract you, and win them back by passing a short quiz on exactly what you studied.
 
 HOW IT WORKS
 • Pick a subject and topic, and add your plan or photos of your book pages.
@@ -54,7 +54,7 @@ PRIVACY FIRST
 • No ads. We never sell your data.
 • Delete your account any time, right in the app.
 
-Study Assistant uses Android's Accessibility service only to lock the apps you choose while you study. You can turn it off whenever no lock is running.
+Study Mate uses Android's Accessibility service only to lock the apps you choose while you study. You can turn it off whenever no lock is running.
 ```
 
 **Category:** Education. **Tags:** Education, Productivity, Study, Focus.
@@ -103,7 +103,7 @@ Data is encrypted in transit (HTTPS): **Yes**. Users can request deletion: **Yes
 
 ## Permissions declarations
 
-**Accessibility API** (Play Console → App content → Accessibility API). Use: *"Study Assistant is a focus app. While a study session or a parent's lock is running, the Accessibility service detects when one of the apps the user chose to lock comes to the foreground (only its package name) and shows the study screen instead, until the user passes a quiz. It does not read text, input or screen content of other apps."*
+**Accessibility API** (Play Console → App content → Accessibility API). Use: *"Study Mate is a focus app. While a study session or a parent's lock is running, the Accessibility service detects when one of the apps the user chose to lock comes to the foreground (only its package name) and shows the study screen instead, until the user passes a quiz. It does not read text, input or screen content of other apps."*
 In-app disclosure: App lock → Open settings shows "How app lock uses Accessibility" with **I agree / No thanks** before any settings open.
 Video: record App lock → Open settings → disclosure → I agree → enabling the service → starting a session → opening a locked app → lock screen (60 s or less, upload to YouTube unlisted).
 
@@ -127,6 +127,6 @@ Video: record App lock → Open settings → disclosure → I agree → enabling
 ```bash
 cd app
 D=https://gist.githubusercontent.com/Ashfaq1306/73f5cd0421af834e9965f8680d2ea2b1/raw/study-assistant-endpoint.json
-flutter build appbundle --release --dart-define=API_BASE_URL=<server https address> --dart-define=API_DISCOVERY_URL=$D
+flutter build appbundle --release --dart-define=API_BASE_URL=https://study-assistant-api-jdgm.onrender.com --dart-define=API_DISCOVERY_URL=$D
 ```
 Bump `version:` in `app/pubspec.yaml` (and `AppConfig.appVersion`) for every upload; the number after `+` must grow.

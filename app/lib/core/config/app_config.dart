@@ -15,7 +15,7 @@ abstract final class AppConfig {
   /// Empty: always use [apiBaseUrl].
   static const apiDiscoveryUrl = String.fromEnvironment('API_DISCOVERY_URL');
 
-  static const appName = 'Study Assistant';
+  static const appName = 'Study Mate';
 
   /// Keep in step with the version in pubspec.yaml.
   static const appVersion = '1.0.0';

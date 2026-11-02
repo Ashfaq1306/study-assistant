@@ -55,7 +55,7 @@ const EnvSchema = z
     SMTP_PORT: z.coerce.number().int().default(587),
     SMTP_USER: optional,
     SMTP_PASS: optional,
-    SMTP_FROM: z.string().default('Study Assistant <no-reply@example.com>'),
+    SMTP_FROM: z.string().default('Study Mate <no-reply@example.com>'),
     SMS_PROVIDER: z.enum(['console', 'twilio', 'none']).default('console'),
     /** Claude API key for AI exams and the study helper. Unset = built-in practice questions. */
     /** auto: Claude if ANTHROPIC_API_KEY is set, else Gemini if GEMINI_API_KEY is set, else practice questions. */

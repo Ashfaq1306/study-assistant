@@ -44,7 +44,7 @@ class ApiException implements Exception {
       DioExceptionType.receiveTimeout ||
       DioExceptionType.sendTimeout => const ApiException(
         code: network,
-        message: "Can't reach Study Assistant. Check your internet and try again.",
+        message: "Can't reach Study Mate. Check your internet and try again.",
       ),
       _ => ApiException(
         code: unknown,
