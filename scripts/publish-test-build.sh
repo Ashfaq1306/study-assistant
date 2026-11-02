@@ -34,7 +34,7 @@ fi
 flutter build apk --profile --split-per-abi --dart-define=API_BASE_URL="$API_BASE_URL" --dart-define=API_DISCOVERY_URL="$API_DISCOVERY_URL"
 apks=()
 for abi in arm64-v8a armeabi-v7a x86_64; do
-  out="build/study-assistant-${version}-b${build}-${abi}.apk"
+  out="build/study-mate-${version}-b${build}-${abi}.apk"
   cp "build/app/outputs/flutter-apk/app-${abi}-profile.apk" "$out"
   apks+=("$out")
 done

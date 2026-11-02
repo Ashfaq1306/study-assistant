@@ -2,7 +2,7 @@
 
 A study app for students: pick what you will study, lock distracting apps, and unlock them by passing an AI-generated exam. Parents can link with a QR code. An admin panel controls everything.
 
-> **Scope:** this repository only. It sits inside a folder belonging to another project (Joruri BD); never read, change or borrow from anything outside `study-assistant/`.
+> **Scope:** this repository only. It sits inside a folder belonging to another project (Joruri BD); never read, change or borrow from anything outside this repository (`study-mate`, formerly `study-assistant`).
 
 ## Layout
 ```
