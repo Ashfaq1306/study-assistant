@@ -2,8 +2,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
-
 /// The Study Assistant mark: a pencil that has just drawn a tick, meaning
 /// "you passed". One painter is the source for the in-app logo and for
 /// every launcher icon (see tool/icon/render_icon_test.dart).
@@ -40,6 +38,11 @@ class LogoPainter extends CustomPainter {
   static const _gradientTop = Color(0xFF8172F7);
   static const _gradientBottom = Color(0xFF4F3DD6);
 
+  // Brand colours: the mark looks the same in every theme.
+  static const _violetDeep = Color(0xFF4B3BC4);
+  static const _ink = Color(0xFF2D2A4A);
+  static const _sunshine = Color(0xFFFFC93C);
+
   @override
   void paint(Canvas canvas, Size size) {
     final s = size.shortestSide;
@@ -49,6 +52,9 @@ class LogoPainter extends CustomPainter {
     canvas.translate(s / 2, s / 2);
     canvas.scale(contentScale);
     canvas.translate(-s / 2, -s / 2);
+    // The tick and pencil sit up and to the right of centre: shift them so the
+    // whole mark is centred (and can be drawn larger inside icon masks).
+    canvas.translate(-s * 0.035, s * 0.055);
     _paintSparkles(canvas, s);
     _paintTick(canvas, s);
     _paintPencil(canvas, s);
@@ -93,7 +99,7 @@ class LogoPainter extends CustomPainter {
           ..strokeWidth = s * 0.09
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round
-          ..color = AppColors.violetDeep.withValues(alpha: 0.45),
+          ..color = _violetDeep.withValues(alpha: 0.45),
       );
     }
     canvas.drawPath(
@@ -119,7 +125,7 @@ class LogoPainter extends CustomPainter {
       canvas.drawRRect(
         RRect.fromLTRBR(s * 0.05, -w + s * 0.035, s * 0.42, w + s * 0.035, Radius.circular(w)),
         Paint()
-          ..color = AppColors.violetDeep.withValues(alpha: 0.45)
+          ..color = _violetDeep.withValues(alpha: 0.45)
           ..maskFilter = MaskFilter.blur(BlurStyle.normal, s * 0.012),
       );
     }
@@ -136,7 +142,7 @@ class LogoPainter extends CustomPainter {
         ..lineTo(tipEnd, -w * 0.36)
         ..lineTo(tipEnd, w * 0.36)
         ..close(),
-      Paint()..color = c(AppColors.ink),
+      Paint()..color = c(_ink),
     );
     canvas.drawPath(
       Path()
@@ -150,7 +156,7 @@ class LogoPainter extends CustomPainter {
 
     // Three bands suggest the hexagonal faces of the body.
     final third = 2 * w / 3;
-    for (final (i, color) in [const Color(0xFFFFE27D), AppColors.sunshine, const Color(0xFFF2AE12)].indexed) {
+    for (final (i, color) in [const Color(0xFFFFE27D), _sunshine, const Color(0xFFF2AE12)].indexed) {
       canvas.drawRect(
         Rect.fromLTRB(woodEnd, -w + third * i, bodyEnd, -w + third * (i + 1) + 0.5),
         Paint()..color = c(color),

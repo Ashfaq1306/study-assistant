@@ -23,7 +23,7 @@ class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin
   void initState() {
     super.initState();
     final random = math.Random();
-    const colors = [AppColors.violet, AppColors.sunshine, AppColors.mint, AppColors.coral, AppColors.sky];
+    final colors = [AppColors.violet, AppColors.sunshine, AppColors.mint, AppColors.coral, AppColors.sky];
     _pieces = List.generate(
       90,
       (_) => _Piece(

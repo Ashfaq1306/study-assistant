@@ -26,12 +26,13 @@ void main() {
   test('render icons', () async {
     // iOS and legacy Android: full square tile; the OS applies its own mask.
     await _render('assets/icon/app_icon.png', const LogoPainter(rounded: false));
-    // Android adaptive icon layers. The mark must fit the central 66/108 safe zone.
+    // Android adaptive icon layers. The centred mark at 0.74 stays inside the circle
+    // every launcher mask shows (72/108), and reads much larger on the home screen.
     await _render('assets/icon/app_icon_background.png', const LogoPainter(rounded: false, contentScale: 0));
-    await _render('assets/icon/app_icon_foreground.png', const LogoPainter(background: false, contentScale: 0.62));
+    await _render('assets/icon/app_icon_foreground.png', const LogoPainter(background: false, contentScale: 0.74));
     await _render(
       'assets/icon/app_icon_monochrome.png',
-      const LogoPainter(background: false, monochrome: true, contentScale: 0.62),
+      const LogoPainter(background: false, monochrome: true, contentScale: 0.74),
     );
     // README / store listing.
     await _render('../docs/assets/logo.png', const LogoPainter(), size: 512);

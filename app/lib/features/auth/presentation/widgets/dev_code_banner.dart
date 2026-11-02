@@ -22,12 +22,12 @@ class DevCodeBanner extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              const Icon(Icons.developer_mode_rounded, color: AppColors.sunshineDeep),
+              Icon(Icons.developer_mode_rounded, color: AppColors.sunshineDeep),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   'Test mode: your code is $code. Tap to fill it in.',
-                  style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink),
+                  style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink),
                 ),
               ),
             ],

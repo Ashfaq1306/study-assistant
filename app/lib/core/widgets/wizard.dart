@@ -68,17 +68,20 @@ class WizardPage extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.children,
-    this.color = AppColors.violet,
+    this.color,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final List<Widget> children;
-  final Color color;
+
+  /// The theme accent when null.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final color = this.color ?? AppColors.violet;
     final text = Theme.of(context).textTheme;
     return Center(
       child: ConstrainedBox(
@@ -149,7 +152,7 @@ class FieldLabel extends StatelessWidget {
     padding: const EdgeInsets.only(left: 6, bottom: 10),
     child: Text(
       text,
-      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.ink),
+      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.ink),
     ),
   );
 }

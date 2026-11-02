@@ -77,3 +77,12 @@ export const normalizePairingCode = (input: string): string =>
   input.toUpperCase().replace(/[\s-]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1');
 
 export const formatPairingCode = (code: string): string => `${code.slice(0, 4)}-${code.slice(4)}`;
+
+/** No 0/O, 1/l/I: nothing that looks like another character when read off a screen or paper. */
+const READABLE = 'abcdefghjkmnpqrstuvwxyz23456789';
+
+/** A password meant to be read and typed by a person, e.g. "k7mp-3qhx-9tbw" (about 59 bits). */
+export function readablePassword(): string {
+  const group = () => Array.from({ length: 4 }, () => READABLE[randomInt(0, READABLE.length)]).join('');
+  return `${group()}-${group()}-${group()}`;
+}

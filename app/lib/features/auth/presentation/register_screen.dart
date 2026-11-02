@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/routes.dart';
 import '../../../core/config/app_config.dart';
+import '../../../core/config/remote_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/validators.dart';
@@ -45,6 +46,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   UserRole? _role;
   DateTime? _dateOfBirth;
   OtpChannel _channel = OtpChannel.email;
+
+  /// The channels the server can really send on (SMS needs an SMS provider).
+  List<OtpChannel> get _channels {
+    final config = ref.read(remoteConfigProvider).value ?? const RemoteConfig();
+    return [if (config.emailCodes) OtpChannel.email, if (config.smsCodes) OtpChannel.sms];
+  }
+
+  /// The picked channel, or the only one the server offers.
+  OtpChannel get _effectiveChannel {
+    final channels = _channels;
+    return channels.contains(_channel) || channels.isEmpty ? _channel : channels.first;
+  }
+
   bool _loading = false;
   ApiException? _error;
 
@@ -106,7 +120,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               email: _email.text,
               phone: _phone.text,
               password: _password.text,
-              otpChannel: _channel,
+              otpChannel: _effectiveChannel,
             ),
           );
       if (mounted) await context.push(Routes.verify, extra: pending);
@@ -123,6 +137,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild when the server says which code channels it offers.
+    ref.watch(remoteConfigProvider);
     return Scaffold(
       body: DreamyBackground(
         child: SafeArea(
@@ -278,58 +294,61 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           subtitle: "We'll send a 6-digit code to open your account.",
           children: [
             AppTextField(
-              label: _channel == OtpChannel.email ? 'Email' : 'Email (optional)',
+              label: _effectiveChannel == OtpChannel.email ? 'Email' : 'Email (optional)',
               controller: _email,
               hint: 'you@example.com',
               icon: Icons.mail_rounded,
               keyboardType: TextInputType.emailAddress,
               autofillHints: const [AutofillHints.email],
-              validator: (v) => Validators.email(v, required: _channel == OtpChannel.email),
+              validator: (v) => Validators.email(v, required: _effectiveChannel == OtpChannel.email),
               errorText: _error?.fieldErrors['email'],
             ),
             const SizedBox(height: 18),
             AppTextField(
-              label: _channel == OtpChannel.sms ? 'Mobile number' : 'Mobile number (optional)',
+              label: _effectiveChannel == OtpChannel.sms ? 'Mobile number' : 'Mobile number (optional)',
               controller: _phone,
               hint: '01712345678',
               icon: Icons.phone_iphone_rounded,
               keyboardType: TextInputType.phone,
               autofillHints: const [AutofillHints.telephoneNumber],
-              validator: (v) => Validators.phone(v, required: _channel == OtpChannel.sms),
+              validator: (v) => Validators.phone(v, required: _effectiveChannel == OtpChannel.sms),
               errorText: _error?.fieldErrors['phone'],
             ),
             const SizedBox(height: 18),
-            const Padding(
-              padding: EdgeInsets.only(left: 6, bottom: 8),
-              child: Text('Send my code by', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-            ),
-            Row(
-              children: [
-                for (final channel in OtpChannel.values) ...[
-                  if (channel != OtpChannel.values.first) const SizedBox(width: 12),
-                  Expanded(
-                    child: ClayCard(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      radius: 20,
-                      selected: _channel == channel,
-                      onTap: () => setState(() => _channel = channel),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            channel == OtpChannel.email ? Icons.mail_rounded : Icons.sms_rounded,
-                            color: _channel == channel ? AppColors.violet : AppColors.inkSoft,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(channel.label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-                        ],
+            // Only a choice when the server can send both ways.
+            if (_channels.length > 1) ...[
+              const Padding(
+                padding: EdgeInsets.only(left: 6, bottom: 8),
+                child: Text('Send my code by', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+              ),
+              Row(
+                children: [
+                  for (final channel in _channels) ...[
+                    if (channel != _channels.first) const SizedBox(width: 12),
+                    Expanded(
+                      child: ClayCard(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        radius: 20,
+                        selected: _channel == channel,
+                        onTap: () => setState(() => _channel = channel),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              channel == OtpChannel.email ? Icons.mail_rounded : Icons.sms_rounded,
+                              color: _channel == channel ? AppColors.violet : AppColors.inkSoft,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(channel.label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
-            ),
-            const SizedBox(height: 18),
+              ),
+              const SizedBox(height: 18),
+            ],
             AppTextField(
               label: 'Password',
               controller: _password,
@@ -406,7 +425,7 @@ class _RoleCard extends StatelessWidget {
               duration: const Duration(milliseconds: 200),
               child: selected
                   ? Icon(Icons.check_circle_rounded, key: const ValueKey(true), color: color, size: 30)
-                  : const Icon(Icons.circle_outlined, key: ValueKey(false), color: AppColors.line, size: 30),
+                  : Icon(Icons.circle_outlined, key: const ValueKey(false), color: AppColors.line, size: 30),
             ),
           ],
         ),

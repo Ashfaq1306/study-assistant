@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_logo.dart';
 import '../../../core/widgets/clay_card.dart';
 import '../../../core/widgets/feedback.dart';
+import '../../../app/routes.dart';
 import '../../auth/application/auth_controller.dart';
 
 /// Greeting row with the logo and an account menu.
@@ -19,7 +21,7 @@ class HomeHeader extends ConsumerWidget {
     final text = Theme.of(context).textTheme;
     return Row(
       children: [
-        const AppLogo(size: 52),
+        const AppLogo(size: 58),
         const SizedBox(width: 14),
         Expanded(
           child: Column(
@@ -32,18 +34,28 @@ class HomeHeader extends ConsumerWidget {
         ),
         PopupMenuButton<String>(
           tooltip: 'Account',
-          icon: const CircleAvatar(
+          icon: CircleAvatar(
             backgroundColor: AppColors.card,
             child: Icon(Icons.person_rounded, color: AppColors.violet),
           ),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           onSelected: (value) {
             if (value == 'logout') ref.read(authControllerProvider.notifier).logout();
+            if (value == 'appearance') context.push(Routes.appearance);
+            if (value == 'delete') context.push(Routes.deleteAccount);
           },
           itemBuilder: (_) => const [
             PopupMenuItem(
+              value: 'appearance',
+              child: ListTile(leading: Icon(Icons.palette_rounded), title: Text('Appearance')),
+            ),
+            PopupMenuItem(
               value: 'logout',
               child: ListTile(leading: Icon(Icons.logout_rounded), title: Text('Sign out')),
+            ),
+            PopupMenuItem(
+              value: 'delete',
+              child: ListTile(leading: Icon(Icons.delete_forever_rounded), title: Text('Delete account')),
             ),
           ],
         ),
@@ -89,7 +101,7 @@ class FeatureTile extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(color: AppColors.sunshineSoft, borderRadius: BorderRadius.circular(20)),
-                  child: const Text(
+                  child: Text(
                     'Soon',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.sunshineDeep),
                   ),

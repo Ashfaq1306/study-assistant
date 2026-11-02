@@ -60,8 +60,13 @@ flowchart LR
 | 🔒 | App blocker: lock chosen apps or the whole phone; strict mode blocks Settings and uninstalls; calls and Wi-Fi always work | ✅ Done |
 | 📝 | AI-generated exams on what you studied: multiple choice, true/false and short answers, timed, graded with feedback; pass mark ≥ 50% | ✅ Done |
 | 🤖 | AI study helper chat (pauses during exams, daily limit) | ✅ Done |
-| 📊 | Parent dashboard: screen time, remote block, parent-written questions | 🔜 Phase 5 |
-| 🛠️ | Admin panel (users, content, settings, analytics) | 🔜 Phase 6 |
+| 📅 | Calendar: exams, weekly classes, assignments and holidays with phone reminders; the AI imports a school or university academic calendar from a PDF, photo or text | ✅ Done |
+| 🌗 | Light and dark mode, accent colours, 3D opening screens, home-screen widget | ✅ Done |
+| 🔄 | Test builds update themselves from GitHub Releases | ✅ Done |
+| 📊 | Parent dashboard: each child at a glance, screen time, study time, exams, app-lock status, remote locks unlocked by a quiz, parent-written questions, alerts | ✅ Done |
+| 🛠️ | **Control Room** (admin panel, in the app for admin accounts and on the web at `/admin/`): who is online or signed out and when, sign-in history, study time per student and subject, unlock a phone without the exam, sign out, reset password, disable accounts, every rule and subject | ✅ Done |
+| 🌍 | Works from any network: the API on your computer is published over HTTPS through a Cloudflare tunnel, and the app finds its current address by itself | ✅ Done |
+| ✉️ | Real one-time codes by email (Gmail SMTP); SMS when an SMS provider is set up | ✅ Done |
 
 ## Tech stack
 
@@ -69,6 +74,8 @@ flowchart LR
 | --- | --- |
 | **App** (`app/`) | Flutter 3.47, Riverpod 3, go_router 18, dio, flutter_secure_storage, mobile_scanner, qr_flutter |
 | **API** (`backend/`) | Node 24, TypeScript, Fastify 5, Prisma 6, zod 4, vitest |
+| **Admin** (`admin/`) | Plain HTML, CSS and an ES module, served by the API (no build step) |
+| **Hosting** | Your computer + Cloudflare quick tunnel + a GitHub gist that holds the current address (or any cloud host) |
 | **Data** | SQLite for development; Postgres for production |
 | **Delivery** | SMTP email, Twilio SMS (both swappable; console output in development) |
 
@@ -98,9 +105,29 @@ adb reverse tcp:8080 tcp:8080   # lets the phone or emulator reach the API on yo
 flutter run                      # add --release to see real speed
 ```
 
+### 3. Use it from any network (your computer as the server)
+**Control Room from anywhere:** https://ashfaq1306.github.io/study-assistant/admin/ always forwards to the server's current address (the page lives on the `gh-pages` branch).
+
+The phone talks to `https://…trycloudflare.com`, so it works on any Wi-Fi or mobile data, as long as this computer is on and online.
+```powershell
+winget install Cloudflare.cloudflared        # once
+cd backend; npm run build; cd ..
+powershell -ExecutionPolicy Bypass -File scriptsinstall-autostart.ps1   # runs at every sign-in, starts now
+powershell -ExecutionPolicy Bypass -File scriptsnfigure-server.ps1    # real email codes (Gmail app password) and the AI key
+```
+- `serve-public.ps1` keeps the API and tunnel running and writes the current address to a GitHub gist (needs `gh` signed in with the `gist` scope). Builds read the gist: `NOTES="..." scripts/publish-test-build.sh`.
+- Make an admin, then sign in with it in the app (it opens the Control Room) or open `<tunnel address>/admin/` (or `http://127.0.0.1:8080/admin/` on this computer):
+  ```bash
+  cd backend && npm run admin -- create you@example.com "Your Name"   # prints a one-time password
+  ```
+- Logs: `%LOCALAPPDATA%StudyAssistantogs`. Keep the computer from sleeping while people use the app.
+
 ### Production settings
-- **API:** set `NODE_ENV=production`, `TRUST_PROXY` to the number of proxies in front of the API (rate limits depend on the real client IP), a Postgres `DATABASE_URL` (and change the Prisma `provider`), real secrets, `ANTHROPIC_API_KEY` (from console.anthropic.com; without it exams use built-in practice questions and the helper is off), `EMAIL_PROVIDER=smtp` with `SMTP_*`, and `SMS_PROVIDER=twilio` with `TWILIO_*`. Console providers are refused in production.
+- **API:** set `NODE_ENV=production`, `TRUST_PROXY` to the number of proxies in front of the API (rate limits depend on the real client IP), a Postgres `DATABASE_URL` (and change the Prisma `provider`), real secrets, `ANTHROPIC_API_KEY` (from console.anthropic.com; without it exams use built-in practice questions and the helper is off), `EMAIL_PROVIDER=smtp` with `SMTP_*`, and `SMS_PROVIDER=twilio` with `TWILIO_*` (or `SMS_PROVIDER=none` for email codes only; the app then hides SMS). Console providers are refused in production.
 - **App:** `flutter build apk --release --dart-define=API_BASE_URL=https://your-api.example.com`
+
+## Launching on Google Play
+Everything for the Play Console (listing text, screenshots, feature graphic, Data safety answers, the Accessibility declaration and a launch checklist) is in [docs/store](docs/store/README.md). Release builds are signed with the upload key named in `app/android/key.properties` (never committed); the privacy policy and account-deletion pages are at https://ashfaq1306.github.io/study-assistant/privacy/ and …/delete-account/.
 
 ## Testing
 ```bash
@@ -117,11 +144,13 @@ study-assistant/
 │   ├── lib/core/         network, storage, theme, 3D widgets
 │   ├── lib/features/     auth · family · home  (data / domain / application / presentation)
 │   └── tool/icon/        draws the launcher icons from code
+├── admin/                web admin panel (served by the API at /admin/)
 ├── backend/              REST API
 │   ├── prisma/           database schema
-│   ├── src/modules/      auth · users · family · notify
+│   ├── src/modules/      auth · users · family · sessions · exams · admin · …
 │   └── test/             API tests
 ├── docs/                 architecture and assets
+├── scripts/              serve-public · install-autostart · configure-server · publish-test-build
 └── .claude/agents/       junior-coder · senior-coder · code-reviewer · qa-tester
 ```
 

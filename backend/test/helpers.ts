@@ -52,8 +52,16 @@ export interface TestContext {
 
 export async function resetDatabase(): Promise<void> {
   await prisma.$transaction([
+    prisma.activityEvent.deleteMany(),
+    prisma.contentReport.deleteMany(),
     prisma.aiUsage.deleteMany(),
+    prisma.notification.deleteMany(),
+    prisma.calendarEvent.deleteMany(),
+    prisma.usageDay.deleteMany(),
     prisma.exam.deleteMany(),
+    prisma.studyPhoto.deleteMany(),
+    prisma.parentLock.deleteMany(),
+    prisma.questionSet.deleteMany(),
     prisma.device.deleteMany(),
     prisma.studySession.deleteMany(),
     prisma.appSetting.deleteMany(),
@@ -67,7 +75,13 @@ export async function resetDatabase(): Promise<void> {
 }
 
 export async function createTestApp(
-  options: { rateLimit?: boolean; nodeEnv?: typeof env.NODE_ENV; exposeDevCodes?: boolean; ai?: AiProvider } = {},
+  options: {
+    rateLimit?: boolean;
+    nodeEnv?: typeof env.NODE_ENV;
+    exposeDevCodes?: boolean;
+    ai?: AiProvider;
+    smsProvider?: typeof env.SMS_PROVIDER;
+  } = {},
 ): Promise<TestContext> {
   const notifier = new FakeNotifier();
   const clock = new TestClock();
@@ -76,6 +90,7 @@ export async function createTestApp(
       ...env,
       NODE_ENV: options.nodeEnv ?? env.NODE_ENV,
       EXPOSE_DEV_CODES: options.exposeDevCodes ?? false,
+      SMS_PROVIDER: options.smsProvider ?? env.SMS_PROVIDER,
     },
     prisma,
     notifier,

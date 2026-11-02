@@ -80,4 +80,27 @@ void main() {
       expect(guardRoute(auth, Routes.family), Routes.parentHome);
     });
   });
+
+  group('admin', () {
+    final auth = AuthSignedIn(testUser(role: UserRole.admin, age: 30));
+
+    test('lands in the Control Room and stays there', () {
+      expect(guardRoute(auth, Routes.splash), Routes.admin);
+      expect(guardRoute(auth, Routes.login), Routes.admin);
+      expect(guardRoute(auth, Routes.admin), isNull);
+      expect(guardRoute(auth, Routes.home), Routes.admin);
+      expect(guardRoute(auth, Routes.studyNew), Routes.admin);
+      expect(guardRoute(auth, Routes.parentHome), Routes.admin);
+    });
+
+    test('students and parents never reach it', () {
+      expect(guardRoute(AuthSignedIn(testUser()), Routes.admin), Routes.home);
+      expect(guardRoute(AuthSignedIn(testUser(role: UserRole.parent, age: 40)), Routes.admin), Routes.parentHome);
+    });
+  });
+
+  test('students and parents can always reach Delete account (Google Play)', () {
+    expect(guardRoute(AuthSignedIn(testUser()), Routes.deleteAccount), isNull);
+    expect(guardRoute(AuthSignedIn(testUser(role: UserRole.parent, age: 40)), Routes.deleteAccount), isNull);
+  });
 }

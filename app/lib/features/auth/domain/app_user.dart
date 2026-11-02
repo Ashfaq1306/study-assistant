@@ -38,6 +38,8 @@ class AppUser {
   final int linkedChildren;
 
   bool get isParent => role == UserRole.parent;
+  bool get isStudent => role == UserRole.student;
+  bool get isAdmin => role == UserRole.admin;
 
   /// Under-15 students stay on the "link a parent" screen until one links.
   bool get needsParentLink => role == UserRole.student && parentalControlRequired && linkedParents == 0;

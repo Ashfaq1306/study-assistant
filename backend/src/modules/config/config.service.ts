@@ -33,7 +33,8 @@ export const SettingsSchema = z.object({
   /** Share of the planned time after which "finish early" unlocks the exam. */
   earlyFinishPercent: z.number().int().min(0).max(100).default(50),
   maxQuestions: z.number().int().min(3).max(50).default(30),
-  examRetryCooldownSeconds: z.number().int().min(0).max(3600).default(120),
+  /** 0 = a failed student can try again straight away (with fresh questions). */
+  examRetryCooldownSeconds: z.number().int().min(0).max(3600).default(0),
   tutorDailyLimit: z.number().int().min(0).max(1000).default(60),
   aiEnabled: z.boolean().default(true),
   /** Shown as a banner in the app when set. */
@@ -79,7 +80,12 @@ export class ConfigService {
 
   /** Validates and stores a partial update. Returns the full new settings. */
   async update(patch: Partial<Settings>): Promise<Settings> {
-    const valid = SettingsSchema.partial().parse(patch);
+    // zod fills in defaults even for a partial schema: keep only the keys that were sent, or
+    // changing one setting would quietly reset every other one to its default.
+    const parsed = SettingsSchema.partial().parse(patch);
+    const valid = Object.fromEntries(
+      Object.entries(parsed).filter(([key]) => Object.hasOwn(patch, key)),
+    ) as Partial<Settings>;
     const current = await this.get();
     const min = valid.minStudyMinutes ?? current.minStudyMinutes;
     const max = valid.maxStudyMinutes ?? current.maxStudyMinutes;

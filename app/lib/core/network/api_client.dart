@@ -1,21 +1,27 @@
+import 'dart:typed_data';
+
 import 'dart:async';
 
 import 'package:dio/dio.dart';
 
 import '../storage/token_store.dart';
+import 'api_endpoint.dart';
 import 'api_exception.dart';
 import 'server_clock.dart';
 
 typedef Json = Map<String, Object?>;
 
 /// Thin HTTP layer: JSON in and out, server errors become [ApiException],
-/// and an expired access token is refreshed once, transparently.
+/// and an expired access token is refreshed once, transparently. With an
+/// [endpoint], a server that moved to a new address is found again.
 class ApiClient {
-  ApiClient({required String baseUrl, required this._store, Dio? dio, Dio? refreshDio})
-    : _dio = dio ?? Dio(_options(baseUrl)),
-      _refreshDio = refreshDio ?? Dio(_options(baseUrl)) {
+  ApiClient({required String baseUrl, required this._store, Dio? dio, Dio? refreshDio, this.endpoint})
+    : _dio = dio ?? Dio(_options(endpoint?.value ?? baseUrl)),
+      _refreshDio = refreshDio ?? Dio(_options(endpoint?.value ?? baseUrl)) {
+    endpoint?.addListener(_followEndpoint);
     _dio.interceptors
       ..add(_AuthInterceptor(this))
+      ..add(_EndpointInterceptor(this))
       ..add(
         InterceptorsWrapper(
           onResponse: (response, handler) {
@@ -36,6 +42,20 @@ class ApiClient {
 
   final TokenStore _store;
   final Dio _dio;
+
+  /// Finds the server again when its address changes (see [ApiEndpoint]).
+  final ApiEndpoint? endpoint;
+
+  /// The address requests go to now.
+  String get baseUrl => _dio.options.baseUrl;
+
+  void _followEndpoint() {
+    final url = endpoint!.value;
+    _dio.options.baseUrl = url;
+    _refreshDio.options.baseUrl = url;
+  }
+
+  void dispose() => endpoint?.removeListener(_followEndpoint);
 
   /// Separate instance without interceptors, so refreshing cannot recurse.
   final Dio _refreshDio;
@@ -60,7 +80,19 @@ class ApiClient {
 
   Future<Json> patch(String path, {Object? data}) => _send(() => _dio.patch<Object?>(path, data: data));
 
-  Future<void> delete(String path) => _send(() => _dio.delete<Object?>(path));
+  Future<Json> put(String path, {Object? data}) => _send(() => _dio.put<Object?>(path, data: data));
+
+  Future<Json> delete(String path, {Object? data}) => _send(() => _dio.delete<Object?>(path, data: data));
+
+  /// Raw bytes, e.g. a photo. Signed in like any other request.
+  Future<Uint8List> getBytes(String path) async {
+    try {
+      final res = await _dio.get<List<int>>(path, options: _auth(true).copyWith(responseType: ResponseType.bytes));
+      return Uint8List.fromList(res.data ?? const []);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
 
   static Options _auth(bool authenticated, [Map<String, String>? headers, Duration? timeout]) =>
       Options(extra: {_AuthInterceptor.authKey: authenticated}, headers: headers, receiveTimeout: timeout);
@@ -96,6 +128,49 @@ class _RefreshResult {
 
   final String? accessToken;
   final bool rejected;
+}
+
+/// When the server cannot be reached, looks up its address again and, if it
+/// moved, retries the request once at the new address.
+class _EndpointInterceptor extends Interceptor {
+  _EndpointInterceptor(this._client);
+
+  static const _retriedKey = 'endpointRetried';
+
+  final ApiClient _client;
+
+  /// No answer at all, or Cloudflare saying the tunnel behind it is gone.
+  static bool unreachable(DioException e) {
+    switch (e.type) {
+      case DioExceptionType.connectionError:
+      case DioExceptionType.connectionTimeout:
+        return true;
+      case DioExceptionType.badResponse:
+        final status = e.response?.statusCode;
+        final server = e.response?.headers.value('server') ?? '';
+        return (status == 530 || status == 502 || status == 503) && server.contains('cloudflare');
+      default:
+        return false;
+    }
+  }
+
+  @override
+  Future<void> onError(DioException err, ErrorInterceptorHandler handler) async {
+    final endpoint = _client.endpoint;
+    final request = err.requestOptions;
+    if (endpoint == null || request.extra[_retriedKey] == true || !unreachable(err)) return handler.next(err);
+
+    await endpoint.refresh();
+    if (request.baseUrl == endpoint.value) return handler.next(err);
+    request
+      ..baseUrl = endpoint.value
+      ..extra[_retriedKey] = true;
+    try {
+      handler.resolve(await _client._dio.fetch<Object?>(request));
+    } on DioException catch (e) {
+      handler.next(e);
+    }
+  }
 }
 
 /// Attaches the access token and recovers from an expired one.

@@ -75,10 +75,12 @@ class RoundBackButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.card,
-      shape: const CircleBorder(side: BorderSide(color: AppColors.line, width: 1.5)),
+      shape: CircleBorder(
+        side: BorderSide(color: AppColors.isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.line, width: 1.5),
+      ),
       child: IconButton(
         tooltip: 'Back',
-        icon: const Icon(Icons.arrow_back_rounded, color: AppColors.ink),
+        icon: Icon(Icons.arrow_back_rounded, color: AppColors.ink),
         onPressed: onPressed ?? () => Navigator.of(context).maybePop(),
       ),
     );

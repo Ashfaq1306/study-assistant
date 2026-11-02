@@ -7,7 +7,7 @@ flowchart LR
         Lock["App blocker<br/>(Android service, phase 3)"]
         App <--> Lock
     end
-    Admin["Admin panel<br/>(web, phase 6)"]
+    Admin["Admin panel<br/>(web, /admin/)"]
     subgraph Server
         API["Fastify API<br/>/v1/*"]
         DB[("Postgres<br/>(SQLite in dev)")]
@@ -47,6 +47,8 @@ Every error is `{ "error": { "code": "OTP_INVALID", "message": "That code is not
 | `ACCOUNT_NOT_VERIFIED` | Right password, code not entered yet; `details.userId` lets the app continue |
 | `OTP_INVALID` / `OTP_EXPIRED` / `OTP_TOO_MANY_ATTEMPTS` / `OTP_RESEND_TOO_SOON` | One-time code problems |
 | `PAIRING_CODE_INVALID` / `ALREADY_LINKED` / `TOO_MANY_PARENTS` | Family linking |
+| `OTP_CHANNEL_OFF` | This server cannot send codes that way (no SMS provider) |
+| `CANNOT_DISABLE_SELF` / `CANNOT_MANAGE_ADMIN` / `NOT_A_STUDENT` | Control Room account actions |
 | `UNAUTHORIZED` / `FORBIDDEN` / `RATE_LIMITED` | Access control |
 
 ## App blocker (Android)
@@ -71,3 +73,40 @@ Every error is `{ "error": { "code": "OTP_INVALID", "message": "That code is not
 
 ## The 3D look
 There is no 3D engine. `Pencil3D` is a hand-built mesh (an 18-sided eraser and ferrule, a hexagonal body, a sharpened cone and a graphite tip) projected with perspective in a `CustomPainter`. It uses back-face culling, painter's-algorithm depth sorting and Blinn-Phong shading tinted violet. Buttons (`Button3D`) have a physical bottom edge that sinks on press, and cards (`ClayCard`) use soft coloured "clay" shadows.
+
+## Reaching the server from any network
+The API can run on a home computer and still work for phones on any Wi-Fi or mobile data:
+
+```mermaid
+flowchart LR
+    Phone["Phone<br/>(any network)"] -- HTTPS --> CF["Cloudflare edge<br/>xyz.trycloudflare.com"]
+    CF -- tunnel --> PC["cloudflared on the PC"] --> API["API on 127.0.0.1:8080"]
+    Watch["serve-public.ps1"] -- "PATCH current address" --> Gist[("GitHub gist<br/>study-assistant-endpoint.json")]
+    Phone -. "start-up, or server unreachable" .-> Gist
+```
+
+- **`scripts/serve-public.ps1`** starts the API bound to `127.0.0.1` only (nothing on the LAN reaches it directly), opens a Cloudflare *quick tunnel* (free, no account, HTTPS), and writes the tunnel's address to a gist. Every 30 s it checks both and restarts whichever died; a tunnel that is unreachable from outside three times in a row is replaced. `scripts/install-autostart.ps1` runs it at every Windows sign-in. Logs: `%LOCALAPPDATA%\StudyAssistant\logs`.
+- **The app** is built with `API_DISCOVERY_URL` (the gist's raw URL). `ApiEndpoint` starts from the last address that worked (cached on the phone), reads the file at start-up, and reads it again whenever a request gets no answer or Cloudflare's `530/502/503` for a dead tunnel; the request is then retried once at the new address. Reads are shared and at most one per 15 s. Only `https://` addresses are accepted from the file, so it can never downgrade the app to plain HTTP.
+- **The native lock sync** (it runs with the app closed) does the same: when a heartbeat gets no answer it reads the file (at most every 2 minutes), stores the new address and retries.
+- **A permanent link:** https://ashfaq1306.github.io/study-assistant/admin/ (GitHub Pages, `gh-pages` branch) reads the same gist and forwards to `<current address>/admin/`. `/health` allows cross-origin reads so that page can check the server is up.
+- **Logs** are kept across restarts (the last 10 of each, timestamped) in `%LOCALAPPDATA%StudyAssistantogs`.
+- **Rate limits** see the real phone IP: cloudflared adds `X-Forwarded-For` and `TRUST_PROXY=1`.
+- **Limits:** the computer must be on, awake and online. A quick tunnel has no uptime guarantee; when it drops, the watchdog opens a new one and phones follow within a minute or two. For always-on hosting, deploy the API to a cloud host with Postgres and build the app with that `API_BASE_URL` (no discovery file needed).
+
+## Admin panel (the Control Room)
+`admin/` is a dependency-free web app (HTML, CSS and one ES module) that the API serves at **`/admin/`**, so it shares the API's origin: no CORS and the same HTTPS tunnel. It has its own look (dark slate and cyan), deliberately unlike the student app. Files are read once at start-up from `ADMIN_PANEL_DIR` (default `../admin`); only names in that folder can be served.
+
+- **In the app:** an ADMIN account that signs in to the phone app goes straight to `AdminPanelScreen`, which shows the Control Room in a WebView, and the route guard keeps it there (and keeps everyone else out). The app asks `POST /v1/admin/panel-session` for a *separate* session and puts it in the page's `sessionStorage`, so the app and the panel never share, and rotate, one refresh token. Signing out in the panel signs the app out too. Admins never register a phone or sync study data.
+- **In a browser:** sign in with the admin ID and password. Non-admin accounts are refused (and their new session revoked). Tokens live in `sessionStorage` and refresh on a `401`.
+- **Overview:** who is online now, who is signed in, minutes studied today, accounts, pass rate, a 14-day chart of minutes studied.
+- **Accounts:** search and filter by role, status and presence (online, signed in, signed out). Each account shows its last activity, the devices it is signed in on, its sign-in history, study time per subject, sessions, exams, phones, family links and lock state, with these controls:
+  - **Unlock phone** (students): the owner's override of the exam rule; see the API reference. It asks for confirmation and an optional reason, and it is logged.
+  - **Sign out everywhere**, **Reset password** (a new random password is shown to the admin once), **Disable / Enable**.
+  - Admin accounts can't be changed from the panel.
+- **Study time:** every student's minutes and sessions for the last 24 h, 7 days, 30 days or all time, with their top subjects, plus totals per subject.
+- **Activity log:** every sign-up, sign-in, sign-out and password reset (time, device, IP) and every admin action (who did it, why).
+- **Settings:** pass-mark floor (≥ 50%), study time limits, finish-early share, exam size, retry wait, AI helper limit, AI on/off, subjects, in-app announcement.
+
+**How it is recorded:** `ActivityService` writes `ActivityEvent` rows from the auth routes and admin actions; a failed write is logged and never fails the request. `requireAuth` stamps `User.lastActiveAt` (at most every 2 minutes, not awaited). Live sessions are `Session` rows that are not revoked, not rotated and not expired.
+
+**Admins** are created on the server only: `npm run admin -- create <email> "<name>"` prints a one-time password; `promote <email>` upgrades an existing verified account; `reset-password <email>` and `list` exist too. All user text in the panel is rendered with `textContent`, never as HTML, and Helmet's CSP allows only same-origin scripts.

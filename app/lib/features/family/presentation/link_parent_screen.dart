@@ -58,7 +58,7 @@ class _LinkParentScreenState extends ConsumerState<LinkParentScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Center(child: IconBadge(Icons.family_restroom_rounded, size: 76, color: AppColors.mintDeep)),
+          Center(child: IconBadge(Icons.family_restroom_rounded, size: 76, color: AppColors.mintDeep)),
           const SizedBox(height: 14),
           Text('One last step, $name!', textAlign: TextAlign.center, style: text.headlineMedium),
           const SizedBox(height: 8),
@@ -73,11 +73,11 @@ class _LinkParentScreenState extends ConsumerState<LinkParentScreen> {
           const SizedBox(height: 24),
           const _HowTo(),
           const SizedBox(height: 20),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2.4)),
-              SizedBox(width: 10),
+              const SizedBox.square(dimension: 16, child: CircularProgressIndicator(strokeWidth: 2.4)),
+              const SizedBox(width: 10),
               Text(
                 'Waiting for your parent…',
                 style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.inkSoft),
@@ -113,7 +113,7 @@ class _HowTo extends StatelessWidget {
                 Expanded(
                   child: Text(
                     '${i + 1}. $step',
-                    style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink),
+                    style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink),
                   ),
                 ),
               ],

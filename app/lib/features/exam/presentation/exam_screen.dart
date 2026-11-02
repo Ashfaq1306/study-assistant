@@ -9,6 +9,7 @@ import '../../../app/routes.dart';
 import '../../../core/config/remote_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../reports/report_sheet.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/button_3d.dart';
 import '../../../core/widgets/clay_card.dart';
@@ -25,9 +26,12 @@ import '../domain/exam.dart';
 /// Answers typed so far, per exam, so leaving the screen does not lose them.
 final _draftAnswersProvider = Provider<Map<String, Map<String, String>>>((ref) => {});
 
-/// The unlock exam for the running study session.
+/// The unlock exam for the running study session, or for a parent's lock.
 class ExamScreen extends ConsumerStatefulWidget {
-  const ExamScreen({super.key});
+  const ExamScreen({super.key, this.lockId});
+
+  /// A parent's lock to lift instead of the study session's.
+  final String? lockId;
 
   @override
   ConsumerState<ExamScreen> createState() => _ExamScreenState();
@@ -67,9 +71,12 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       _error = null;
       _retryAt = null;
     });
-    final session = ref.read(activeSessionProvider).value ?? await ref.read(activeSessionProvider.future);
+    final lockId = widget.lockId;
+    final session = lockId != null
+        ? null
+        : ref.read(activeSessionProvider).value ?? await ref.read(activeSessionProvider.future);
     if (!mounted) return;
-    if (session == null || session.status != SessionStatus.examPending) {
+    if (lockId == null && (session == null || session.status != SessionStatus.examPending)) {
       setState(() {
         _loading = false;
         _error = const ApiException(code: 'NO_EXAM', message: 'There is no exam waiting. Start a study session first.');
@@ -77,7 +84,8 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
       return;
     }
     try {
-      final exam = await ref.read(examApiProvider).startForSession(session.id);
+      final api = ref.read(examApiProvider);
+      final exam = lockId != null ? await api.startForLock(lockId) : await api.startForSession(session!.id);
       if (mounted) setState(() => _exam = exam);
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -167,6 +175,16 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     if (ok ?? false) await _submit();
   }
 
+  /// A fresh exam right away (unless the admin set a break, which the server then reports).
+  Future<void> _retry() async {
+    setState(() {
+      _exam = null;
+      _index = 0;
+      _nextAutoSubmit = null;
+    });
+    await _load();
+  }
+
   void _goTo(int index) {
     FocusScope.of(context).unfocus();
     setState(() => _index = index);
@@ -177,7 +195,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
     final exam = _exam;
     if (_loading) return const _Writing();
     if (exam == null) return _problem();
-    if (exam.result != null) return _ResultView(exam: exam);
+    if (exam.result != null) return _ResultView(exam: exam, onRetry: _retry, forLock: widget.lockId != null);
     if (exam.status != ExamStatus.active) return const _Writing(marking: true);
     return _taking(exam);
   }
@@ -282,7 +300,7 @@ class _ExamScreenState extends ConsumerState<ExamScreen> {
             ],
             Text(
               'Question ${_index + 1} of ${exam.questions.length} · pass ${exam.passMarks}/${exam.totalMarks}',
-              style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.inkSoft),
+              style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.inkSoft),
             ),
             const SizedBox(height: 8),
             ClipRRect(
@@ -409,7 +427,7 @@ class _QuestionCard extends StatelessWidget {
             children: [
               Text(
                 'Q$number · ${question.marks} ${question.marks == 1 ? 'mark' : 'marks'} · ${question.type.label}',
-                style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.violet),
+                style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.violet),
               ),
               const SizedBox(height: 8),
               Text(question.prompt, style: Theme.of(context).textTheme.titleLarge?.copyWith(height: 1.3)),
@@ -465,7 +483,7 @@ class _Option extends StatelessWidget {
               height: 36,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: selected ? AppColors.violet : AppColors.violetSoft,
+                color: selected ? AppColors.hero : AppColors.violetSoft,
                 shape: BoxShape.circle,
               ),
               child: icon != null
@@ -479,7 +497,7 @@ class _Option extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.ink),
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppColors.ink),
               ),
             ),
           ],
@@ -522,9 +540,11 @@ class _ShortAnswerState extends State<_ShortAnswer> {
 
 /// Score, pass/fail, and a review of every question with the right answer.
 class _ResultView extends ConsumerWidget {
-  const _ResultView({required this.exam});
+  const _ResultView({required this.exam, required this.onRetry, this.forLock = false});
 
   final Exam exam;
+  final VoidCallback onRetry;
+  final bool forLock;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -551,7 +571,7 @@ class _ResultView extends ConsumerWidget {
                     children: [
                       Text(
                         '${_fmt(result.score)}/${exam.totalMarks}',
-                        style: const TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: AppColors.ink),
+                        style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: AppColors.ink),
                       ),
                       Text(
                         result.passed ? 'Passed!' : 'Not yet',
@@ -571,16 +591,28 @@ class _ResultView extends ConsumerWidget {
               else
                 MessageBanner.info(
                   'You needed ${exam.passMarks} marks: just ${_fmt(missing.toDouble())} more. '
-                  'Your apps stay locked. Revise the answers below, then try again in about ${(cooldown / 60).ceil()} min '
-                  'with fresh questions.',
+                  '${cooldown == 0 ? 'Your apps stay locked for now. Check the answers below, then try again with fresh questions.' : 'Your apps stay locked. Revise the answers below, then try again in about ${(cooldown / 60).ceil()} min with fresh questions.'}',
                 ),
               const SizedBox(height: 20),
-              Button3D(
-                label: result.passed ? 'Back home' : 'Revise with the AI helper',
-                icon: result.passed ? Icons.home_rounded : Icons.smart_toy_rounded,
-                onPressed: () => result.passed ? context.go(Routes.home) : context.push(Routes.tutor),
-              ),
-              if (!result.passed) ...[
+              if (result.passed)
+                Button3D(label: 'Back home', icon: Icons.home_rounded, onPressed: () => context.go(Routes.home))
+              else ...[
+                Button3D(
+                  label: cooldown == 0 ? 'Try again now' : 'Try again',
+                  icon: Icons.refresh_rounded,
+                  color: AppColors.sunshine,
+                  edgeColor: AppColors.sunshineDeep,
+                  foreground: AppColors.onBright,
+                  onPressed: onRetry,
+                ),
+                const SizedBox(height: 12),
+                Button3D.secondary(
+                  label: 'Revise with the AI helper',
+                  icon: Icons.smart_toy_rounded,
+                  onPressed: () => context.push(Routes.tutor),
+                ),
+              ],
+              if (!result.passed && !forLock) ...[
                 const SizedBox(height: 12),
                 Button3D.secondary(
                   label: 'Back to my session',
@@ -644,7 +676,7 @@ class _ReviewTile extends StatelessWidget {
               Expanded(
                 child: Text(
                   'Question $number',
-                  style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.ink),
+                  style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.ink),
                 ),
               ),
               Text(
@@ -656,29 +688,36 @@ class _ReviewTile extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             question.prompt,
-            style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink),
+            style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink),
           ),
           const SizedBox(height: 8),
           Text(
             'Your answer: ${_given()}',
-            style: const TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w600),
+            style: TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w600),
           ),
           if (!result.correct)
             Text(
               'Right answer: ${result.correctAnswer}',
-              style: const TextStyle(color: AppColors.mintDeep, fontWeight: FontWeight.w800),
+              style: TextStyle(color: AppColors.mintDeep, fontWeight: FontWeight.w800),
             ),
           if (result.explanation.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text(result.explanation, style: const TextStyle(color: AppColors.inkSoft)),
+            Text(result.explanation, style: TextStyle(color: AppColors.inkSoft)),
           ],
           if (question.type == QuestionType.short && result.feedback.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
               result.feedback,
-              style: const TextStyle(color: AppColors.violet, fontWeight: FontWeight.w700),
+              style: TextStyle(color: AppColors.violet, fontWeight: FontWeight.w700),
             ),
           ],
+          Align(
+            alignment: Alignment.centerRight,
+            child: ReportLink(
+              kind: ReportKind.exam,
+              content: '${question.prompt} (marked right answer: ${result.correctAnswer})',
+            ),
+          ),
         ],
       ),
     );

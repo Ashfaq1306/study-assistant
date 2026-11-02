@@ -39,6 +39,15 @@ class LockStore(context: Context) {
         get() = prefs.getString(KEY_BASE_URL, null)
         set(value) = prefs.edit().putString(KEY_BASE_URL, value).apply()
 
+    /** A JSON file with the API's current address, read when the server stops answering. */
+    var discoveryUrl: String?
+        get() = prefs.getString(KEY_DISCOVERY_URL, null)
+        set(value) = prefs.edit().putString(KEY_DISCOVERY_URL, value).apply()
+
+    var lastDiscoveryAt: Long
+        get() = prefs.getLong(KEY_LAST_DISCOVERY, 0)
+        set(value) = prefs.edit().putLong(KEY_LAST_DISCOVERY, value).apply()
+
     var deviceToken: String?
         get() = prefs.getString(KEY_TOKEN, null)
         set(value) = prefs.edit().putString(KEY_TOKEN, value).apply()
@@ -82,6 +91,8 @@ class LockStore(context: Context) {
     private companion object {
         const val NAME = "study_assistant_lock"
         const val KEY_BASE_URL = "api_base_url"
+        const val KEY_DISCOVERY_URL = "discovery_url"
+        const val KEY_LAST_DISCOVERY = "last_discovery_at"
         const val KEY_TOKEN = "device_token"
         const val KEY_OWNER = "owner_user_id"
         const val KEY_STATE = "lock_state"

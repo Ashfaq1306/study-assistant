@@ -438,3 +438,50 @@ describe('development codes', () => {
     expect(res.json().verification.devCode).toBe(dev.notifier.lastCode());
   });
 });
+
+describe('a server without an SMS provider', () => {
+  beforeEach(async () => {
+    await resetDatabase();
+    ctx = await createTestApp({ smsProvider: 'none' });
+  });
+
+  it('tells the app that codes only go by email', async () => {
+    const config = (await ctx.app.inject({ method: 'GET', url: '/v1/config' })).json();
+    expect(config.otpChannels).toEqual(['EMAIL']);
+  });
+
+  it('refuses an SMS signup before creating anything', async () => {
+    const res = await post('/v1/auth/register', studentBody({ email: '', phone: '01712345678', otpChannel: 'SMS' }));
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe('OTP_CHANNEL_OFF');
+    expect(await prisma.user.count()).toBe(0);
+    expect(ctx.notifier.sent).toHaveLength(0);
+  });
+
+  it('still signs up by email', async () => {
+    const res = await post('/v1/auth/register', studentBody({ phone: '01712345678' }));
+    expect(res.statusCode).toBe(201);
+    expect(ctx.notifier.sent[0]).toMatchObject({ channel: 'EMAIL' });
+  });
+
+  it('refuses a password reset by phone the same way whether or not the account exists', async () => {
+    const res = await post('/v1/auth/password/forgot', { identifier: '01999999999' });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe('OTP_CHANNEL_OFF');
+  });
+});
+
+describe('production settings', () => {
+  it('allow SMS to be switched off but never printed to the log', () => {
+    const base = {
+      NODE_ENV: 'production',
+      DATABASE_URL: 'file:./x.db',
+      JWT_SECRET: 'x'.repeat(32),
+      OTP_SECRET: 'y'.repeat(32),
+      EMAIL_PROVIDER: 'smtp',
+      SMTP_HOST: 'smtp.gmail.com',
+    };
+    expect(() => loadEnv({ ...base, SMS_PROVIDER: 'none' })).not.toThrow();
+    expect(() => loadEnv({ ...base, SMS_PROVIDER: 'console' })).toThrow();
+  });
+});

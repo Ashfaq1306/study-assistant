@@ -93,6 +93,8 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with WidgetsBindi
                 MessageBanner.info(
                   s.state.wholePhone
                       ? 'Your phone is locked right now (calls still work).'
+                      : s.state.packages.length == 1
+                      ? '1 app is locked right now.'
                       : '${s.state.packages.length} apps are locked right now.',
                 ),
               ],
@@ -102,12 +104,15 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with WidgetsBindi
                 icon: Icons.accessibility_new_rounded,
                 title: 'Allow app lock',
                 body:
-                    'Opens Accessibility settings. Choose "Study Assistant app lock" and switch it on. '
+                    'Opens Accessibility settings. Choose "Installed apps" (or "Downloaded apps"), then '
+                    '"Study Assistant app lock", and switch it on. '
                     'It only checks which app is open on screen, never what you type or what is inside apps. '
                     'Your list of installed apps is shared with your linked parent so they can choose apps to lock.',
                 done: s.protectionOn,
                 action: 'Open settings',
-                onAction: platform.openAccessibilitySettings,
+                onAction: () async {
+                  if (await _agreeToAccessibility(context)) await platform.openAccessibilitySettings();
+                },
               ),
               if (s.protectionOn && s.shortcutOn) ...[
                 const SizedBox(height: 12),
@@ -133,10 +138,10 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with WidgetsBindi
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Row(
+                      Row(
                         children: [
                           Icon(Icons.help_rounded, color: AppColors.sunshineDeep),
-                          SizedBox(width: 8),
+                          const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Switch greyed out ("Restricted setting")?',
@@ -146,9 +151,10 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with WidgetsBindi
                         ],
                       ),
                       const SizedBox(height: 6),
-                      const Text(
-                        'Open App info, tap the three dots at the top right, choose "Allow restricted settings", '
-                        'then come back and try step 1 again.',
+                      Text(
+                        'Android protects this switch for apps not installed from the Play Store. '
+                        'Tap "Open App info" below, tap the three dots (top right), choose "Allow restricted settings" '
+                        'and confirm with your PIN or fingerprint. Then come back and do step 1 again.',
                         style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.ink),
                       ),
                       const SizedBox(height: 10),
@@ -226,7 +232,7 @@ class _Step extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
-              if (done) const Icon(Icons.check_circle_rounded, color: AppColors.mintDeep),
+              if (done) Icon(Icons.check_circle_rounded, color: AppColors.mintDeep),
             ],
           ),
           const SizedBox(height: 8),
@@ -239,4 +245,32 @@ class _Step extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Google Play's prominent disclosure for the Accessibility API: what the app lock reads, why,
+/// and an explicit choice before the user is sent to Accessibility settings.
+Future<bool> _agreeToAccessibility(BuildContext context) async {
+  final agreed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      icon: const Icon(Icons.accessibility_new_rounded),
+      title: const Text('How app lock uses Accessibility'),
+      content: const SingleChildScrollView(
+        child: Text(
+          'Study Assistant uses Android\'s Accessibility service only to lock the apps you choose while you '
+          'study, until you pass your exam.\n\n'
+          '• It reads which app is on screen (its package name) to know when a locked app opens.\n'
+          '• It never reads what you type, your messages, or anything inside other apps.\n'
+          '• It sends the list of apps installed on this phone to our server, so you (and a linked parent) '
+          'can choose what to lock. Nothing is shared with anyone else.\n\n'
+          'You can switch it off any time in Settings > Accessibility (while no lock is running).',
+        ),
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('No thanks')),
+        FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('I agree')),
+      ],
+    ),
+  );
+  return agreed ?? false;
 }

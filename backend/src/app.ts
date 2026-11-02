@@ -2,22 +2,38 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
-import type { PrismaClient } from '@prisma/client';
-import Fastify, { type FastifyInstance, type FastifyServerOptions } from 'fastify';
+import type { OtpChannel, PrismaClient } from '@prisma/client';
+import { resolve } from 'node:path';
+import Fastify, { type FastifyBaseLogger, type FastifyInstance, type FastifyServerOptions } from 'fastify';
 import type { Env } from './config/env.js';
 import { systemClock, type Clock } from './lib/clock.js';
 import { AppError } from './lib/errors.js';
+import { ActivityService } from './modules/activity/activity.service.js';
+import { adminPanel } from './modules/admin/admin-panel.js';
+import { adminReportRoutes, reportRoutes } from './modules/reports/reports.js';
+import { adminRoutes } from './modules/admin/admin.routes.js';
+import { AdminService } from './modules/admin/admin.service.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { AuthService } from './modules/auth/auth.service.js';
 import { OtpService } from './modules/auth/otp.service.js';
 import { ACCESS_TOKEN_TTL_SECONDS, TokenService } from './modules/auth/token.service.js';
+import { calendarRoutes } from './modules/calendar/calendar.routes.js';
+import { CalendarService } from './modules/calendar/calendar.service.js';
 import { configRoutes } from './modules/config/config.routes.js';
 import { ConfigService } from './modules/config/config.service.js';
 import { deviceSyncRoutes, devicesRoutes } from './modules/devices/devices.routes.js';
 import { DevicesService } from './modules/devices/devices.service.js';
 import { LockStateService } from './modules/devices/lock-state.service.js';
+import { UsageService } from './modules/devices/usage.service.js';
+import { notificationsRoutes } from './modules/notifications/notifications.routes.js';
+import { NotificationsService } from './modules/notifications/notifications.service.js';
+import { parentRoutes, studentLockRoutes } from './modules/parent/parent.routes.js';
+import { photoFileRoutes, sessionPhotosRoutes } from './modules/photos/photos.routes.js';
+import { PhotosService } from './modules/photos/photos.service.js';
+import { ParentService } from './modules/parent/parent.service.js';
 import { AnthropicProvider } from './modules/ai/anthropic.provider.js';
 import type { AiProvider } from './modules/ai/ai.types.js';
+import { GeminiProvider } from './modules/ai/gemini.provider.js';
 import { PracticeProvider } from './modules/ai/practice.provider.js';
 import { examsRoutes } from './modules/exams/exams.routes.js';
 import { ExamsService } from './modules/exams/exams.service.js';
@@ -29,6 +45,26 @@ import { sessionsRoutes } from './modules/sessions/sessions.routes.js';
 import { SessionsService } from './modules/sessions/sessions.service.js';
 import { usersRoutes } from './modules/users/users.routes.js';
 import { UsersService } from './modules/users/users.service.js';
+
+/** The configured AI, or built-in practice questions when none is set up. */
+function createAi(env: Env, log: FastifyBaseLogger): AiProvider {
+  const provider =
+    env.AI_PROVIDER === 'auto' ? (env.ANTHROPIC_API_KEY ? 'anthropic' : env.GEMINI_API_KEY ? 'gemini' : null) : env.AI_PROVIDER;
+  if (provider === 'anthropic' && env.ANTHROPIC_API_KEY) {
+    return new AnthropicProvider(
+      { apiKey: env.ANTHROPIC_API_KEY, model: env.AI_MODEL, examEffort: env.AI_EXAM_EFFORT, tutorEffort: env.AI_TUTOR_EFFORT },
+      log,
+    );
+  }
+  if (provider === 'gemini' && env.GEMINI_API_KEY) {
+    return new GeminiProvider(
+      { apiKey: env.GEMINI_API_KEY, models: [env.GEMINI_MODEL, ...env.GEMINI_FALLBACK_MODELS] },
+      log,
+    );
+  }
+  if (provider) log.warn({ provider }, 'AI provider chosen but its API key is missing: using practice questions');
+  return new PracticeProvider();
+}
 
 export interface AppOptions {
   env: Env;
@@ -53,7 +89,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     bodyLimit: 256 * 1024,
   });
 
-  await app.register(helmet);
+  // No upgrade-insecure-requests: the admin panel's files are relative, so they already follow the
+  // page's scheme, and a local http:// panel (development, an emulator) must still load them.
+  await app.register(helmet, { contentSecurityPolicy: { directives: { upgradeInsecureRequests: null } } });
   await app.register(cors, { origin: env.CORS_ORIGINS.length > 0 ? env.CORS_ORIGINS : false });
   if (options.rateLimit !== false) {
     await app.register(rateLimit, {
@@ -98,41 +136,66 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   );
 
   const notifier = options.notifier ?? createNotifier(env, app.log);
+  const otpChannels: OtpChannel[] = env.SMS_PROVIDER === 'none' ? ['EMAIL'] : ['EMAIL', 'SMS'];
+  const activity = new ActivityService(prisma, clock, app.log);
   const users = new UsersService(prisma, clock);
   // Local test servers can return OTPs in responses so the app works without email/SMS.
-  const otp = new OtpService(prisma, notifier, env.OTP_SECRET, clock, app.log, env.EXPOSE_DEV_CODES && env.NODE_ENV !== 'production');
+  const otp = new OtpService(prisma, notifier, env.OTP_SECRET, clock, app.log, env.EXPOSE_DEV_CODES && env.NODE_ENV !== 'production', otpChannels);
   const tokens = new TokenService(prisma, (claims) => app.jwt.sign(claims), clock);
   const auth = new AuthService(prisma, otp, tokens, users, clock);
   const family = new FamilyService(prisma, users, env.OTP_SECRET, clock);
   const config = new ConfigService(prisma, clock);
-  const sessions = new SessionsService(prisma, config, users, clock);
-  const lockState = new LockStateService(sessions);
-  const devices = new DevicesService(prisma, lockState, clock);
-  const ai =
-    options.ai ??
-    (env.ANTHROPIC_API_KEY
-      ? new AnthropicProvider(
-          {
-            apiKey: env.ANTHROPIC_API_KEY,
-            model: env.AI_MODEL,
-            examEffort: env.AI_EXAM_EFFORT,
-            tutorEffort: env.AI_TUTOR_EFFORT,
-          },
-          app.log,
-        )
-      : new PracticeProvider());
-  const exams = new ExamsService(prisma, ai, config, sessions, clock, app.log);
+  const notifications = new NotificationsService(prisma, clock);
+  const sessions = new SessionsService(prisma, config, users, notifications, clock);
+  const lockState = new LockStateService(prisma, sessions);
+  const usage = new UsageService(prisma);
+  const devices = new DevicesService(prisma, lockState, usage, notifications, clock);
+  const ai = options.ai ?? createAi(env, app.log);
+  const photos = new PhotosService(prisma, clock);
+  if (env.NODE_ENV !== 'test') {
+    // Old study photos are deleted daily (see PHOTO_KEEP_DAYS), starting a minute after start-up.
+    const cleanPhotos = () =>
+      photos
+        .deleteOld()
+        .then((n) => n > 0 && app.log.info({ deleted: n }, 'old study photos deleted'))
+        .catch((err: unknown) => app.log.warn({ err }, 'photo cleanup failed'));
+    const first = setTimeout(() => void cleanPhotos(), 60_000);
+    const daily = setInterval(() => void cleanPhotos(), 24 * 60 * 60_000);
+    first.unref();
+    daily.unref();
+    app.addHook('onClose', async () => {
+      clearTimeout(first);
+      clearInterval(daily);
+    });
+  }
+  const exams = new ExamsService(prisma, ai, config, sessions, notifications, photos, clock, app.log);
+  const parent = new ParentService(prisma, sessions, usage, config, notifications, clock);
+  const calendar = new CalendarService(prisma, ai, config, clock);
   const tutor = new TutorService(prisma, ai, config, sessions, exams, clock);
+  const admin = new AdminService(prisma, config, sessions, notifications, activity, tokens, clock);
 
-  app.get('/health', () => ({ status: 'ok' }));
-  await app.register(authRoutes(auth), { prefix: '/v1/auth' });
+  // Public and harmless: other sites (the GitHub Pages link to the Control Room) may check it's up.
+  app.get('/health', (_request, reply) =>
+    reply.header('cross-origin-resource-policy', 'cross-origin').send({ status: 'ok' }),
+  );
+  await app.register(authRoutes(auth, activity), { prefix: '/v1/auth' });
   await app.register(usersRoutes(prisma, users), { prefix: '/v1/me' });
   await app.register(familyRoutes(prisma, family), { prefix: '/v1/family' });
-  await app.register(configRoutes(config), { prefix: '/v1/config' });
+  await app.register(configRoutes(config, otpChannels), { prefix: '/v1/config' });
   await app.register(sessionsRoutes(prisma, sessions), { prefix: '/v1/sessions' });
+  await app.register(sessionPhotosRoutes(prisma, photos), { prefix: '/v1/sessions' });
+  await app.register(photoFileRoutes(prisma, photos), { prefix: '/v1/photos' });
   await app.register(devicesRoutes(prisma, devices), { prefix: '/v1/devices' });
   await app.register(deviceSyncRoutes(devices), { prefix: '/v1/device' });
   await app.register(examsRoutes(prisma, exams, tutor), { prefix: '/v1' });
+  await app.register(parentRoutes(prisma, parent), { prefix: '/v1/parent' });
+  await app.register(studentLockRoutes(prisma, parent, exams), { prefix: '/v1/locks' });
+  await app.register(notificationsRoutes(prisma, notifications), { prefix: '/v1/notifications' });
+  await app.register(calendarRoutes(prisma, calendar), { prefix: '/v1/calendar' });
+  await app.register(reportRoutes(prisma), { prefix: '/v1/reports' });
+  await app.register(adminRoutes(prisma, admin), { prefix: '/v1/admin' });
+  await app.register(adminReportRoutes(prisma), { prefix: '/v1/admin/reports' });
+  if (env.ADMIN_PANEL_DIR) await app.register(adminPanel(resolve(env.ADMIN_PANEL_DIR)));
 
   return app;
 }

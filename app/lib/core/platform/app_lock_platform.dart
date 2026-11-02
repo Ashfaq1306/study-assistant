@@ -5,6 +5,8 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../config/app_config.dart';
+
 class NativeLockStatus {
   const NativeLockStatus({
     required this.protectionOn,
@@ -14,6 +16,7 @@ class NativeLockStatus {
     this.shortcutOn = false,
     this.ownerUserId,
     this.deviceToken,
+    this.apiBaseUrl,
   });
 
   /// The accessibility service is switched on.
@@ -28,6 +31,9 @@ class NativeLockStatus {
   final bool shortcutOn;
   final String? ownerUserId;
   final String? deviceToken;
+
+  /// Where the native blocker syncs; updated when the app's server changes.
+  final String? apiBaseUrl;
 }
 
 class InstalledApp {
@@ -74,16 +80,40 @@ class AppLockPlatform {
       shortcutOn: map['shortcutOn'] as bool? ?? false,
       ownerUserId: map['ownerUserId'] as String?,
       deviceToken: map['deviceToken'] as String?,
+      apiBaseUrl: map['apiBaseUrl'] as String?,
     );
   }
 
-  Future<void> configure({required String baseUrl, required String deviceToken, required String userId}) =>
-      _invoke('configure', {'baseUrl': baseUrl, 'deviceToken': deviceToken, 'userId': userId});
+  /// [discoveryUrl] lets the native sync find the server again if its address changes while the app is closed.
+  Future<void> configure({required String baseUrl, required String deviceToken, required String userId}) => _invoke(
+    'configure',
+    {'baseUrl': baseUrl, 'deviceToken': deviceToken, 'userId': userId, 'discoveryUrl': AppConfig.apiDiscoveryUrl},
+  );
 
   /// Hands the lock state fetched by the app to the blocker right away.
   Future<void> applyState(Map<String, Object?> state) => _invoke('applyState', {'state': jsonEncode(state)});
 
   Future<void> syncNow() => _invoke('syncNow');
+
+  /// Asks the launcher to add the home-screen widget. False when the launcher can't.
+  Future<bool> pinWidget() async => isSupported && (await _channel.invokeMethod<bool>('pinWidget') ?? false);
+
+  /// Redraws the home-screen widget. [mode] is idle, studying, exam, locked or signedOut.
+  Future<void> updateWidget({
+    required String mode,
+    String title = '',
+    String subtitle = '',
+    DateTime? endsAt,
+    int todayMinutes = 0,
+    int streakDays = 0,
+  }) => _invoke('updateWidget', {
+    'mode': mode,
+    'title': title,
+    'subtitle': subtitle,
+    'endsAt': endsAt?.millisecondsSinceEpoch ?? 0,
+    'todayMinutes': todayMinutes,
+    'streakDays': streakDays,
+  });
 
   /// Launchable apps; icons are only loaded when [withIcons] (for the picker).
   Future<List<InstalledApp>> installedApps({bool withIcons = true}) async {

@@ -1,0 +1,73 @@
+# Every push to main builds a test version of the app and publishes it as a GitHub pre-release.
+# Installed test builds see it and update themselves (see app/lib/features/updates).
+# The Google Play version updates through Play instead (upload the release bundle there).
+#
+# Needs: secret DEBUG_KEYSTORE_B64 (the debug keystore that signed the installed test builds,
+# base64) and variable API_BASE_URL (the server's https address).
+name: Test build
+
+on:
+  push:
+    branches: [main]
+    paths: ['app/**', '.github/workflows/test-build.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: test-build
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # Waits until the server address is set (Settings → Variables → API_BASE_URL).
+    if: ${{ vars.API_BASE_URL != '' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    env:
+      GH_TOKEN: ${{ github.token }}
+      API_BASE_URL: ${{ vars.API_BASE_URL }}
+      API_DISCOVERY_URL: https://gist.githubusercontent.com/Ashfaq1306/73f5cd0421af834e9965f8680d2ea2b1/raw/study-assistant-endpoint.json
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+      - name: Same signing key as the installed test builds
+        run: |
+          mkdir -p ~/.android
+          echo "${{ secrets.DEBUG_KEYSTORE_B64 }}" | base64 -d > ~/.android/debug.keystore
+          test -s ~/.android/debug.keystore || { echo "DEBUG_KEYSTORE_B64 secret is missing"; exit 1; }
+      - name: Next build number (always higher than the newest test release)
+        id: version
+        run: |
+          version=$(sed -nE 's/^version: ([0-9]+\.[0-9]+\.[0-9]+)\+([0-9]+).*/\1/p' pubspec.yaml)
+          pubspec=$(sed -nE 's/^version: [0-9.]+\+([0-9]+).*/\1/p' pubspec.yaml)
+          latest=$(gh release list --limit 50 --json tagName --jq '.[].tagName' | sed -nE 's/^v[0-9.]+-b([0-9]+)$/\1/p' | sort -n | tail -1)
+          build=$(( ${latest:-0} + 1 > pubspec ? ${latest:-0} + 1 : pubspec ))
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "build=$build" >> "$GITHUB_OUTPUT"
+          echo "Test build $version ($build)"
+      - run: flutter pub get
+      - name: Build (profile = fast, still a test build that can update itself)
+        run: >-
+          flutter build apk --profile --split-per-abi
+          --build-name=${{ steps.version.outputs.version }} --build-number=${{ steps.version.outputs.build }}
+          --dart-define=API_BASE_URL="$API_BASE_URL" --dart-define=API_DISCOVERY_URL="$API_DISCOVERY_URL"
+      - name: Publish
+        run: |
+          v=${{ steps.version.outputs.version }}; b=${{ steps.version.outputs.build }}
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            cp "build/app/outputs/flutter-apk/app-$abi-profile.apk" "study-assistant-$v-b$b-$abi.apk"
+          done
+          gh release create "v$v-b$b" study-assistant-$v-b$b-*.apk --prerelease --target "$GITHUB_SHA" \
+            --title "Test build $v ($b)" --notes "Automatic test build from $(git log -1 --pretty=%s)"

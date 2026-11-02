@@ -1,0 +1,72 @@
+# Render blueprint: the API (with the Control Room at /admin/) and its Postgres database, in Singapore.
+# Every push to main is deployed automatically once GitHub's checks pass.
+# Secrets marked `sync: false` are entered in the Render dashboard, never committed.
+services:
+  - type: web
+    name: study-assistant-api
+    runtime: node
+    region: singapore
+    plan: starter
+    branch: main
+    rootDir: .
+    autoDeployTrigger: checksPass
+    buildCommand: >-
+      cd backend && npm ci && node scripts/prisma-provider.mjs postgresql && npx prisma generate && npm run build
+    # Adds new tables and columns before the new version starts (refuses anything that would lose data).
+    preDeployCommand: cd backend && npx prisma db push --skip-generate
+    startCommand: cd backend && node dist/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: LOG_LEVEL
+        value: info
+      # Render's proxy sits in front of the API: trust one hop for the real client IP (rate limits).
+      - key: TRUST_PROXY
+        value: '1'
+      - key: DATABASE_URL
+        fromDatabase:
+          name: study-assistant-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: OTP_SECRET
+        generateValue: true
+      - key: ADMIN_PANEL_DIR
+        value: ../admin
+      # One-time codes by email (Gmail with an app password).
+      - key: EMAIL_PROVIDER
+        value: smtp
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: '587'
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_FROM
+        sync: false
+      - key: SMS_PROVIDER
+        value: none
+      # AI exams, the study helper and calendar import.
+      - key: AI_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash
+      - key: GEMINI_FALLBACK_MODELS
+        value: gemini-3.5-flash-lite,gemini-flash-lite-latest
+
+databases:
+  - name: study-assistant-db
+    region: singapore
+    plan: basic-256mb
+    databaseName: study_assistant
+    user: study_assistant
+    postgresMajorVersion: '16'

@@ -14,9 +14,10 @@ class RemoteConfig {
     this.maxStudyMinutes = 240,
     this.earlyFinishPercent = 50,
     this.maxQuestions = 30,
-    this.examRetryCooldownSeconds = 120,
+    this.examRetryCooldownSeconds = 0,
     this.aiEnabled = true,
     this.announcement,
+    this.otpChannels = const ['EMAIL', 'SMS'],
   });
 
   final List<String> subjects;
@@ -29,6 +30,12 @@ class RemoteConfig {
   final bool aiEnabled;
   final String? announcement;
 
+  /// How the server can send sign-up codes ("EMAIL", "SMS"). The app offers only these.
+  final List<String> otpChannels;
+
+  bool get smsCodes => otpChannels.contains('SMS');
+  bool get emailCodes => otpChannels.contains('EMAIL');
+
   factory RemoteConfig.fromJson(Map<String, Object?> json) => RemoteConfig(
     subjects: [for (final s in json['subjects']! as List<Object?>) s! as String],
     minPassPercent: (json['minPassPercent']! as num).toInt(),
@@ -39,6 +46,10 @@ class RemoteConfig {
     examRetryCooldownSeconds: (json['examRetryCooldownSeconds']! as num).toInt(),
     aiEnabled: json['aiEnabled'] as bool? ?? true,
     announcement: json['announcement'] as String?,
+    otpChannels: switch (json['otpChannels']) {
+      final List<Object?> list when list.isNotEmpty => [for (final c in list) c.toString()],
+      _ => const ['EMAIL', 'SMS'],
+    },
   );
 }
 

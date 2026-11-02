@@ -15,17 +15,36 @@ abstract final class Routes {
   static const studySession = '/home/session';
   static const stats = '/home/stats';
   static const exam = '/home/exam';
+
+  /// The quiz that lifts a parent's lock.
+  static String lockExam(String lockId) => '$exam?lock=${Uri.encodeQueryComponent(lockId)}';
   static const tutor = '/home/tutor';
+  static const calendar = '/home/calendar';
+  static const calendarEdit = '/home/calendar/edit';
+  static const calendarImport = '/home/calendar/import';
   static const parentHome = '/parent';
   static const addChild = '/parent/add-child';
+  static const questionSets = '/parent/questions';
+  static const questionSetEdit = '/parent/questions/edit';
+  static const parentAlerts = '/parent/alerts';
+
+  /// A linked child's dashboard; `/lock` under it adds a lock.
+  static String child(String id) => '/parent/child/$id';
   static const appLock = '/home/app-lock';
+
+  /// Settings shared by students and parents.
+  static const appearance = '/settings/appearance';
+  static const deleteAccount = '/settings/delete-account';
+
+  /// The admin's Control Room (the web admin panel inside the app). Admin accounts see nothing else.
+  static const admin = '/admin';
 
   /// Shown over a locked app. Reachable in every sign-in state.
   static const locked = '/locked';
 
   static const signedOutOnly = {welcome, login, register, verify, forgotPassword};
 
-  static String homeFor(AppUser user) => user.isParent ? parentHome : home;
+  static String homeFor(AppUser user) => user.isAdmin ? admin : (user.isParent ? parentHome : home);
 }
 
 /// Decides where a navigation may go for the current auth state.
@@ -47,6 +66,8 @@ String? guardRoute(AuthState auth, String location) {
       if (location == Routes.splash || location == Routes.linkParent || Routes.signedOutOnly.contains(location)) {
         return home;
       }
+      if (location.startsWith('/settings/')) return null;
+      if ((location == Routes.admin) != user.isAdmin) return home;
       final inParentArea = location == Routes.parentHome || location.startsWith('${Routes.parentHome}/');
       if (inParentArea != user.isParent) return home;
       return null;

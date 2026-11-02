@@ -9,6 +9,7 @@ import '../../core/widgets/dreamy_background.dart';
 import '../../core/widgets/feedback.dart';
 import '../../core/widgets/page_shell.dart';
 import '../auth/application/auth_controller.dart';
+import '../reports/report_sheet.dart';
 import '../study/application/study_providers.dart';
 
 class ChatMessage {
@@ -140,7 +141,7 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                   children: [
                     const RoundBackButton(),
                     const SizedBox(width: 12),
-                    const IconBadge(Icons.smart_toy_rounded, size: 44, color: AppColors.sky),
+                    IconBadge(Icons.smart_toy_rounded, size: 44, color: AppColors.sky),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -159,7 +160,7 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                     if (state.messages.isNotEmpty)
                       IconButton(
                         tooltip: 'New chat',
-                        icon: const Icon(Icons.refresh_rounded, color: AppColors.inkSoft),
+                        icon: Icon(Icons.refresh_rounded, color: AppColors.inkSoft),
                         onPressed: state.thinking ? null : ref.read(tutorProvider.notifier).clear,
                       ),
                   ],
@@ -188,7 +189,7 @@ class _TutorScreenState extends ConsumerState<TutorScreen> {
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Text(
                     '${state.remainingToday} questions left today',
-                    style: const TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w700),
+                    style: TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w700),
                   ),
                 ),
               _InputBar(controller: _input, enabled: !state.thinking, onSend: _send),
@@ -225,7 +226,7 @@ class _Welcome extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
-        const Center(child: IconBadge(Icons.psychology_rounded, size: 88, color: AppColors.sky)),
+        Center(child: IconBadge(Icons.psychology_rounded, size: 88, color: AppColors.sky)),
         const SizedBox(height: 16),
         Text('Stuck? Ask me!', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 6),
@@ -291,7 +292,19 @@ class _Bubble extends StatelessWidget {
               ),
             ),
     );
-    return Align(alignment: fromStudent ? Alignment.centerRight : Alignment.centerLeft, child: bubble);
+    if (fromStudent || typing) {
+      return Align(alignment: fromStudent ? Alignment.centerRight : Alignment.centerLeft, child: bubble);
+    }
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          bubble,
+          ReportLink(kind: ReportKind.tutor, content: text),
+        ],
+      ),
+    );
   }
 }
 

@@ -16,6 +16,9 @@ import '../../study/application/study_providers.dart';
 import '../../study/domain/study_session.dart';
 import '../../study/presentation/stats_screen.dart';
 import 'home_widgets.dart';
+import '../../updates/update_card.dart';
+import '../../parent/presentation/parent_locks_card.dart';
+import '../../calendar/presentation/next_up_card.dart';
 
 class StudentHomeScreen extends ConsumerWidget {
   const StudentHomeScreen({super.key});
@@ -38,6 +41,7 @@ class StudentHomeScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           HomeHeader(greeting: 'Hi ${user.firstName}!', subtitle: 'Ready to learn something today?'),
+          const UpdateCard(),
           if (announcement != null && announcement.isNotEmpty) ...[
             const SizedBox(height: 16),
             MessageBanner.info(announcement),
@@ -51,6 +55,8 @@ class StudentHomeScreen extends ConsumerWidget {
             _ActiveCard(session: active)
           else
             _StartCard(onStart: () => context.push(Routes.studyNew)),
+          const ParentLocksCard(),
+          const NextUpCard(),
           const SizedBox(height: 18),
           Row(
             children: [
@@ -106,6 +112,13 @@ class StudentHomeScreen extends ConsumerWidget {
                 onTap: () => context.push(Routes.appLock),
               ),
               FeatureTile(
+                icon: Icons.calendar_month_rounded,
+                title: 'Calendar',
+                subtitle: 'Exams, classes and reminders',
+                color: AppColors.coralDeep,
+                onTap: () => context.push(Routes.calendar),
+              ),
+              FeatureTile(
                 icon: Icons.smart_toy_rounded,
                 title: 'AI helper',
                 subtitle: 'Ask anything about your lesson',
@@ -140,12 +153,12 @@ class _RetryBanner extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
         onTap: onRetry,
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
               Icon(Icons.wifi_off_rounded, color: AppColors.coralDeep),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   "Couldn't check your study session. Tap to try again.",
@@ -169,8 +182,8 @@ class _StartCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
     return ClayCard(
-      color: AppColors.violet,
-      glow: AppColors.violetDeep,
+      color: AppColors.hero,
+      glow: AppColors.hero,
       padding: const EdgeInsets.fromLTRB(22, 18, 12, 22),
       child: Row(
         children: [
@@ -191,7 +204,7 @@ class _StartCard extends StatelessWidget {
                   height: 50,
                   color: AppColors.sunshine,
                   edgeColor: AppColors.sunshineDeep,
-                  foreground: AppColors.ink,
+                  foreground: AppColors.onBright,
                   onPressed: onStart,
                 ),
               ],

@@ -121,6 +121,23 @@ describe('starting a session', () => {
     const { code } = (await as(young).post('/v1/family/pairing-code')).json();
     await as(parent).post('/v1/family/links', { code });
 
+    // Locking apps also needs App lock working on the phone.
+    const unprotected = await start(young, { strict: false });
+    expect(unprotected.statusCode).toBe(409);
+    expect(unprotected.json().error.code).toBe('PROTECTION_REQUIRED');
+
+    const { deviceToken } = (await as(young).post('/v1/devices', { name: 'Phone', platform: 'android' })).json();
+    const heartbeat = (shortcutOn: boolean) =>
+      ctx.app.inject({
+        method: 'POST',
+        url: '/v1/device/heartbeat',
+        headers: { 'x-device-token': deviceToken },
+        payload: { protectionOn: true, shortcutOn },
+      });
+    await heartbeat(true);
+    expect((await start(young, { strict: false })).json().error.code).toBe('PROTECTION_REQUIRED');
+
+    await heartbeat(false);
     const ok = await start(young, { strict: false });
     expect(ok.statusCode).toBe(201);
     expect(ok.json().strict).toBe(true);

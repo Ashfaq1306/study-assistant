@@ -1,3 +1,4 @@
+import type { PrismaClient } from '@prisma/client';
 import type { SessionsService } from '../sessions/sessions.service.js';
 
 export interface LockReason {
@@ -19,7 +20,10 @@ export interface DeviceLockState {
 }
 
 export class LockStateService {
-  constructor(private readonly sessions: SessionsService) {}
+  constructor(
+    private readonly prisma: PrismaClient,
+    private readonly sessions: SessionsService,
+  ) {}
 
   async forStudent(studentId: string): Promise<DeviceLockState> {
     const packages = new Set<string>();
@@ -27,13 +31,16 @@ export class LockStateService {
     let strict = false;
     let wholePhone = false;
 
-    const session = await this.sessions.findActive(studentId);
-    if (session) {
-      const apps = JSON.parse(session.lockedApps) as string[];
-      for (const app of apps) {
+    const add = (lockedApps: string) => {
+      for (const app of JSON.parse(lockedApps) as string[]) {
         if (app === '*') wholePhone = true;
         else packages.add(app);
       }
+    };
+
+    const session = await this.sessions.findActive(studentId);
+    if (session) {
+      add(session.lockedApps);
       strict ||= session.strict;
       reasons.push({
         kind: 'SESSION',
@@ -41,6 +48,16 @@ export class LockStateService {
         title: `${session.subject}: ${session.topics}`,
         status: session.status,
       });
+    }
+
+    const parentLocks = await this.prisma.parentLock.findMany({
+      where: { studentId, status: 'ACTIVE' },
+      orderBy: { createdAt: 'asc' },
+    });
+    for (const lock of parentLocks) {
+      add(lock.lockedApps);
+      strict ||= lock.strict;
+      reasons.push({ kind: 'PARENT', id: lock.id, title: lock.title, status: lock.status });
     }
 
     const locked = wholePhone || packages.size > 0;

@@ -128,14 +128,14 @@ class StatTile extends StatelessWidget {
           FittedBox(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.ink),
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.ink),
             ),
           ),
           Text(
             label,
             textAlign: TextAlign.center,
             maxLines: 2,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.inkSoft),
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.inkSoft),
           ),
         ],
       ),
@@ -176,7 +176,7 @@ class SessionTile extends StatelessWidget {
                 ),
                 Text(
                   '${d.day}/${d.month}/${d.year}',
-                  style: const TextStyle(fontSize: 12, color: AppColors.inkFaint, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: 12, color: AppColors.inkFaint, fontWeight: FontWeight.w700),
                 ),
               ],
             ),

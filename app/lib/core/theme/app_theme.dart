@@ -6,9 +6,18 @@ import 'app_colors.dart';
 abstract final class AppTheme {
   static const radius = 20.0;
 
+  /// The default light theme (used by tests).
   static ThemeData light() {
+    AppColors.use(AppPalette.light(AppAccent.lavender));
+    return build();
+  }
+
+  /// The theme for the active palette (see [AppColors.use]).
+  static ThemeData build() {
+    final dark = AppColors.isDark;
     final scheme = ColorScheme.fromSeed(
       seedColor: AppColors.violet,
+      brightness: dark ? Brightness.dark : Brightness.light,
       primary: AppColors.violet,
       secondary: AppColors.sunshine,
       tertiary: AppColors.mint,
@@ -19,6 +28,7 @@ abstract final class AppTheme {
 
     final base = ThemeData(
       useMaterial3: true,
+      brightness: dark ? Brightness.dark : Brightness.light,
       colorScheme: scheme,
       fontFamily: 'Nunito',
       scaffoldBackgroundColor: AppColors.cloud,
@@ -43,13 +53,13 @@ abstract final class AppTheme {
         bodyMedium: text.bodyMedium?.copyWith(fontWeight: FontWeight.w500, height: 1.4, color: AppColors.inkSoft),
         labelLarge: text.labelLarge?.copyWith(fontWeight: FontWeight.w800),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         foregroundColor: AppColors.ink,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        systemOverlayStyle: dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
         titleTextStyle: TextStyle(
           fontFamily: 'Nunito',
           fontSize: 20,
@@ -61,7 +71,7 @@ abstract final class AppTheme {
         filled: true,
         fillColor: AppColors.card,
         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-        hintStyle: const TextStyle(color: AppColors.inkFaint, fontWeight: FontWeight.w500),
+        hintStyle: TextStyle(color: AppColors.inkFaint, fontWeight: FontWeight.w500),
         prefixIconColor: AppColors.inkSoft,
         suffixIconColor: AppColors.inkSoft,
         border: border(AppColors.line),
@@ -69,7 +79,7 @@ abstract final class AppTheme {
         focusedBorder: border(AppColors.violet, 2.2),
         errorBorder: border(AppColors.coral),
         focusedErrorBorder: border(AppColors.coralDeep, 2.2),
-        errorStyle: const TextStyle(color: AppColors.coralDeep, fontWeight: FontWeight.w700),
+        errorStyle: TextStyle(color: AppColors.coralDeep, fontWeight: FontWeight.w700),
         errorMaxLines: 3,
       ),
       textButtonTheme: TextButtonThemeData(
@@ -85,6 +95,22 @@ abstract final class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       datePickerTheme: DatePickerThemeData(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28))),
+      dialogTheme: DialogThemeData(
+        backgroundColor: AppColors.card,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: AppColors.card,
+        showDragHandle: true,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+      ),
+      popupMenuTheme: PopupMenuThemeData(color: AppColors.card),
+      dividerTheme: DividerThemeData(color: AppColors.line),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: AppColors.violet,
+        linearTrackColor: AppColors.violetSoft,
+      ),
+      checkboxTheme: CheckboxThemeData(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6))),
     );
   }
 }

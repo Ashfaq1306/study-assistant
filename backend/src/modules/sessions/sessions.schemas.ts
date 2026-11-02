@@ -24,7 +24,7 @@ export const ExamSettingsSchema = z
       .array(z.enum(QUESTION_TYPES))
       .min(1, 'Pick at least one question type.')
       .transform((types) => [...new Set(types)]),
-    difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).default('MEDIUM'),
+    difficulty: z.enum(['EASY', 'MEDIUM', 'HARD']).default('EASY'),
   })
   .superRefine((exam, ctx) => {
     if (exam.passMarks > exam.totalMarks) {
@@ -39,6 +39,8 @@ export type ExamSettings = z.infer<typeof ExamSettingsSchema>;
 export const StartSessionBody = z.object({
   subject: z.string().trim().min(1, 'Pick a subject.').max(60),
   topics: z.string().trim().min(2, 'Write what you will study.').max(500),
+  /** The student's plan or notes, in their own words. */
+  notes: z.string().trim().max(1000).default(''),
   plannedMinutes: z.number().int(),
   lockedApps: z.array(packageName).max(300).default([]).transform((apps) => [...new Set(apps)]),
   strict: z.boolean().default(true),

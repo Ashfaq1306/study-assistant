@@ -9,6 +9,8 @@ import android.os.Looper
 import android.provider.Settings
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
+import com.ashfaq.study_assistant.update.AutoUpdater
+import com.ashfaq.study_assistant.widget.StudyWidget
 import org.json.JSONObject
 import java.util.concurrent.Executors
 
@@ -27,16 +29,64 @@ class AppLockChannel(private val activity: Activity) : MethodChannel.MethodCallH
                     "deviceModel" to "${Build.MANUFACTURER} ${Build.MODEL}".trim(),
                     "ownerUserId" to store.ownerUserId,
                     "deviceToken" to store.deviceToken,
+                    "apiBaseUrl" to store.apiBaseUrl,
                     "locked" to store.state().locked,
                 ),
             )
 
             "configure" -> {
                 store.apiBaseUrl = call.argument<String>("baseUrl")
+                store.discoveryUrl = call.argument<String>("discoveryUrl")?.takeIf { it.isNotBlank() }
                 store.deviceToken = call.argument<String>("deviceToken")
                 store.ownerUserId = call.argument<String>("userId")
                 store.lastAppsSentAt = 0
                 AppLockService.instance?.syncNow()
+                result.success(null)
+            }
+
+            "updateWidget" -> {
+                @Suppress("UNCHECKED_CAST")
+                StudyWidget.save(activity, call.arguments as? Map<String, Any?> ?: emptyMap())
+                result.success(null)
+            }
+
+            "versionCode" -> {
+                val info = activity.packageManager.getPackageInfo(activity.packageName, 0)
+                result.success(if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else @Suppress("DEPRECATION") info.versionCode.toLong())
+            }
+
+            "canSelfUpdate" -> result.success(AutoUpdater.enabled(activity))
+
+            "abi" -> result.success(Build.SUPPORTED_ABIS.firstOrNull() ?: "")
+
+            "installApk" -> {
+                val path = call.argument<String>("path")
+                if (!AutoUpdater.enabled(activity) || path == null) {
+                    result.success(false)
+                } else {
+                    // Through PackageInstaller, so this app becomes the installer of
+                    // record and later updates can install without asking.
+                    executor.execute {
+                        val ok = try {
+                            AutoUpdater.install(activity, java.io.File(path))
+                        } catch (_: Exception) {
+                            false
+                        }
+                        main.post { result.success(ok) }
+                    }
+                }
+            }
+
+            "autoUpdate" -> {
+                AutoUpdater.runAsync(activity) { started -> main.post { result.success(started) } }
+            }
+
+            "pinWidget" -> {
+                result.success(StudyWidget.requestPin(activity))
+            }
+
+            "clearWidget" -> {
+                StudyWidget.clear(activity)
                 result.success(null)
             }
 

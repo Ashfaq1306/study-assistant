@@ -21,7 +21,7 @@ enum Difficulty {
   final String api;
   final String label;
 
-  static Difficulty fromApi(String value) => values.firstWhere((d) => d.api == value, orElse: () => medium);
+  static Difficulty fromApi(String value) => values.firstWhere((d) => d.api == value, orElse: () => easy);
 }
 
 enum SessionStatus {
@@ -47,7 +47,7 @@ class ExamSettings {
     required this.totalMarks,
     required this.passMarks,
     required this.questionTypes,
-    this.difficulty = Difficulty.medium,
+    this.difficulty = Difficulty.easy,
   });
 
   final int questionCount;
@@ -80,7 +80,7 @@ class ExamSettings {
     totalMarks: (json['totalMarks']! as num).toInt(),
     passMarks: (json['passMarks']! as num).toInt(),
     questionTypes: [for (final t in json['questionTypes']! as List<Object?>) QuestionType.fromApi(t! as String)],
-    difficulty: Difficulty.fromApi(json['difficulty'] as String? ?? 'MEDIUM'),
+    difficulty: Difficulty.fromApi(json['difficulty'] as String? ?? 'EASY'),
   );
 
   Map<String, Object?> toJson() => {
@@ -106,6 +106,8 @@ class StudySession {
     required this.endsAt,
     required this.canFinishAt,
     required this.studiedMinutes,
+    this.notes = '',
+    this.photoIds = const [],
     this.studyEndedAt,
     this.completedAt,
   });
@@ -125,6 +127,12 @@ class StudySession {
   final DateTime? completedAt;
   final int studiedMinutes;
 
+  /// The student's plan, in their own words.
+  final String notes;
+
+  /// Photos of what they are studying (load with [StudyPhoto]).
+  final List<String> photoIds;
+
   factory StudySession.fromJson(Map<String, Object?> json) => StudySession(
     id: json['id']! as String,
     subject: json['subject']! as String,
@@ -140,6 +148,8 @@ class StudySession {
     studyEndedAt: json['studyEndedAt'] == null ? null : DateTime.parse(json['studyEndedAt']! as String),
     completedAt: json['completedAt'] == null ? null : DateTime.parse(json['completedAt']! as String),
     studiedMinutes: (json['studiedMinutes'] as num?)?.toInt() ?? 0,
+    notes: json['notes'] as String? ?? '',
+    photoIds: [for (final p in json['photoIds'] as List<Object?>? ?? const []) p! as String],
   );
 }
 

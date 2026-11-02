@@ -15,7 +15,9 @@ app/       Flutter 3.47 (Android first), Riverpod 3, go_router 18, dio
   lib/features/<feature>/  data / domain / application / presentation
   lib/app/                 providers, routes + guard, router
   tool/icon/               renders launcher icons from LogoPainter
-admin/     (coming) web admin panel
+  tool/store/              renders the Play feature graphic and icon
+admin/     web admin panel (plain HTML/CSS/JS), served by the API at /admin/
+scripts/   serve-public.ps1 (API + Cloudflare tunnel + address gist), install-autostart, configure-server, publish-test-build
 docs/      architecture notes and assets
 .claude/agents/            junior-coder, senior-coder, code-reviewer, qa-tester
 ```
@@ -37,10 +39,11 @@ flutter test tool/icon/render_icon_test.dart && dart run flutter_launcher_icons 
 ```
 
 ## Product rules (never break these)
-- A study session locks the apps the student chose. **Unlocking requires passing an exam** on what they said they would study. A failed exam keeps the apps locked. There is no bypass.
+- A study session locks the apps the student chose. **Unlocking requires passing an exam** on what they said they would study. A failed exam keeps the apps locked. There is no bypass for students or parents. **The only exception is the owner:** an admin can unlock a student's phone from the Control Room (`POST /v1/admin/users/:id/unlock`, owner decision 2026-11-01). It is logged in the activity log, and the student and their parents are notified.
 - The student sets the exam pattern, total marks and pass mark. **The pass mark is at least 50%**, and the student may choose higher.
 - **Students under 15 must have a parent linked** before using study features. The server reports `parentalControl.required`, and the app gate is `guardRoute()`. A student aged 15 or over may link a parent if they choose.
 - Parent accounts are 18+. A parent links by scanning the student's QR (single-use code, 10-minute expiry). Parents can block apps, see screen time and set questions.
+- **Admins** are created only on the server (`npm run admin`); the API and the panel can never make or change an admin. An admin signing in to the app sees only the Control Room.
 - Signup verifies by email or SMS OTP (6 digits, 10-minute expiry, 5 atomic attempts, a 60 s cooldown and 5 per hour **per destination**). Only verified contacts can sign in or reset a password.
 
 ## Conventions

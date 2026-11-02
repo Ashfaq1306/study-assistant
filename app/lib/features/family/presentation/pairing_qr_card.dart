@@ -82,27 +82,24 @@ class _PairingQrCardState extends ConsumerState<PairingQrCard> {
                 padding: EdgeInsets.zero,
                 errorCorrectionLevel: QrErrorCorrectLevel.M,
                 semanticsLabel: 'QR code for your parent to scan',
-                eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: AppColors.violetDeep),
-                dataModuleStyle: const QrDataModuleStyle(
-                  dataModuleShape: QrDataModuleShape.circle,
-                  color: AppColors.ink,
-                ),
+                eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: AppColors.violetDeep),
+                dataModuleStyle: QrDataModuleStyle(dataModuleShape: QrDataModuleShape.circle, color: AppColors.ink),
               ),
             ),
             const SizedBox(height: 18),
-            const Text(
+            Text(
               'Or type this code',
               style: TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 4),
             SelectableText(
               code.code,
-              style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w900, letterSpacing: 4, color: AppColors.ink),
+              style: TextStyle(fontSize: 30, fontWeight: FontWeight.w900, letterSpacing: 4, color: AppColors.ink),
             ),
             const SizedBox(height: 8),
             Text(
               'New code in ${_format(_remaining)}',
-              style: const TextStyle(color: AppColors.inkFaint, fontWeight: FontWeight.w700),
+              style: TextStyle(color: AppColors.inkFaint, fontWeight: FontWeight.w700),
             ),
           ],
         ],

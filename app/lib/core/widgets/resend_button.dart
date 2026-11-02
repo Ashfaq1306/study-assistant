@@ -73,7 +73,7 @@ class _ResendButtonState extends State<ResendButton> {
     if (wait > 0) {
       return Text(
         'You can ask for a new code in ${wait}s',
-        style: const TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w700),
+        style: TextStyle(color: AppColors.inkSoft, fontWeight: FontWeight.w700),
       );
     }
     return TextButton.icon(

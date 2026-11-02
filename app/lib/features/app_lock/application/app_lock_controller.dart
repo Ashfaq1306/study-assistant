@@ -53,6 +53,9 @@ class AppLockController extends AsyncNotifier<AppLockStatus> {
   AppLockPlatform get _platform => ref.read(appLockPlatformProvider);
   DeviceApi get _api => ref.read(deviceApiProvider);
 
+  /// Where the app reaches the API now (it can move; see ApiEndpoint).
+  String get _baseUrl => ref.read(apiClientProvider).baseUrl;
+
   String? _studentId;
   Future<AppLockStatus>? _inFlight;
   String? _inFlightFor;
@@ -60,7 +63,7 @@ class AppLockController extends AsyncNotifier<AppLockStatus> {
   @override
   Future<AppLockStatus> build() async {
     _studentId = ref.watch(
-      authControllerProvider.select((s) => s is AuthSignedIn && !s.user.isParent ? s.user.id : null),
+      authControllerProvider.select((s) => s is AuthSignedIn && s.user.isStudent ? s.user.id : null),
     );
     return _syncOnce();
   }
@@ -105,13 +108,18 @@ class AppLockController extends AsyncNotifier<AppLockStatus> {
       } else {
         try {
           final device = await _api.register(name: native.deviceModel, appVersion: AppConfig.appVersion);
-          await _platform.configure(baseUrl: AppConfig.apiBaseUrl, deviceToken: device.deviceToken, userId: studentId);
+          await _platform.configure(baseUrl: _baseUrl, deviceToken: device.deviceToken, userId: studentId);
           token = device.deviceToken;
           native = await _platform.status();
         } on ApiException {
           // Offline: try again on the next refresh.
         }
       }
+    }
+
+    // The app now talks to a different server (e.g. a new address): keep the native sync in step.
+    if (token != null && studentId != null && !lockedForAnotherUser && native.apiBaseUrl != _baseUrl) {
+      await _platform.configure(baseUrl: _baseUrl, deviceToken: token, userId: studentId);
     }
 
     var lockState = DeviceLockState.unlocked;
