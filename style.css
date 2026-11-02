@@ -44,3 +44,13 @@ a { color: var(--accent); }
 }
 .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
 #status { margin: 0; font-weight: 700; }
+
+/* Long documents (privacy policy, account deletion) */
+body.doc { place-items: start center; }
+.doc-card { width: min(760px, 100%); text-align: left; gap: 6px; padding: 32px 28px; line-height: 1.6; }
+.doc-card .brand { justify-content: flex-start; margin-bottom: 8px; }
+.doc-card h1 { font-size: 26px; margin: 4px 0 2px; }
+.doc-card h2 { font-size: 17px; margin: 18px 0 2px; color: var(--accent); }
+.doc-card ul, .doc-card ol { margin: 4px 0; padding-left: 22px; }
+.doc-card li { margin: 4px 0; }
+.doc-card p { margin: 6px 0; }
