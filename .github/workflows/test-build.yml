@@ -44,9 +44,16 @@ jobs:
           cache: true
       - name: Same signing key as the installed test builds
         run: |
-          mkdir -p ~/.android
-          echo "${{ secrets.DEBUG_KEYSTORE_B64 }}" | base64 -d > ~/.android/debug.keystore
-          test -s ~/.android/debug.keystore || { echo "DEBUG_KEYSTORE_B64 secret is missing"; exit 1; }
+          # The Android Gradle plugin reads the debug key from ANDROID_USER_HOME when it is set
+          # (the runner image may point it elsewhere): set it, and put the key there.
+          key_home="$RUNNER_TEMP/android-user-home"
+          mkdir -p "$key_home"
+          echo "${{ secrets.DEBUG_KEYSTORE_B64 }}" | base64 -d > "$key_home/debug.keystore"
+          test -s "$key_home/debug.keystore" || { echo "DEBUG_KEYSTORE_B64 secret is missing"; exit 1; }
+          echo "ANDROID_USER_HOME=$key_home" >> "$GITHUB_ENV"
+          got=$(keytool -list -v -keystore "$key_home/debug.keystore" -storepass android | sed -nE 's/.*SHA256: //p' | head -1 | tr -d ':' | tr 'A-F' 'a-f')
+          echo "Key fingerprint: $got"
+          [ "$got" = "${{ vars.TEST_SIGNING_SHA256 }}" ] || { echo "The stored key is not the one installed test builds use"; exit 1; }
       - name: Next build number (always higher than the newest test release)
         id: version
         run: |
@@ -63,6 +70,14 @@ jobs:
           flutter build apk --profile --split-per-abi
           --build-name=${{ steps.version.outputs.version }} --build-number=${{ steps.version.outputs.build }}
           --dart-define=API_BASE_URL="$API_BASE_URL" --dart-define=API_DISCOVERY_URL="$API_DISCOVERY_URL"
+      - name: Check the signature before publishing
+        run: |
+          apksigner=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          for apk in build/app/outputs/flutter-apk/app-*-profile.apk; do
+            got=$("$apksigner" verify --print-certs "$apk" | sed -nE 's/.*SHA-256 digest: //p' | head -1)
+            echo "$apk: $got"
+            [ "$got" = "${{ vars.TEST_SIGNING_SHA256 }}" ] || { echo "Signed with the wrong key: installed test builds could not update"; exit 1; }
+          done
       - name: Publish
         run: |
           v=${{ steps.version.outputs.version }}; b=${{ steps.version.outputs.build }}
