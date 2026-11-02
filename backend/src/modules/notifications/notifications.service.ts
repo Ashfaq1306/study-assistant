@@ -67,7 +67,7 @@ export class NotificationsService {
 
   async list(userId: string, limit: number): Promise<{ notifications: NotificationView[]; unread: number }> {
     const [rows, unread] = await Promise.all([
-      this.prisma.notification.findMany({ where: { userId }, orderBy: { createdAt: 'desc' }, take: limit }),
+      this.prisma.notification.findMany({ where: { userId }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], take: limit }),
       this.prisma.notification.count({ where: { userId, readAt: null } }),
     ]);
     return { notifications: rows.map(toView), unread };

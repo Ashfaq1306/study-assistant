@@ -54,7 +54,7 @@ export const adminReportRoutes =
         prisma.contentReport.count({ where }),
         prisma.contentReport.findMany({
           where,
-          orderBy: { createdAt: 'desc' },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           skip: (q.page - 1) * q.pageSize,
           take: q.pageSize,
           include: { user: { select: { id: true, name: true, role: true } } },

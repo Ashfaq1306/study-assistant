@@ -203,7 +203,7 @@ export class AdminService {
       }),
       this.prisma.device.count({ where: { revokedAt: null, lastSeenAt: { gte: phoneSince } } }),
       this.prisma.activityEvent.findMany({
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         take: 8,
         select: { id: true, kind: true, detail: true, userAgent: true, createdAt: true, user: { select: { id: true, name: true } }, actor: { select: { name: true } } },
       }),
@@ -307,12 +307,12 @@ export class AdminService {
         sessions: {
           where: this.liveSessionWhere(now),
           select: { id: true, userAgent: true, createdAt: true, expiresAt: true },
-          orderBy: { createdAt: 'desc' },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         },
         studySessions: { orderBy: { startedAt: 'desc' } },
         exams: {
           select: { id: true, subject: true, source: true, status: true, score: true, totalMarks: true, passMarks: true, passed: true, submittedAt: true, createdAt: true },
-          orderBy: { createdAt: 'desc' },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           take: 20,
         },
         locksOn: {
@@ -320,7 +320,7 @@ export class AdminService {
           select: { id: true, title: true, lockedApps: true, createdAt: true, parent: { select: { name: true } } },
         },
         activity: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
           take: 60,
           select: { id: true, kind: true, ip: true, userAgent: true, detail: true, createdAt: true, actor: { select: { name: true } } },
         },
@@ -509,7 +509,7 @@ export class AdminService {
       this.prisma.activityEvent.count({ where }),
       this.prisma.activityEvent.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
         skip: (query.page - 1) * query.pageSize,
         take: query.pageSize,
         select: {
