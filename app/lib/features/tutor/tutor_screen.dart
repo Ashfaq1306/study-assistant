@@ -9,6 +9,7 @@ import '../../core/widgets/dreamy_background.dart';
 import '../../core/widgets/feedback.dart';
 import '../../core/widgets/page_shell.dart';
 import '../auth/application/auth_controller.dart';
+import '../reports/report_sheet.dart';
 import '../study/application/study_providers.dart';
 
 class ChatMessage {
@@ -291,7 +292,19 @@ class _Bubble extends StatelessWidget {
               ),
             ),
     );
-    return Align(alignment: fromStudent ? Alignment.centerRight : Alignment.centerLeft, child: bubble);
+    if (fromStudent || typing) {
+      return Align(alignment: fromStudent ? Alignment.centerRight : Alignment.centerLeft, child: bubble);
+    }
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          bubble,
+          ReportLink(kind: ReportKind.tutor, content: text),
+        ],
+      ),
+    );
   }
 }
 

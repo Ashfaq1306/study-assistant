@@ -82,7 +82,7 @@ class ApiClient {
 
   Future<Json> put(String path, {Object? data}) => _send(() => _dio.put<Object?>(path, data: data));
 
-  Future<Json> delete(String path) => _send(() => _dio.delete<Object?>(path));
+  Future<Json> delete(String path, {Object? data}) => _send(() => _dio.delete<Object?>(path, data: data));
 
   /// Raw bytes, e.g. a photo. Signed in like any other request.
   Future<Uint8List> getBytes(String path) async {

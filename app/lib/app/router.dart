@@ -33,6 +33,7 @@ import '../features/calendar/presentation/calendar_screen.dart';
 import '../features/calendar/presentation/event_editor_screen.dart';
 import '../features/calendar/presentation/import_calendar_screen.dart';
 import '../features/settings/appearance_screen.dart';
+import '../features/settings/delete_account_screen.dart';
 import '../features/tutor/tutor_screen.dart';
 import 'routes.dart';
 
@@ -121,6 +122,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(path: Routes.appearance, builder: (_, _) => const AppearanceScreen()),
+      GoRoute(path: Routes.deleteAccount, builder: (_, _) => const DeleteAccountScreen()),
     ],
   );
 

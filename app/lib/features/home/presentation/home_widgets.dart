@@ -42,6 +42,7 @@ class HomeHeader extends ConsumerWidget {
           onSelected: (value) {
             if (value == 'logout') ref.read(authControllerProvider.notifier).logout();
             if (value == 'appearance') context.push(Routes.appearance);
+            if (value == 'delete') context.push(Routes.deleteAccount);
           },
           itemBuilder: (_) => const [
             PopupMenuItem(
@@ -51,6 +52,10 @@ class HomeHeader extends ConsumerWidget {
             PopupMenuItem(
               value: 'logout',
               child: ListTile(leading: Icon(Icons.logout_rounded), title: Text('Sign out')),
+            ),
+            PopupMenuItem(
+              value: 'delete',
+              child: ListTile(leading: Icon(Icons.delete_forever_rounded), title: Text('Delete account')),
             ),
           ],
         ),

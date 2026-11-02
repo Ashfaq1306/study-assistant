@@ -34,6 +34,7 @@ abstract final class Routes {
 
   /// Settings shared by students and parents.
   static const appearance = '/settings/appearance';
+  static const deleteAccount = '/settings/delete-account';
 
   /// The admin's Control Room (the web admin panel inside the app). Admin accounts see nothing else.
   static const admin = '/admin';

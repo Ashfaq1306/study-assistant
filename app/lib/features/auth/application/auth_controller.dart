@@ -110,6 +110,12 @@ class AuthController extends Notifier<AuthState> {
     return user;
   }
 
+  /// The account was deleted on the server: forget it on this phone (nothing to sign out of).
+  Future<void> forgetSession() async {
+    await _store.clear();
+    _set(const AuthSignedOut());
+  }
+
   Future<void> logout() async {
     final saved = await _store.read();
     if (saved != null) {

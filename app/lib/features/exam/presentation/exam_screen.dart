@@ -9,6 +9,7 @@ import '../../../app/routes.dart';
 import '../../../core/config/remote_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../reports/report_sheet.dart';
 import '../../../core/widgets/app_text_field.dart';
 import '../../../core/widgets/button_3d.dart';
 import '../../../core/widgets/clay_card.dart';
@@ -710,6 +711,13 @@ class _ReviewTile extends StatelessWidget {
               style: TextStyle(color: AppColors.violet, fontWeight: FontWeight.w700),
             ),
           ],
+          Align(
+            alignment: Alignment.centerRight,
+            child: ReportLink(
+              kind: ReportKind.exam,
+              content: '${question.prompt} (marked right answer: ${result.correctAnswer})',
+            ),
+          ),
         ],
       ),
     );

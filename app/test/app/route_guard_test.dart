@@ -98,4 +98,9 @@ void main() {
       expect(guardRoute(AuthSignedIn(testUser(role: UserRole.parent, age: 40)), Routes.admin), Routes.parentHome);
     });
   });
+
+  test('students and parents can always reach Delete account (Google Play)', () {
+    expect(guardRoute(AuthSignedIn(testUser()), Routes.deleteAccount), isNull);
+    expect(guardRoute(AuthSignedIn(testUser(role: UserRole.parent, age: 40)), Routes.deleteAccount), isNull);
+  });
 }
