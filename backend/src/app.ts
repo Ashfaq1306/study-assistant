@@ -152,6 +152,22 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const devices = new DevicesService(prisma, lockState, usage, notifications, clock);
   const ai = options.ai ?? createAi(env, app.log);
   const photos = new PhotosService(prisma, clock);
+  if (env.NODE_ENV !== 'test') {
+    // Old study photos are deleted daily (see PHOTO_KEEP_DAYS), starting a minute after start-up.
+    const cleanPhotos = () =>
+      photos
+        .deleteOld()
+        .then((n) => n > 0 && app.log.info({ deleted: n }, 'old study photos deleted'))
+        .catch((err: unknown) => app.log.warn({ err }, 'photo cleanup failed'));
+    const first = setTimeout(() => void cleanPhotos(), 60_000);
+    const daily = setInterval(() => void cleanPhotos(), 24 * 60 * 60_000);
+    first.unref();
+    daily.unref();
+    app.addHook('onClose', async () => {
+      clearTimeout(first);
+      clearInterval(daily);
+    });
+  }
   const exams = new ExamsService(prisma, ai, config, sessions, notifications, photos, clock, app.log);
   const parent = new ParentService(prisma, sessions, usage, config, notifications, clock);
   const calendar = new CalendarService(prisma, ai, config, clock);

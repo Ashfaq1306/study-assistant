@@ -133,3 +133,25 @@ describe('study photos and notes', () => {
     expect((await as(stranger).post(`/v1/sessions/${id}/photos`, { mime: 'image/jpeg', data: JPEG })).statusCode).toBe(404);
   });
 });
+
+describe('old photo cleanup', () => {
+  it('deletes photos older than 30 days from finished sessions only, and drops them from the session', async () => {
+    const { PhotosService } = await import('../src/modules/photos/photos.service.js');
+    const done = await startSession();
+    const add = async (id: string) =>
+      (await as(student).post(`/v1/sessions/${id}/photos`, { mime: 'image/jpeg', data: JPEG })).json<{ id: string }>();
+    const oldPhoto = await add(done.id);
+
+    // The finished session is 31 days old; its photo goes, a fresh one stays.
+    const longAgo = new Date(ctx.clock.fn().getTime() - 31 * 24 * 60 * MIN);
+    await prisma.studySession.update({ where: { id: done.id }, data: { status: 'PASSED' } });
+    await prisma.studyPhoto.update({ where: { id: oldPhoto.id }, data: { createdAt: longAgo } });
+
+    const cleaner = new PhotosService(prisma, ctx.clock.fn);
+    expect(await cleaner.deleteOld()).toBe(1);
+    expect(await prisma.studyPhoto.count({ where: { id: oldPhoto.id } })).toBe(0);
+    const session = await prisma.studySession.findUniqueOrThrow({ where: { id: done.id } });
+    expect(JSON.parse(session.photoIds)).toEqual([]);
+    expect(await cleaner.deleteOld()).toBe(0);
+  });
+});

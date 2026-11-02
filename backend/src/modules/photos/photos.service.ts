@@ -26,12 +26,47 @@ export function looksLike(mime: string, bytes: Buffer): boolean {
   return bytes.subarray(0, 4).toString('latin1') === 'RIFF' && bytes.subarray(8, 12).toString('latin1') === 'WEBP';
 }
 
+/** Study photos are only needed to write that session's quiz: they are deleted after this many days. */
+export const PHOTO_KEEP_DAYS = 30;
+
 /** Photos of the study material. The student and their linked parents can see them. */
 export class PhotosService {
   constructor(
     private readonly prisma: PrismaClient,
     private readonly clock: Clock,
   ) {}
+
+  /**
+   * Deletes photos older than [days] from finished sessions, and drops them from each
+   * session's photo list, so the database stays small. Returns how many were deleted.
+   */
+  async deleteOld(days = PHOTO_KEEP_DAYS): Promise<number> {
+    const cutoff = new Date(this.clock().getTime() - days * 86_400_000);
+    const old = await this.prisma.studyPhoto.findMany({
+      where: { createdAt: { lt: cutoff }, session: { status: { notIn: ['STUDYING', 'EXAM_PENDING'] } } },
+      select: { id: true, sessionId: true },
+      take: 1000,
+    });
+    if (old.length === 0) return 0;
+    const bySession = new Map<string, Set<string>>();
+    for (const p of old) bySession.set(p.sessionId, (bySession.get(p.sessionId) ?? new Set()).add(p.id));
+    const sessions = await this.prisma.studySession.findMany({
+      where: { id: { in: [...bySession.keys()] } },
+      select: { id: true, photoIds: true },
+    });
+    await this.prisma.$transaction([
+      this.prisma.studyPhoto.deleteMany({ where: { id: { in: old.map((p) => p.id) } } }),
+      ...sessions.map((s) =>
+        this.prisma.studySession.update({
+          where: { id: s.id },
+          data: {
+            photoIds: JSON.stringify((JSON.parse(s.photoIds) as string[]).filter((id) => !bySession.get(s.id)?.has(id))),
+          },
+        }),
+      ),
+    ]);
+    return old.length;
+  }
 
   /** Adds a photo while the student is still studying (the exam uses them). */
   async add(student: User, sessionId: string, input: z.infer<typeof PhotoBody>): Promise<{ id: string; photoIds: string[] }> {
