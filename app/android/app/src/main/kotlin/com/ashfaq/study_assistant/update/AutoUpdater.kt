@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit
  */
 object AutoUpdater {
     private const val TAG = "AutoUpdater"
-    private const val REPO = "Ashfaq1306/study-assistant"
+    private const val REPO = "Ashfaq1306/study-mate"
     private const val JOB_ID = 4711
     private val executor = Executors.newSingleThreadExecutor()
     private val ABI_APK = Regex("-(arm64-v8a|armeabi-v7a|x86_64)\\.apk$")

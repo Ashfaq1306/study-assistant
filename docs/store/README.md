@@ -59,8 +59,8 @@ Study Mate uses Android's Accessibility service only to lock the apps you choose
 
 **Category:** Education. **Tags:** Education, Productivity, Study, Focus.
 **Contact email:** your support email (it is shown publicly on Play; the privacy pages point to it).
-**Privacy policy:** https://ashfaq1306.github.io/study-assistant/privacy/
-**Account deletion URL** (Data safety): https://ashfaq1306.github.io/study-assistant/delete-account/
+**Privacy policy:** https://ashfaq1306.github.io/study-mate/privacy/
+**Account deletion URL** (Data safety): https://ashfaq1306.github.io/study-mate/delete-account/
 
 ## App content answers
 

@@ -86,7 +86,7 @@ class AppUpdates {
   Future<void> install(AppUpdate update, {void Function(double progress)? onProgress}) async {
     final dir = Directory('${(await getTemporaryDirectory()).path}/updates');
     await dir.create(recursive: true);
-    final file = File('${dir.path}/study-assistant-${update.build}.apk');
+    final file = File('${dir.path}/study-mate-${update.build}.apk');
     if (!await file.exists()) {
       final partial = File('${file.path}.part');
       await _dio.download(

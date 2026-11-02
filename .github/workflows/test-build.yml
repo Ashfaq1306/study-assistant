@@ -82,7 +82,7 @@ jobs:
         run: |
           v=${{ steps.version.outputs.version }}; b=${{ steps.version.outputs.build }}
           for abi in arm64-v8a armeabi-v7a x86_64; do
-            cp "build/app/outputs/flutter-apk/app-$abi-profile.apk" "study-assistant-$v-b$b-$abi.apk"
+            cp "build/app/outputs/flutter-apk/app-$abi-profile.apk" "study-mate-$v-b$b-$abi.apk"
           done
-          gh release create "v$v-b$b" study-assistant-$v-b$b-*.apk --prerelease --target "$GITHUB_SHA" \
+          gh release create "v$v-b$b" study-mate-$v-b$b-*.apk --prerelease --target "$GITHUB_SHA" \
             --title "Test build $v ($b)" --notes "Automatic test build from $(git log -1 --pretty=%s)"

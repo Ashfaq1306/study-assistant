@@ -8,7 +8,7 @@
 
 Pick what you'll study, lock distracting apps, and win them back by passing a quick AI quiz.
 
-[![CI](https://github.com/Ashfaq1306/study-assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/Ashfaq1306/study-assistant/actions/workflows/ci.yml)
+[![CI](https://github.com/Ashfaq1306/study-mate/actions/workflows/ci.yml/badge.svg)](https://github.com/Ashfaq1306/study-mate/actions/workflows/ci.yml)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-02569B?logo=flutter&logoColor=white)
 ![Node](https://img.shields.io/badge/Node-24-339933?logo=node.js&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android-3DDC84?logo=android&logoColor=white)
@@ -106,7 +106,7 @@ flutter run                      # add --release to see real speed
 ```
 
 ### 3. Use it from any network (your computer as the server)
-**Control Room from anywhere:** https://ashfaq1306.github.io/study-assistant/admin/ always forwards to the server's current address (the page lives on the `gh-pages` branch).
+**Control Room from anywhere:** https://ashfaq1306.github.io/study-mate/admin/ always forwards to the server's current address (the page lives on the `gh-pages` branch).
 
 The phone talks to `https://…trycloudflare.com`, so it works on any Wi-Fi or mobile data, as long as this computer is on and online.
 ```powershell
@@ -127,7 +127,7 @@ powershell -ExecutionPolicy Bypass -File scriptsnfigure-server.ps1    # real em
 - **App:** `flutter build apk --release --dart-define=API_BASE_URL=https://your-api.example.com`
 
 ## Launching on Google Play
-Everything for the Play Console (listing text, screenshots, feature graphic, Data safety answers, the Accessibility declaration and a launch checklist) is in [docs/store](docs/store/README.md). Release builds are signed with the upload key named in `app/android/key.properties` (never committed); the privacy policy and account-deletion pages are at https://ashfaq1306.github.io/study-assistant/privacy/ and …/delete-account/.
+Everything for the Play Console (listing text, screenshots, feature graphic, Data safety answers, the Accessibility declaration and a launch checklist) is in [docs/store](docs/store/README.md). Release builds are signed with the upload key named in `app/android/key.properties` (never committed); the privacy policy and account-deletion pages are at https://ashfaq1306.github.io/study-mate/privacy/ and …/delete-account/.
 
 ## Testing
 ```bash
@@ -138,7 +138,7 @@ CI runs the same checks on every pull request.
 
 ## Project structure
 ```
-study-assistant/
+study-mate/
 ├── app/                  Flutter app
 │   ├── lib/app/          router, route guard, providers
 │   ├── lib/core/         network, storage, theme, 3D widgets
