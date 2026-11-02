@@ -152,7 +152,10 @@ class _RoundButton extends StatelessWidget {
 
 /// Seven chunky bars, one per day, tallest day = full height.
 class WeekBars extends StatelessWidget {
-  const WeekBars({super.key, required this.days, this.height = 150});
+  const WeekBars({super.key, required this.days, this.height = 150, this.what = 'Study minutes'});
+
+  /// What the bars count, for screen readers ("Study minutes", "Phone minutes").
+  final String what;
 
   final List<({DateTime day, int minutes})> days;
   final double height;
@@ -163,7 +166,7 @@ class WeekBars extends StatelessWidget {
   Widget build(BuildContext context) {
     final most = days.fold<int>(0, (m, d) => d.minutes > m ? d.minutes : m);
     return Semantics(
-      label: 'Study minutes for the last 7 days: ${days.map((d) => d.minutes).join(', ')}',
+      label: '$what for the last 7 days: ${days.map((d) => d.minutes).join(', ')}',
       excludeSemantics: true,
       child: SizedBox(
         height: height + 44,

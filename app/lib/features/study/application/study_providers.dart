@@ -52,8 +52,21 @@ class ActiveSessionController extends AsyncNotifier<StudySession?> {
   }
 }
 
-final studyStatsProvider = FutureProvider.autoDispose<StudyStats>((ref) => ref.watch(studyApiProvider).stats());
-
-final studyHistoryProvider = FutureProvider.autoDispose<List<StudySession>>(
-  (ref) => ref.watch(studyApiProvider).history(limit: 30),
+/// The signed-in student's id, or null. Study data is re-read whenever it changes, so a
+/// student who signs in sees their own numbers at once (the home-screen widget keeps these
+/// providers alive while signed out, which used to leave the empty signed-out result showing).
+final _studentIdProvider = Provider<String?>(
+  (ref) => ref.watch(authControllerProvider.select((s) => s is AuthSignedIn && s.user.isStudent ? s.user.id : null)),
 );
+
+const _noStats = StudyStats(todayMinutes: 0, streakDays: 0, week: [], totalMinutes: 0, sessionsCompleted: 0);
+
+final studyStatsProvider = FutureProvider.autoDispose<StudyStats>((ref) async {
+  if (ref.watch(_studentIdProvider) == null) return _noStats;
+  return ref.watch(studyApiProvider).stats();
+});
+
+final studyHistoryProvider = FutureProvider.autoDispose<List<StudySession>>((ref) async {
+  if (ref.watch(_studentIdProvider) == null) return const [];
+  return ref.watch(studyApiProvider).history(limit: 30);
+});

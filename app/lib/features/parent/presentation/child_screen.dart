@@ -159,7 +159,7 @@ class _Body extends ConsumerWidget {
                   padding: const EdgeInsets.all(8),
                   child: Text('No phone time reported yet.', style: text.bodyMedium),
                 )
-              : WeekBars(days: _week(d.screenTime), height: 120),
+              : WeekBars(days: _week(d.screenTime), height: 120, what: 'Phone minutes'),
         ),
         if (today != null && today.apps.isNotEmpty) ...[
           const SizedBox(height: 12),

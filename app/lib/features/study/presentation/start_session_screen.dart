@@ -439,6 +439,8 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
                     ? 'Whole phone'
                     : _apps.isEmpty
                     ? 'Nothing'
+                    : _apps.length == 1
+                    ? '1 app'
                     : '${_apps.length} apps',
               ),
             ],

@@ -161,6 +161,8 @@ class _ActiveSessionScreenState extends ConsumerState<ActiveSessionScreen> {
                   child: Text(
                     session.lockedApps.isEmpty
                         ? 'Stay focused. Put your phone face down and study!'
+                        : session.lockedApps.length == 1
+                        ? '1 app is locked until you pass your exam.'
                         : '${session.lockedApps.length} apps are locked until you pass your exam.',
                     style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.ink),
                   ),

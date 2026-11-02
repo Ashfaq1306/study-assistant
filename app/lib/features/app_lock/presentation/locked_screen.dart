@@ -43,7 +43,10 @@ class LockedScreen extends ConsumerWidget {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) platform.goHome();
+        if (!didPop) {
+          context.go(Routes.splash);
+          platform.goHome();
+        }
       },
       child: PageShell(
         showBack: false,
@@ -67,6 +70,11 @@ class LockedScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               switch ((wholePhone, pending)) {
+                // Only a parent's lock: there is no study session to finish.
+                _ when parentLock != null && !sessionLocked =>
+                  wholePhone
+                      ? 'Pass the quiz your parent set to unlock your phone. Calls and the camera still work.'
+                      : 'Pass the quiz your parent set to unlock it.',
                 (true, true) =>
                   'Pass your exam to unlock your phone. Calls and the camera still work. You can do this!',
                 (true, false) =>
@@ -146,7 +154,15 @@ class LockedScreen extends ConsumerWidget {
                 onPressed: () => context.go(Routes.login),
               ),
             const SizedBox(height: 14),
-            Button3D.secondary(label: 'Back to home screen', icon: Icons.home_rounded, onPressed: platform.goHome),
+            Button3D.secondary(
+              label: 'Back to home screen',
+              icon: Icons.home_rounded,
+              onPressed: () {
+                // Leave the lock screen behind, so opening Study Assistant later starts as usual.
+                context.go(Routes.splash);
+                platform.goHome();
+              },
+            ),
           ],
         ),
       ),
