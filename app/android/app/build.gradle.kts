@@ -1,7 +1,19 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+/**
+ * Google Play upload key. android/key.properties (never committed) points at the keystore:
+ *   storeFile=E:/dev/keys/study-assistant-upload.jks, storePassword=…, keyPassword=…, keyAlias=upload
+ * Without it (CI, other computers) release builds fall back to the debug key and cannot go to Play.
+ */
+val uploadKey = Properties().apply {
+    val file = rootProject.file("key.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
 }
 
 android {
@@ -17,7 +29,6 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.ashfaq.study_assistant"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -31,11 +42,20 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        if (uploadKey.getProperty("storeFile") != null) {
+            create("upload") {
+                storeFile = file(uploadKey.getProperty("storeFile"))
+                storePassword = uploadKey.getProperty("storePassword")
+                keyAlias = uploadKey.getProperty("keyAlias")
+                keyPassword = uploadKey.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("upload") ?: signingConfigs.getByName("debug")
         }
     }
 }
