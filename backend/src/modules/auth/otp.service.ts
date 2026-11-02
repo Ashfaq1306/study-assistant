@@ -188,15 +188,15 @@ function buildMessage(
 ): OutboundMessage {
   const action = purpose === 'VERIFY_ACCOUNT' ? 'open your account' : 'reset your password';
   const minutes = OTP_TTL_MS / 60_000;
-  const text = `${code} is your Study Assistant code to ${action}. It expires in ${minutes} minutes. Never share it with anyone.`;
+  const text = `${code} is your Study Mate code to ${action}. It expires in ${minutes} minutes. Never share it with anyone.`;
   if (channel === 'SMS') return { channel, to, text };
   return {
     channel,
     to,
-    subject: `${code} is your Study Assistant code`,
+    subject: `${code} is your Study Mate code`,
     text: `Hi ${name},\n\n${text}\n\nIf you did not ask for this, you can ignore this email.`,
     html: `<div style="font-family:system-ui,sans-serif;max-width:420px;margin:auto;padding:24px">
-<h2 style="color:#6c5ce7;margin:0 0 12px">Study Assistant</h2>
+<h2 style="color:#6c5ce7;margin:0 0 12px">Study Mate</h2>
 <p>Hi ${escapeHtml(name)},</p>
 <p>Use this code to ${action}:</p>
 <p style="font-size:32px;letter-spacing:8px;font-weight:800;margin:16px 0">${code}</p>

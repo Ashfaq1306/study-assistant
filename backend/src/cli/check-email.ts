@@ -25,8 +25,8 @@ async function main(): Promise<void> {
   await new SmtpEmailNotifier(env).send({
     channel: 'EMAIL',
     to,
-    subject: 'Study Assistant: email works',
-    text: 'This is a test from your Study Assistant server. One-time codes will arrive like this.',
+    subject: 'Study Mate: email works',
+    text: 'This is a test from your Study Mate server. One-time codes will arrive like this.',
   });
   console.log(`Sent a test email to ${to}.`);
 }

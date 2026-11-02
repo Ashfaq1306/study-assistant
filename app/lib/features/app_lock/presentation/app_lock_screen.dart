@@ -78,7 +78,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with WidgetsBindi
               Text(
                 s.protectionOn
                     ? 'Locked apps open your study session instead, until you pass your exam.'
-                    : 'Two quick switches let Study Assistant lock the apps you pick while you study.',
+                    : 'Two quick switches let Study Mate lock the apps you pick while you study.',
                 textAlign: TextAlign.center,
                 style: text.bodyLarge?.copyWith(color: AppColors.inkSoft),
               ),
@@ -105,7 +105,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with WidgetsBindi
                 title: 'Allow app lock',
                 body:
                     'Opens Accessibility settings. Choose "Installed apps" (or "Downloaded apps"), then '
-                    '"Study Assistant app lock", and switch it on. '
+                    '"Study Mate app lock", and switch it on. '
                     'It only checks which app is open on screen, never what you type or what is inside apps. '
                     'Your list of installed apps is shared with your linked parent so they can choose apps to lock.',
                 done: s.protectionOn,
@@ -122,7 +122,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with WidgetsBindi
                   title: 'Turn off the shortcut',
                   body:
                       'The app lock has a shortcut switched on (volume keys, accessibility button or a quick setting). '
-                      'Open Accessibility settings, choose "Study Assistant app lock" and turn its shortcut off, '
+                      'Open Accessibility settings, choose "Study Mate app lock" and turn its shortcut off, '
                       'so the lock cannot be switched off by accident.',
                   done: false,
                   action: 'Open settings',
@@ -168,7 +168,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with WidgetsBindi
                 number: 2,
                 icon: Icons.insights_rounded,
                 title: 'Share screen time',
-                body: 'Lets your parent see how long apps were used. Choose Study Assistant and allow usage access.',
+                body: 'Lets your parent see how long apps were used. Choose Study Mate and allow usage access.',
                 done: s.usageAccess,
                 action: 'Open settings',
                 onAction: platform.openUsageAccessSettings,
@@ -178,7 +178,7 @@ class _AppLockScreenState extends ConsumerState<AppLockScreen> with WidgetsBindi
                 number: 3,
                 icon: Icons.battery_charging_full_rounded,
                 title: 'Keep it running',
-                body: 'Some phones close background apps. Set Study Assistant to "Unrestricted" or "Not optimised".',
+                body: 'Some phones close background apps. Set Study Mate to "Unrestricted" or "Not optimised".',
                 done: false,
                 optional: true,
                 action: 'Battery settings',
@@ -257,7 +257,7 @@ Future<bool> _agreeToAccessibility(BuildContext context) async {
       title: const Text('How app lock uses Accessibility'),
       content: const SingleChildScrollView(
         child: Text(
-          'Study Assistant uses Android\'s Accessibility service only to lock the apps you choose while you '
+          'Study Mate uses Android\'s Accessibility service only to lock the apps you choose while you '
           'study, until you pass your exam.\n\n'
           '• It reads which app is on screen (its package name) to know when a locked app opens.\n'
           '• It never reads what you type, your messages, or anything inside other apps.\n'

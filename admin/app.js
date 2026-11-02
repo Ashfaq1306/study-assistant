@@ -1,4 +1,4 @@
-// Study Assistant admin panel. Plain ES modules, no build step: served by the API at /admin/.
+// Study Mate admin panel. Plain ES modules, no build step: served by the API at /admin/.
 // Every piece of user data goes into the page through textContent (see el()), never as HTML.
 
 const API = '/v1';
@@ -334,7 +334,7 @@ function renderLogin(message) {
       },
     },
     brand('Control Room'),
-    el('p', { class: 'sub', style: 'text-align:center;margin-top:-6px' }, 'Study Assistant administration'),
+    el('p', { class: 'sub', style: 'text-align:center;margin-top:-6px' }, 'Study Mate administration'),
     error,
     identifier,
     password,

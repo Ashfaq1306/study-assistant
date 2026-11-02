@@ -53,7 +53,7 @@ Every error is `{ "error": { "code": "OTP_INVALID", "message": "That code is not
 
 ## App blocker (Android)
 - **The server decides.** A phone registers with `POST /v1/devices` and gets its own device token. `GET /v1/device/state` (or the heartbeat) returns what to block: the running session's apps, a parent's lock, or the whole phone (`*`).
-- **The phone enforces.** `AppLockService` is an accessibility service that only listens for window changes; it never reads screen content. When a locked app comes to the front, it goes home and opens Study Assistant's lock screen. A re-check catches apps that open a second window while starting.
+- **The phone enforces.** `AppLockService` is an accessibility service that only listens for window changes; it never reads screen content. When a locked app comes to the front, it goes home and opens Study Mate's lock screen. A re-check catches apps that open a second window while starting.
 - **Sync** runs natively every minute, so a lock starts and ends even when the app is closed. Offline, the last known state keeps applying; staying locked is the safe default.
 - **Never blocked:** this app, the launcher, the keyboard, the phone dialer, in-call screens and emergency apps.
 - **Strict mode** (always on for under-15s) also blocks Settings, app stores, the uninstaller and the permission controller. Wi-Fi, mobile data and the Internet panel stay reachable so the student can get online for the exam. Only real activity windows decide, because splash windows say nothing about which screen is opening.

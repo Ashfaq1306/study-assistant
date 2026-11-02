@@ -74,7 +74,7 @@ class _FamilyScreenState extends ConsumerState<FamilyScreen> {
           const SizedBox(height: 24),
           Text('Add a parent', style: text.titleLarge),
           const SizedBox(height: 6),
-          Text('Your parent scans this in their Study Assistant app.', style: text.bodyMedium),
+          Text('Your parent scans this in their Study Mate app.', style: text.bodyMedium),
           const SizedBox(height: 12),
           // Wait for the first load so only one code is created; after that a
           // new link count means the shown code was used, so make a fresh one.

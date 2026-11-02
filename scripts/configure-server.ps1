@@ -9,7 +9,7 @@
 
   Gmail needs an *app password* (not your normal password):
     1. Turn on 2-Step Verification:   https://myaccount.google.com/signinoptions/twosv
-    2. Create an app password:        https://myaccount.google.com/apppasswords   (name it "Study Assistant")
+    2. Create an app password:        https://myaccount.google.com/apppasswords   (name it "Study Mate")
     3. Copy the 16-letter password it shows, and paste it here when asked.
 
   Run again any time to change a value. Press Enter to keep the current one.
@@ -45,7 +45,7 @@ function Read-Secret([string]$prompt) {
 }
 
 Write-Host ''
-Write-Host 'Study Assistant server setup' -ForegroundColor Magenta
+Write-Host 'Study Mate server setup' -ForegroundColor Magenta
 Write-Host 'Press Enter to keep a current value.'
 Write-Host ''
 
@@ -64,7 +64,7 @@ Set-EnvValue 'SMTP_HOST' 'smtp.gmail.com'
 Set-EnvValue 'SMTP_PORT' '587'
 Set-EnvValue 'SMTP_USER' $gmail
 Set-EnvValue 'SMTP_PASS' $appPassword
-Set-EnvValue 'SMTP_FROM' "Study Assistant <$gmail>"
+Set-EnvValue 'SMTP_FROM' "Study Mate <$gmail>"
 
 # --- AI (optional) ---
 $hasAi = [bool](Get-EnvValue 'GEMINI_API_KEY')

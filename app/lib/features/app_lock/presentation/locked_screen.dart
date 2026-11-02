@@ -158,7 +158,7 @@ class LockedScreen extends ConsumerWidget {
               label: 'Back to home screen',
               icon: Icons.home_rounded,
               onPressed: () {
-                // Leave the lock screen behind, so opening Study Assistant later starts as usual.
+                // Leave the lock screen behind, so opening Study Mate later starts as usual.
                 context.go(Routes.splash);
                 platform.goHome();
               },

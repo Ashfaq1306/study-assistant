@@ -1,4 +1,4 @@
-# Study Assistant: guide for Claude and contributors
+# Study Mate: guide for Claude and contributors
 
 A study app for students: pick what you will study, lock distracting apps, and unlock them by passing an AI-generated exam. Parents can link with a QR code. An admin panel controls everything.
 

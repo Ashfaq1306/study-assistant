@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="docs/assets/logo.png" alt="Study Assistant logo" width="120" />
+<img src="docs/assets/logo.png" alt="Study Mate logo" width="120" />
 
-# Study Assistant
+# Study Mate
 
 **Study smart. Unlock by learning.**
 

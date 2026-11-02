@@ -1,4 +1,4 @@
-# Study Assistant: Flutter app
+# Study Mate: Flutter app
 
 See the [main README](../README.md) for setup. Quick start:
 

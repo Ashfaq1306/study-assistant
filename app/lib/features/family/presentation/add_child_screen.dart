@@ -75,7 +75,7 @@ class _AddChildScreenState extends ConsumerState<AddChildScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            "On your child's phone, open Study Assistant. Point your camera at the QR code it shows.",
+            "On your child's phone, open Study Mate. Point your camera at the QR code it shows.",
             textAlign: TextAlign.center,
             style: text.bodyLarge?.copyWith(color: AppColors.inkSoft),
           ),

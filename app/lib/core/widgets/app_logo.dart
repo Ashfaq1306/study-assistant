@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// The Study Assistant mark: a pencil that has just drawn a tick, meaning
+/// The Study Mate mark: a pencil that has just drawn a tick, meaning
 /// "you passed". One painter is the source for the in-app logo and for
 /// every launcher icon (see tool/icon/render_icon_test.dart).
 class AppLogo extends StatelessWidget {
@@ -13,7 +13,7 @@ class AppLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Study Assistant logo',
+      label: 'Study Mate logo',
       image: true,
       child: CustomPaint(size: Size.square(size), painter: const LogoPainter()),
     );

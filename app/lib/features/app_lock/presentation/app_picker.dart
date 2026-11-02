@@ -125,7 +125,7 @@ class _AppPickerState extends ConsumerState<AppPicker> {
       return MessageBanner.info(
         widget.apps == null
             ? 'App lock works on Android phones. You can still study and take the exam.'
-            : 'No app list yet. Open Study Assistant on the child’s phone once, or lock the whole phone.',
+            : 'No app list yet. Open Study Mate on the child’s phone once, or lock the whole phone.',
       );
     }
     final installedDistractions = list.where((a) => commonDistractions.contains(a.packageName)).toList();

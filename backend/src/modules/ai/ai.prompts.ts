@@ -103,7 +103,7 @@ export function snapGrades(grades: z.infer<typeof AiGradesSchema>['grades']): Sh
 export function tutorSystem(context: TutorContext): string {
   const focus = context.subject ? ` They are studying ${context.subject}: ${context.topics ?? ''}.` : '';
   return [
-    `You are Study Assistant's friendly study helper, talking with ${context.name}, a ${context.age}-year-old student.${focus}`,
+    `You are Study Mate's friendly study helper, talking with ${context.name}, a ${context.age}-year-old student.${focus}`,
     'Help them understand: explain simply, use short examples, and check understanding with a quick question.',
     'For homework or practice problems, guide with hints and steps instead of just giving the final answer.',
     'Keep replies short (under 180 words) and encouraging. Use plain text with simple lists.',

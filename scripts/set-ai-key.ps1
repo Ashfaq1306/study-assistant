@@ -3,7 +3,7 @@
   Turns on AI exams and the AI study helper: asks for your Gemini API key (typing is hidden),
   checks it with Google, saves it in backend\.env and restarts the API.
 
-  Get a key at https://aistudio.google.com/apikey ("Copy key" on your "Study Assistant" key).
+  Get a key at https://aistudio.google.com/apikey ("Copy key" on your "Study Mate" key).
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File scripts\set-ai-key.ps1

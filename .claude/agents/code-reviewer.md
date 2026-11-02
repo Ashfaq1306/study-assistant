@@ -1,6 +1,6 @@
 ---
 name: code-reviewer
-description: Independent, read-only reviewer for Study Assistant branches. Reviews the diff against main for bugs, security holes, broken product rules and convention drift, then returns APPROVE or REQUEST CHANGES with file:line findings. Use after senior-coder and before qa-tester.
+description: Independent, read-only reviewer for Study Mate branches. Reviews the diff against main for bugs, security holes, broken product rules and convention drift, then returns APPROVE or REQUEST CHANGES with file:line findings. Use after senior-coder and before qa-tester.
 tools: Read, Glob, Grep, Bash
 model: opus
 ---

@@ -136,7 +136,7 @@ class _NoChildren extends StatelessWidget {
           Text('No child linked yet', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
           const Text(
-            "Open Study Assistant on your child's phone. It shows a QR code: tap \"Add a child\" and scan it.",
+            "Open Study Mate on your child's phone. It shows a QR code: tap \"Add a child\" and scan it.",
             textAlign: TextAlign.center,
           ),
         ],
