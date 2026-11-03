@@ -33,6 +33,7 @@ import { PhotosService } from './modules/photos/photos.service.js';
 import { ParentService } from './modules/parent/parent.service.js';
 import { AnthropicProvider } from './modules/ai/anthropic.provider.js';
 import type { AiProvider } from './modules/ai/ai.types.js';
+import { AiStatusService } from './modules/ai/ai.status.js';
 import { GeminiProvider } from './modules/ai/gemini.provider.js';
 import { PracticeProvider } from './modules/ai/practice.provider.js';
 import { examsRoutes } from './modules/exams/exams.routes.js';
@@ -151,6 +152,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const usage = new UsageService(prisma);
   const devices = new DevicesService(prisma, lockState, usage, notifications, clock);
   const ai = options.ai ?? createAi(env, app.log);
+  const aiStatus = new AiStatusService(ai, clock, app.log);
   const photos = new PhotosService(prisma, clock);
   if (env.NODE_ENV !== 'test') {
     // Old study photos are deleted daily (see PHOTO_KEEP_DAYS), starting a minute after start-up.
@@ -161,11 +163,18 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
         .catch((err: unknown) => app.log.warn({ err }, 'photo cleanup failed'));
     const first = setTimeout(() => void cleanPhotos(), 60_000);
     const daily = setInterval(() => void cleanPhotos(), 24 * 60 * 60_000);
+    // Is the AI key still accepted? Checked soon after start-up, then every 30 minutes.
+    const aiFirst = setTimeout(() => void aiStatus.refresh(true), 5_000);
+    const aiEvery = setInterval(() => void aiStatus.refresh(true), 30 * 60_000);
+    aiFirst.unref();
+    aiEvery.unref();
     first.unref();
     daily.unref();
     app.addHook('onClose', async () => {
       clearTimeout(first);
       clearInterval(daily);
+      clearTimeout(aiFirst);
+      clearInterval(aiEvery);
     });
   }
   const exams = new ExamsService(prisma, ai, config, sessions, notifications, photos, clock, app.log);
@@ -173,10 +182,11 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   const calendar = new CalendarService(prisma, ai, config, clock);
   const tutor = new TutorService(prisma, ai, config, sessions, exams, clock);
   const admin = new AdminService(prisma, config, sessions, notifications, activity, tokens, clock);
+  // The AI's health (state and model only) is public on /health; the Control Room can also re-check it.
 
   // Public and harmless: other sites (the GitHub Pages link to the Control Room) may check it's up.
   app.get('/health', (_request, reply) =>
-    reply.header('cross-origin-resource-policy', 'cross-origin').send({ status: 'ok' }),
+    reply.header('cross-origin-resource-policy', 'cross-origin').send({ status: 'ok', ai: aiStatus.current.state }),
   );
   await app.register(authRoutes(auth, activity), { prefix: '/v1/auth' });
   await app.register(usersRoutes(prisma, users), { prefix: '/v1/me' });
@@ -193,7 +203,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   await app.register(notificationsRoutes(prisma, notifications), { prefix: '/v1/notifications' });
   await app.register(calendarRoutes(prisma, calendar), { prefix: '/v1/calendar' });
   await app.register(reportRoutes(prisma), { prefix: '/v1/reports' });
-  await app.register(adminRoutes(prisma, admin), { prefix: '/v1/admin' });
+  await app.register(adminRoutes(prisma, admin, aiStatus), { prefix: '/v1/admin' });
   await app.register(adminReportRoutes(prisma), { prefix: '/v1/admin/reports' });
   if (env.ADMIN_PANEL_DIR) await app.register(adminPanel(resolve(env.ADMIN_PANEL_DIR)));
 

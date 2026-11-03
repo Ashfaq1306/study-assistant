@@ -111,6 +111,17 @@ export interface CalendarSource {
 }
 
 /** The AI behind exams and the study helper. */
+/** Whether the configured AI answers right now (see AiStatusService). Never includes secrets. */
+export type AiHealthState =
+  | 'UNCHECKED'
+  | 'OK' | 'KEY_REJECTED' | 'BUSY' | 'NO_MODEL' | 'UNREACHABLE' | 'ERROR' | 'NOT_CONFIGURED';
+
+export interface AiHealth {
+  state: AiHealthState;
+  /** The model that answered, when one did. */
+  model?: string;
+}
+
 export interface AiProvider {
   /** 'AI' for a real model, 'PRACTICE' for the built-in fallback. */
   readonly source: 'AI' | 'PRACTICE';
@@ -119,6 +130,8 @@ export interface AiProvider {
   tutor(messages: TutorMessage[], context: TutorContext): Promise<string>;
   /** Reads an academic calendar, exam routine or class timetable. */
   extractCalendar(source: CalendarSource): Promise<ExtractedEvent[]>;
+  /** A tiny request that shows whether the key and model work. Practice questions have none. */
+  check?(): Promise<AiHealth>;
 }
 
 export class AiUnavailableError extends Error {

@@ -1,3 +1,4 @@
+import type { AiStatusService } from '../ai/ai.status.js';
 import type { PrismaClient } from '@prisma/client';
 import type { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
@@ -32,7 +33,7 @@ const SettingsPatch = SettingsSchema.partial().strict();
 
 /** The web admin panel's API. Every route needs an ADMIN account. */
 export const adminRoutes =
-  (prisma: PrismaClient, admin: AdminService): FastifyPluginAsync =>
+  (prisma: PrismaClient, admin: AdminService, aiStatus: AiStatusService): FastifyPluginAsync =>
   async (app) => {
     app.addHook('preHandler', requireAuth(prisma, ['ADMIN']));
 
@@ -69,6 +70,10 @@ export const adminRoutes =
     app.get('/study', (request) => admin.study(parse(StudyQuery, request.query).days));
 
     app.get('/activity', (request) => admin.activityLog(parse(ActivityQuery, request.query)));
+
+    // Whether the AI key works: the last check, or a fresh one on demand ("Check now").
+    app.get('/ai', () => aiStatus.current);
+    app.post('/ai/check', () => aiStatus.refresh());
 
     app.get('/settings', () => admin.settings());
 

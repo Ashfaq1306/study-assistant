@@ -15,6 +15,7 @@ import {
   AiGradesSchema,
   AiUnavailableError,
   ExtractedCalendarSchema,
+  type AiHealth,
   type AiProvider,
   type CalendarSource,
   type ExtractedEvent,
@@ -84,6 +85,21 @@ export class GeminiProvider implements AiProvider {
       .trim();
     if (!text) throw new AiUnavailableError('The study helper had nothing to say. Please try again.');
     return text;
+  }
+
+  async check(): Promise<AiHealth> {
+    try {
+      const response = await this.firstAvailable([{ role: 'user', parts: [{ text: 'Reply with the word OK.' }] }], {
+        maxOutputTokens: 16,
+      });
+      return { state: 'OK', model: response.modelVersion };
+    } catch (err) {
+      if (!(err instanceof ApiError)) return { state: 'UNREACHABLE' };
+      if (err.status === 400 || err.status === 401 || err.status === 403) return { state: 'KEY_REJECTED' };
+      if (err.status === 429) return { state: 'BUSY' };
+      if (err.status === 404) return { state: 'NO_MODEL' };
+      return { state: 'ERROR' };
+    }
   }
 
   /** One JSON-mode request, validated with the same zod schema as Claude's. */
