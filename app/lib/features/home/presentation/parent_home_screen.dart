@@ -113,7 +113,7 @@ class _AlertsBar extends StatelessWidget {
           Expanded(
             child: Text(
               unread == 1 ? '1 new alert' : '$unread new alerts',
-              style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.coralDeep),
+              style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.legible(AppColors.coralDeep)),
             ),
           ),
           Icon(Icons.chevron_right_rounded, color: AppColors.coralDeep),

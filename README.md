@@ -9,9 +9,12 @@
 Pick what you'll study, lock distracting apps, and win them back by passing a quick AI quiz.
 
 [![CI](https://github.com/Ashfaq1306/study-mate/actions/workflows/ci.yml/badge.svg)](https://github.com/Ashfaq1306/study-mate/actions/workflows/ci.yml)
+![Version](https://img.shields.io/badge/version-1.1.0-6C5CE7)
 ![Flutter](https://img.shields.io/badge/Flutter-3.47-02569B?logo=flutter&logoColor=white)
 ![Node](https://img.shields.io/badge/Node-24-339933?logo=node.js&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android-3DDC84?logo=android&logoColor=white)
+
+<img src="docs/store/feature-graphic.png" alt="Study Mate: Study smart. Unlock by learning." width="720" />
 
 </div>
 
@@ -32,20 +35,24 @@ flowchart LR
 - **You set the rules.** Choose the exam pattern, total marks and pass mark. The pass mark can be anything from 50% up.
 - **No shortcuts.** A locked app stays locked until the exam is passed.
 - **Family built in.** Students under 15 link a parent by QR code. Parents can see screen time, block apps and write their own questions.
-- **An AI study buddy.** Ask questions about what you're learning, any time.
+- **An AI study buddy.** Ask questions about what you're learning, any time (it takes a break while your exam is open).
 
 ## Screenshots
 
 <table>
   <tr>
-    <td align="center"><img src="docs/assets/screenshots/welcome.png" width="200" alt="Welcome screen with the 3D pencil"/><br/><sub>Welcome: spinning 3D pencil</sub></td>
-    <td align="center"><img src="docs/assets/screenshots/signup.png" width="200" alt="Signup step about you"/><br/><sub>Signup knows when you're under 15</sub></td>
-    <td align="center"><img src="docs/assets/screenshots/verify.png" width="200" alt="Enter the 6-digit code"/><br/><sub>6-digit code by email or SMS</sub></td>
+    <td align="center"><img src="docs/store/screenshots/1-welcome.png" width="200" alt="Welcome screen with the 3D pencil and glossy icon tiles"/><br/><sub>Welcome</sub></td>
+    <td align="center"><img src="docs/store/screenshots/2-home.png" width="200" alt="Student home with today's focus, next exam and stats"/><br/><sub>Student home</sub></td>
+    <td align="center"><img src="docs/store/screenshots/3-choose-subject.png" width="200" alt="Choosing the subject and topic"/><br/><sub>Pick what you'll study</sub></td>
+    <td align="center"><img src="docs/store/screenshots/4-lock-apps.png" width="200" alt="Choosing which apps to lock"/><br/><sub>Lock distractions</sub></td>
+    <td align="center"><img src="docs/store/screenshots/5-study-timer.png" width="200" alt="Study timer ring"/><br/><sub>Focus timer</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/assets/screenshots/link-parent.png" width="200" alt="QR code for a parent to scan"/><br/><sub>Under 15: a parent scans to link</sub></td>
-    <td align="center"><img src="docs/assets/screenshots/student-home.png" width="200" alt="Student home"/><br/><sub>Student home</sub></td>
-    <td align="center"><img src="docs/assets/screenshots/parent-home.png" width="200" alt="Parent home"/><br/><sub>Parent home</sub></td>
+    <td align="center"><img src="docs/store/screenshots/6-study-time.png" width="200" alt="Weekly study chart and past sessions"/><br/><sub>Study time and streaks</sub></td>
+    <td align="center"><img src="docs/store/screenshots/7-app-locked.png" width="200" alt="Chrome is locked screen"/><br/><sub>A locked app</sub></td>
+    <td align="center"><img src="docs/store/screenshots/8-calendar.png" width="200" alt="Calendar with exams and classes"/><br/><sub>Calendar and reminders</sub></td>
+    <td align="center"><img src="docs/store/screenshots/9-parent-dashboard.png" width="200" alt="Parent home with a child's progress"/><br/><sub>Parent home</sub></td>
+    <td align="center"><img src="docs/store/screenshots/10-child-progress.png" width="200" alt="A child's details for the parent"/><br/><sub>Child's progress</sub></td>
   </tr>
 </table>
 
@@ -53,33 +60,35 @@ flowchart LR
 
 | | Feature | Status |
 | --- | --- | --- |
-| 👤 | Accounts with email **or** SMS one-time codes, password reset | ✅ Done |
+| 👤 | Accounts with email **or** SMS one-time codes, password reset, delete your account in the app | ✅ Done |
 | 👨‍👩‍👧 | Parent ↔ student linking by QR (required under 15) | ✅ Done |
-| 🎨 | 3D design system: spinning 3D pencil mascot, chunky 3D buttons, clay cards | ✅ Done |
+| 💎 | **Liquid-glass design** (v1.1): frosted glass cards with light-catching edges, glossy squircle icon tiles instead of flat stickers, glass buttons, chips, menus and dialogs, readable colour contrast (WCAG AA), light and dark mode. See [docs/design-system.md](docs/design-system.md) | ✅ Done |
 | ⏱️ | Study sessions: subject and topics, timer on server time, finish-early rule, stats, streaks and history | ✅ Done |
-| 🔒 | App blocker: lock chosen apps or the whole phone; strict mode blocks Settings and uninstalls; calls and Wi-Fi always work | ✅ Done |
-| 📝 | AI-generated exams on what you studied: multiple choice, true/false and short answers, timed, graded with feedback; pass mark ≥ 50% | ✅ Done |
-| 🤖 | AI study helper chat (pauses during exams, daily limit) | ✅ Done |
-| 📅 | Calendar: exams, weekly classes, assignments and holidays with phone reminders; the AI imports a school or university academic calendar from a PDF, photo or text | ✅ Done |
-| 🌗 | Light and dark mode, accent colours, 3D opening screens, home-screen widget | ✅ Done |
-| 🔄 | Test builds update themselves from GitHub Releases | ✅ Done |
+| 🔒 | App blocker: lock chosen apps or the whole phone; strict mode blocks Settings and uninstalls; calls and the camera always work | ✅ Done |
+| 📝 | AI-generated exams on what you studied (and on photos of your pages): multiple choice, true/false and short answers, timed, graded with feedback; pass mark ≥ 50% | ✅ Done |
+| 🤖 | AI study helper chat in English or Bangla (pauses during exams, daily limit); students can report a bad AI answer | ✅ Done |
+| 📅 | Calendar: exams, weekly classes, assignments and holidays with phone reminders; the AI imports a school academic calendar from a PDF, photo or text | ✅ Done |
+| 🌗 | Light and dark mode, six accent colours, home-screen widget | ✅ Done |
 | 📊 | Parent dashboard: each child at a glance, screen time, study time, exams, app-lock status, remote locks unlocked by a quiz, parent-written questions, alerts | ✅ Done |
-| 🛠️ | **Control Room** (admin panel, in the app for admin accounts and on the web at `/admin/`): who is online or signed out and when, sign-in history, study time per student and subject, unlock a phone without the exam, sign out, reset password, disable accounts, every rule and subject | ✅ Done |
-| 🌍 | Works from any network: the API on your computer is published over HTTPS through a Cloudflare tunnel, and the app finds its current address by itself | ✅ Done |
+| 🛠️ | **Control Room** (admin panel, in the app for admin accounts and on the web at `/admin/`): live overview, who is online and when they signed in or out, study time per student and subject, activity log, unlock a phone without the exam, sign out, reset password, disable accounts, AI reports, every rule and subject | ✅ Done |
+| 🩺 | **AI health check**: the server tests the AI key at start-up and every 30 minutes; the Control Room shows *AI is working* or exactly what to fix, with a **Check now** button | ✅ Done |
+| ☁️ | Hosted on **Render** (Singapore): API + Postgres, deployed automatically after CI passes; phones find the server by themselves | ✅ Done |
+| 🔄 | Updates: Google Play in-app updates for store installs; test builds update themselves from GitHub Releases | ✅ Done |
 | ✉️ | Real one-time codes by email (Gmail SMTP); SMS when an SMS provider is set up | ✅ Done |
 
 ## Tech stack
 
 | Part | Stack |
 | --- | --- |
-| **App** (`app/`) | Flutter 3.47, Riverpod 3, go_router 18, dio, flutter_secure_storage, mobile_scanner, qr_flutter |
+| **App** (`app/`) | Flutter 3.47, Riverpod 3, go_router 18, dio, flutter_secure_storage, mobile_scanner, qr_flutter, in_app_update |
 | **API** (`backend/`) | Node 24, TypeScript, Fastify 5, Prisma 6, zod 4, vitest |
+| **AI** | Google Gemini (default) or Anthropic Claude, chosen with `AI_PROVIDER`; built-in practice questions when no key is set |
 | **Admin** (`admin/`) | Plain HTML, CSS and an ES module, served by the API (no build step) |
-| **Hosting** | Your computer + Cloudflare quick tunnel + a GitHub gist that holds the current address (or any cloud host) |
-| **Data** | SQLite for development; Postgres for production |
+| **Hosting** | Render web service + Render Postgres ([render.yaml](render.yaml)); the app reads the server address from a small JSON file, so it can move without an app update |
+| **Data** | SQLite for development; Postgres in production (CI tests both) |
 | **Delivery** | SMTP email, Twilio SMS (both swappable; console output in development) |
 
-More detail in [docs/architecture.md](docs/architecture.md) and the [API reference](docs/api.md).
+More detail in [docs/architecture.md](docs/architecture.md), the [API reference](docs/api.md) and the [design system](docs/design-system.md).
 
 ## Getting started
 
@@ -104,53 +113,44 @@ flutter pub get
 adb reverse tcp:8080 tcp:8080   # lets the phone or emulator reach the API on your computer
 flutter run                      # add --release to see real speed
 ```
+For QA and screenshot builds, `--dart-define=UPDATE_REPO=` turns the self-updater off.
 
-### 3. Use it from any network (your computer as the server)
-**Control Room from anywhere:** https://ashfaq1306.github.io/study-mate/admin/ always forwards to the server's current address (the page lives on the `gh-pages` branch).
+### 3. Production (Render)
+The live API runs on Render from [render.yaml](render.yaml): a Node web service and a Postgres database in Singapore. Every merge to `main` deploys by itself once CI passes.
 
-The phone talks to `https://…trycloudflare.com`, so it works on any Wi-Fi or mobile data, as long as this computer is on and online.
-```powershell
-winget install Cloudflare.cloudflared        # once
-cd backend; npm run build; cd ..
-powershell -ExecutionPolicy Bypass -File scriptsinstall-autostart.ps1   # runs at every sign-in, starts now
-powershell -ExecutionPolicy Bypass -File scriptsnfigure-server.ps1    # real email codes (Gmail app password) and the AI key
-```
-- `serve-public.ps1` keeps the API and tunnel running and writes the current address to a GitHub gist (needs `gh` signed in with the `gist` scope). Builds read the gist: `NOTES="..." scripts/publish-test-build.sh`.
-- Make an admin, then sign in with it in the app (it opens the Control Room) or open `<tunnel address>/admin/` (or `http://127.0.0.1:8080/admin/` on this computer):
-  ```bash
-  cd backend && npm run admin -- create you@example.com "Your Name"   # prints a one-time password
-  ```
-- Logs: `%LOCALAPPDATA%StudyAssistantogs`. Keep the computer from sleeping while people use the app.
-
-### Production settings
-- **API:** set `NODE_ENV=production`, `TRUST_PROXY` to the number of proxies in front of the API (rate limits depend on the real client IP), a Postgres `DATABASE_URL` (and change the Prisma `provider`), real secrets, `ANTHROPIC_API_KEY` (from console.anthropic.com; without it exams use built-in practice questions and the helper is off), `EMAIL_PROVIDER=smtp` with `SMTP_*`, and `SMS_PROVIDER=twilio` with `TWILIO_*` (or `SMS_PROVIDER=none` for email codes only; the app then hides SMS). Console providers are refused in production.
-- **App:** `flutter build apk --release --dart-define=API_BASE_URL=https://your-api.example.com`
+- **Secrets** are entered in the Render dashboard (study-assistant-api → Environment), never in the repo: `GEMINI_API_KEY` (from [Google AI Studio](https://aistudio.google.com/apikey)), `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`. After changing a key, open the Control Room and press **Check now** under the AI status.
+- **Health:** `GET /health` returns `{"status":"ok","ai":"OK"}`. `ai` is `KEY_REJECTED` when the AI key stopped working.
+- **Control Room:** https://ashfaq1306.github.io/study-mate/admin/ forwards to the live server.
+- **Admins** are created only on the server: `npm run admin -- create you@example.com "Your Name"` (prints a one-time password).
+- `scripts/move-to-render.ps1` moved the data from the old home-PC server to Render (done 3 Nov 2026). `scripts/serve-public.ps1` (home PC + Cloudflare tunnel) still works for running your own server.
 
 ## Launching on Google Play
-Everything for the Play Console (listing text, screenshots, feature graphic, Data safety answers, the Accessibility declaration and a launch checklist) is in [docs/store](docs/store/README.md). Release builds are signed with the upload key named in `app/android/key.properties` (never committed); the privacy policy and account-deletion pages are at https://ashfaq1306.github.io/study-mate/privacy/ and …/delete-account/.
+Everything for the Play Console (listing text, screenshots, feature graphic, Data safety answers, the Accessibility declaration and a launch checklist) is in [docs/store](docs/store/README.md). Release builds are signed with the upload key named in `app/android/key.properties` (never committed); the privacy policy and account-deletion pages are at https://ashfaq1306.github.io/study-mate/privacy/ and https://ashfaq1306.github.io/study-mate/delete-account/.
 
 ## Testing
 ```bash
-cd backend && npm run lint && npm run typecheck && npm test   # API tests
-cd app && flutter analyze && flutter test test                 # app tests
+cd backend && npm run lint && npm run typecheck && npm test   # API tests (SQLite; CI also runs them on Postgres)
+cd app && flutter analyze && flutter test test                 # app tests, including design-system contrast and layout checks
 ```
-CI runs the same checks on every pull request.
+CI runs the same checks, plus the Kotlin app-lock tests, on every pull request.
 
 ## Project structure
 ```
 study-mate/
 ├── app/                  Flutter app
 │   ├── lib/app/          router, route guard, providers
-│   ├── lib/core/         network, storage, theme, 3D widgets
-│   ├── lib/features/     auth · family · home  (data / domain / application / presentation)
-│   └── tool/icon/        draws the launcher icons from code
-├── admin/                web admin panel (served by the API at /admin/)
+│   ├── lib/core/         network, storage, theme + design tokens, liquid-glass widgets
+│   ├── lib/features/     auth · study · exam · app_lock · calendar · tutor · parent · admin · …
+│   ├── android/          Kotlin app-lock service (Accessibility) and widget
+│   └── tool/             draws the launcher icons and Play artwork from code
+├── admin/                web Control Room (served by the API at /admin/)
 ├── backend/              REST API
 │   ├── prisma/           database schema
-│   ├── src/modules/      auth · users · family · sessions · exams · admin · …
+│   ├── src/modules/      auth · users · family · sessions · exams · ai · admin · reports · …
 │   └── test/             API tests
-├── docs/                 architecture and assets
-├── scripts/              serve-public · install-autostart · configure-server · publish-test-build
+├── docs/                 architecture, API, design system, Play store kit
+├── scripts/              move-to-render · serve-public · install-autostart · configure-server · publish-test-build
+├── render.yaml           Render blueprint (API + Postgres)
 └── .claude/agents/       junior-coder · senior-coder · code-reviewer · qa-tester
 ```
 
@@ -164,3 +164,4 @@ Every change goes through a **junior → senior → reviewer → QA** pipeline a
 - Sensitive endpoints are rate-limited per IP, and one-time codes per destination. Parallel guessing cannot get more than 5 tries.
 - Only contacts that have received a code can be used to sign in or reset a password.
 - On the phone, tokens are kept in the Android Keystore through `flutter_secure_storage`.
+- API keys live only in the server's environment; the AI health check reports a state, never the key.

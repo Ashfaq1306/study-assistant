@@ -73,10 +73,27 @@ class RoundBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.card,
-      shape: CircleBorder(
-        side: BorderSide(color: AppColors.isDark ? Colors.white.withValues(alpha: 0.1) : AppColors.line, width: 1.5),
+    final dark = AppColors.isDark;
+    return DecoratedBox(
+      // A glass bead: milky in light mode, smoked in dark mode, with a bright rim.
+      decoration: ShapeDecoration(
+        shape: CircleBorder(
+          side: BorderSide(color: dark ? Colors.white.withValues(alpha: 0.16) : Colors.white, width: 1.4),
+        ),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: dark
+              ? [Colors.white.withValues(alpha: 0.14), Colors.white.withValues(alpha: 0.05)]
+              : [Colors.white.withValues(alpha: 0.95), Colors.white.withValues(alpha: 0.65)],
+        ),
+        shadows: [
+          BoxShadow(
+            color: AppColors.violet.withValues(alpha: dark ? 0.25 : 0.12),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: IconButton(
         tooltip: 'Back',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/design_tokens.dart';
 
 /// A rounded, selectable pill with an optional icon.
 class ChoicePill extends StatelessWidget {
@@ -34,17 +35,33 @@ class ChoicePill extends StatelessWidget {
           onTap();
         },
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
+          duration: Motion.normal,
+          curve: Motion.ease,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
-          decoration: BoxDecoration(
-            color: selected ? color : AppColors.card,
-            borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: selected ? color : AppColors.line, width: 1.6),
-            boxShadow: [
+          decoration: ShapeDecoration(
+            shape: StadiumBorder(
+              side: BorderSide(
+                color: selected
+                    ? Colors.white.withValues(alpha: 0.45)
+                    : (AppColors.isDark ? Colors.white.withValues(alpha: 0.14) : Colors.white),
+                width: 1.4,
+              ),
+            ),
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: selected
+                  ? [Color.lerp(color, Colors.white, 0.18)!, color]
+                  : AppColors.isDark
+                  ? [Colors.white.withValues(alpha: 0.12), Colors.white.withValues(alpha: 0.05)]
+                  : [Colors.white.withValues(alpha: 0.92), Colors.white.withValues(alpha: 0.62)],
+            ),
+            shadows: [
               BoxShadow(
-                color: (selected ? color : AppColors.violet).withValues(alpha: selected ? 0.3 : 0.06),
-                blurRadius: selected ? 12 : 6,
-                offset: const Offset(0, 4),
+                color: (selected ? color : AppColors.violet).withValues(alpha: selected ? 0.34 : 0.08),
+                blurRadius: selected ? 16 : 8,
+                spreadRadius: selected ? -2 : 0,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
@@ -169,42 +186,73 @@ class WeekBars extends StatelessWidget {
       label: '$what for the last 7 days: ${days.map((d) => d.minutes).join(', ')}',
       excludeSemantics: true,
       child: SizedBox(
-        height: height + 44,
+        // Room for the day letters grows with the text size.
+        height: height + MediaQuery.textScalerOf(context).scale(44),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             for (final (i, d) in days.indexed)
               Expanded(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Text(
-                      d.minutes > 0 ? '${d.minutes}' : '',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.inkSoft),
-                    ),
-                    const SizedBox(height: 4),
-                    AnimatedContainer(
-                      duration: Duration(milliseconds: 400 + i * 60),
-                      curve: Curves.easeOutBack,
-                      height: most == 0 ? 8 : 8 + (height - 8) * d.minutes / most,
-                      margin: const EdgeInsets.symmetric(horizontal: 6),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: i == days.length - 1
-                              ? [AppColors.sunshine, AppColors.sunshineDeep]
-                              : [const Color(0xFF8D80F0), AppColors.violet],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (i == days.length - 1 ? AppColors.sunshineDeep : AppColors.violetDeep).withValues(
-                              alpha: 0.35,
-                            ),
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                    // The bar area takes what is left after the day letter, so large text never overflows.
+                    Expanded(
+                      child: LayoutBuilder(
+                        builder: (context, box) {
+                          final label = (MediaQuery.textScalerOf(context).scale(12) * 1.6).ceilToDouble();
+                          final tallest = (box.maxHeight - label - 4).floorToDouble().clamp(8.0, double.infinity);
+                          final bar = most == 0 ? 8.0 : 8 + (tallest - 8) * d.minutes / most;
+                          final today = i == days.length - 1;
+                          return Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              SizedBox(
+                                height: label,
+                                child: Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: Text(
+                                    d.minutes > 0 ? '${d.minutes}' : '',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.visible,
+                                    softWrap: false,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppColors.inkSoft,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              AnimatedContainer(
+                                duration: Duration(milliseconds: 400 + i * 60),
+                                curve: Curves.easeOutCubic,
+                                height: bar,
+                                margin: const EdgeInsets.symmetric(horizontal: 6),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(12),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: today
+                                        ? [AppColors.sunshine, AppColors.sunshineDeep]
+                                        : [const Color(0xFF8D80F0), AppColors.violet],
+                                  ),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: (today ? AppColors.sunshineDeep : AppColors.violetDeep).withValues(
+                                        alpha: 0.3,
+                                      ),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 8),

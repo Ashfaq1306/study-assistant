@@ -216,7 +216,7 @@ class _Number extends StatelessWidget {
         children: [
           Text(
             value,
-            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: color),
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: AppColors.legible(color)),
           ),
           Text(
             label,

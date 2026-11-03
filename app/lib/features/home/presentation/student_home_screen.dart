@@ -162,7 +162,7 @@ class _RetryBanner extends StatelessWidget {
               Expanded(
                 child: Text(
                   "Couldn't check your study session. Tap to try again.",
-                  style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.coralDeep),
+                  style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.legible(AppColors.coralDeep)),
                 ),
               ),
             ],
@@ -238,7 +238,10 @@ class _ActiveCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(pending ? 'Exam waiting' : 'Studying now', style: text.titleMedium?.copyWith(color: color)),
+                Text(
+                  pending ? 'Exam waiting' : 'Studying now',
+                  style: text.titleMedium?.copyWith(color: AppColors.legible(color)),
+                ),
                 Text(session.subject, style: text.titleLarge),
                 Text(pending ? 'Pass it to unlock your apps' : 'Tap to see your timer', style: text.bodyMedium),
               ],

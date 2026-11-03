@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/design_tokens.dart';
+import 'liquid_glass.dart';
 
 /// Inline message box for errors and hints inside forms.
 class MessageBanner extends StatelessWidget {
@@ -15,25 +17,33 @@ class MessageBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (color, foreground, icon) = switch (_kind) {
-      _BannerKind.error => (AppColors.coralSoft, AppColors.coralDeep, Icons.error_rounded),
-      _BannerKind.info => (AppColors.skySoft, AppColors.skyDeep, Icons.info_rounded),
-      _BannerKind.success => (AppColors.mintSoft, AppColors.mintDeep, Icons.check_circle_rounded),
+    final (foreground, icon) = switch (_kind) {
+      _BannerKind.error => (AppColors.coralDeep, Icons.priority_high_rounded),
+      _BannerKind.info => (AppColors.skyDeep, Icons.info_outline_rounded),
+      _BannerKind.success => (AppColors.mintDeep, Icons.check_rounded),
     };
     return Semantics(
       liveRegion: true,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(18)),
+      child: LiquidGlass(
+        radius: Radii.md,
+        tint: foreground,
+        shadow: foreground,
+        blur: false,
+        padding: const EdgeInsets.symmetric(horizontal: Space.md, vertical: 14),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: foreground, size: 22),
-            const SizedBox(width: 12),
+            GlassIconTile(icon: icon, color: foreground, size: 26),
+            const SizedBox(width: Space.sm),
             Expanded(
               child: Text(
                 message,
-                style: TextStyle(color: foreground, fontWeight: FontWeight.w700, fontSize: 14.5, height: 1.35),
+                style: TextStyle(
+                  color: AppColors.legible(foreground),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14.5,
+                  height: 1.35,
+                ),
               ),
             ),
           ],
@@ -45,8 +55,8 @@ class MessageBanner extends StatelessWidget {
 
 enum _BannerKind { error, info, success }
 
-/// A raised, softly shaded circle holding an icon in [color]. The app's
-/// friendly illustration style: icons everywhere, never emoji.
+/// An icon on a glossy glass tile (see [GlassIconTile]): the app's illustration style.
+/// Icons everywhere, never emoji or flat stickers.
 class IconBadge extends StatelessWidget {
   const IconBadge(this.icon, {super.key, this.color, this.size = 56});
 
@@ -57,39 +67,7 @@ class IconBadge extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) {
-    final color = this.color ?? AppColors.violet;
-    final dark = AppColors.isDark;
-    return ExcludeSemantics(
-      child: Container(
-        width: size,
-        height: size,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: dark
-                ? [color.withValues(alpha: 0.3), color.withValues(alpha: 0.16)]
-                : [Color.lerp(color, Colors.white, 0.86)!, Color.lerp(color, Colors.white, 0.72)!],
-          ),
-          border: Border.all(
-            color: dark ? color.withValues(alpha: 0.4) : Colors.white.withValues(alpha: 0.9),
-            width: size * 0.03,
-          ),
-          boxShadow: [
-            BoxShadow(color: color.withValues(alpha: 0.22), blurRadius: size * 0.22, offset: Offset(0, size * 0.1)),
-          ],
-        ),
-        child: Icon(
-          icon,
-          size: size * 0.5,
-          color: dark ? Color.lerp(color, Colors.white, 0.25) : Color.lerp(color, AppColors.ink, 0.12),
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => GlassIconTile(icon: icon, color: color ?? AppColors.violet, size: size);
 }
 
 void showSnack(BuildContext context, String message) {

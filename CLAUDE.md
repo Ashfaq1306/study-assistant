@@ -50,7 +50,7 @@ flutter test tool/icon/render_icon_test.dart && dart run flutter_launcher_icons 
 - **Errors:** the API always returns `{ error: { code, message, details? } }`. `message` is safe to show users; clients branch on `code`. Field errors go in `details.fields`.
 - **Security:** passwords use scrypt. OTPs and pairing codes are stored only as HMACs. Refresh tokens are opaque, stored hashed, and rotate on use; reuse revokes the session family. Every authenticated route uses `requireAuth(prisma, roles)`.
 - **Time:** inject `Clock` for anything that expires. The server stores UTC.
-- **UI:** use the design system in `app/lib/core/widgets` (`Button3D`, `ClayCard`, `PageShell`, `MessageBanner`, `Pencil3D`) and colours from `AppColors`. Copy is short, warm and encouraging. Every screen handles loading, error, small screens and large text.
+- **UI:** use the liquid-glass design system in `app/lib/core` (`LiquidGlass`, `ClayCard`, `IconBadge`/`GlassIconTile`, `GlassChip`, `Button3D`, `PageShell`, `MessageBanner`), tokens from `design_tokens.dart` and colours from `AppColors` (coloured text through `AppColors.legible`). Never flat emoji or "sticker" icons. See `docs/design-system.md`. Copy is short, warm and encouraging. Every screen handles loading, error, small screens and large text.
 - **Formatting:** Dart uses a 120-column page width (set in `analysis_options.yaml`). TypeScript is checked by ESLint with typed rules.
 
 ## Git and pull requests

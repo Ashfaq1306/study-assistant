@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/design_tokens.dart';
+import 'liquid_glass.dart';
 
-/// A soft, raised "clay" surface. Tappable cards shrink a little when pressed.
+/// The app's card: a pane of liquid glass (see [LiquidGlass]). Tappable cards give a little
+/// when pressed. The name is historical; cards used to be matte "clay".
 class ClayCard extends StatefulWidget {
   const ClayCard({
     super.key,
     required this.child,
     this.onTap,
-    this.padding = const EdgeInsets.all(20),
+    this.padding = const EdgeInsets.all(Space.lg),
     this.color,
     this.glow,
-    this.radius = 28,
+    this.radius = Radii.lg,
     this.selected = false,
   });
 
@@ -20,14 +23,14 @@ class ClayCard extends StatefulWidget {
   final VoidCallback? onTap;
   final EdgeInsetsGeometry padding;
 
-  /// The theme's card colour when null.
+  /// A solid colour for the pane (hero and status cards). Clear glass when null.
   final Color? color;
 
   /// Tint of the shadow, so cards can glow in their accent colour; the theme accent when null.
   final Color? glow;
   final double radius;
 
-  /// Draws a thick accent outline, for choice cards.
+  /// Tints the glass and draws an accent rim, for choice cards.
   final bool selected;
 
   @override
@@ -40,33 +43,27 @@ class _ClayCardState extends State<ClayCard> {
   @override
   Widget build(BuildContext context) {
     final glow = widget.glow ?? AppColors.violet;
-    final dark = AppColors.isDark;
-    final card = AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
-      curve: Curves.easeOut,
-      padding: widget.padding,
-      decoration: BoxDecoration(
-        color: widget.color ?? AppColors.card,
-        borderRadius: BorderRadius.circular(widget.radius),
-        border: Border.all(
-          color: widget.selected
-              ? glow
-              : dark
-              ? Colors.white.withValues(alpha: 0.08)
-              : Colors.white,
-          width: widget.selected ? 3 : 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: glow.withValues(alpha: widget.selected ? 0.28 : (dark ? 0.2 : 0.12)),
-            blurRadius: 28,
-            offset: const Offset(0, 14),
-          ),
-          BoxShadow(color: glow.withValues(alpha: 0.06), blurRadius: 4, offset: const Offset(0, 2)),
-        ],
-      ),
-      child: widget.child,
-    );
+    final color = widget.color;
+    final Widget card = color == null
+        ? LiquidGlass(
+            radius: widget.radius,
+            padding: widget.padding,
+            tint: widget.selected ? glow : null,
+            rim: widget.selected ? glow : null,
+            shadow: glow,
+            // Cards sit on the soft, already-blurry backdrop: translucency alone reads as glass
+            // and keeps long lists smooth on budget phones.
+            blur: false,
+            child: widget.child,
+          )
+        : _SolidGlass(
+            color: color,
+            radius: widget.radius,
+            padding: widget.padding,
+            glow: glow,
+            rim: widget.selected ? glow : null,
+            child: widget.child,
+          );
 
     if (widget.onTap == null) return card;
 
@@ -78,7 +75,57 @@ class _ClayCardState extends State<ClayCard> {
         HapticFeedback.selectionClick();
         widget.onTap!();
       },
-      child: AnimatedScale(scale: _pressed ? 0.97 : 1, duration: const Duration(milliseconds: 120), child: card),
+      child: AnimatedScale(
+        scale: _pressed ? Motion.pressScale : 1,
+        duration: Motion.fast,
+        curve: Motion.ease,
+        child: card,
+      ),
+    );
+  }
+}
+
+/// A coloured glass pane: a rich gradient of [color] with the same sheen and bright rim as clear glass.
+class _SolidGlass extends StatelessWidget {
+  const _SolidGlass({
+    required this.color,
+    required this.radius,
+    required this.padding,
+    required this.glow,
+    required this.rim,
+    required this.child,
+  });
+
+  final Color color;
+  final double radius;
+  final EdgeInsetsGeometry padding;
+  final Color glow;
+  final Color? rim;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final dark = AppColors.isDark;
+    final hsl = HSLColor.fromColor(color);
+    final top = hsl.withLightness((hsl.lightness + 0.06).clamp(0.0, 0.97)).toColor();
+    final bottom = hsl.withLightness((hsl.lightness - 0.05).clamp(0.0, 1.0)).toColor();
+    return DecoratedBox(
+      decoration: ShapeDecoration(
+        shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(radius)),
+        gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [top, bottom]),
+        shadows: [
+          BoxShadow(
+            color: glow.withValues(alpha: dark ? 0.35 : 0.26),
+            blurRadius: 32,
+            spreadRadius: -6,
+            offset: const Offset(0, 18),
+          ),
+        ],
+      ),
+      child: CustomPaint(
+        foregroundPainter: GlassRimPainter(radius: radius, rim: rim, dark: dark, onColor: true),
+        child: Padding(padding: padding, child: child),
+      ),
     );
   }
 }

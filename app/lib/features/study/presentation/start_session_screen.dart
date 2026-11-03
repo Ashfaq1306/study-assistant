@@ -380,7 +380,7 @@ class _StartSessionScreenState extends ConsumerState<StartSessionScreen> {
                 Expanded(
                   child: Text(
                     'App lock is off on this phone. Tap to turn it on, so these apps really get blocked.',
-                    style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.coralDeep),
+                    style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.legible(AppColors.coralDeep)),
                   ),
                 ),
                 Icon(Icons.chevron_right_rounded, color: AppColors.coralDeep),

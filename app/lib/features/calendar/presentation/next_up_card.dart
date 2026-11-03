@@ -53,7 +53,7 @@ class NextUpCard extends ConsumerWidget {
                       children: [
                         Text(
                           'Next exam · ${relativeDay(nextExam.start, now)}',
-                          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.coralDeep),
+                          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.legible(AppColors.coralDeep)),
                         ),
                         Text(
                           nextExam.event.title,
@@ -75,7 +75,7 @@ class NextUpCard extends ConsumerWidget {
             if (todaysClasses.isNotEmpty) ...[
               Text(
                 'Classes today',
-                style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.violet),
+                style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.legible(AppColors.violet)),
               ),
               const SizedBox(height: 6),
               for (final c in todaysClasses.take(3))

@@ -72,7 +72,7 @@ class AppUpdates {
 
   /// Null when this build is the newest (or updates are not possible here).
   Future<AppUpdate?> check() async {
-    if (!await canSelfUpdate()) return null;
+    if (AppConfig.updateRepo.isEmpty || !await canSelfUpdate()) return null;
     final res = await _dio.get<List<Object?>>(
       'https://api.github.com/repos/${AppConfig.updateRepo}/releases',
       queryParameters: {'per_page': 10},
