@@ -16,6 +16,7 @@ import {
   AiGradesSchema,
   AiUnavailableError,
   ExtractedCalendarSchema,
+  type AiHealth,
   type AiProvider,
   type CalendarSource,
   type ExtractedEvent,
@@ -124,6 +125,25 @@ export class AnthropicProvider implements AiProvider {
     } catch (err) {
       this.log.error({ err, kind }, 'AI returned output that does not match the schema');
       throw new AiUnavailableError('The AI gave an unexpected answer. Please try again.');
+    }
+  }
+
+  async check(): Promise<AiHealth> {
+    try {
+      const response = await this.client.messages.create({
+        model: this.options.model,
+        max_tokens: 16,
+        messages: [{ role: 'user', content: 'Reply with the word OK.' }],
+      });
+      return { state: 'OK', model: response.model };
+    } catch (err) {
+      if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError) {
+        return { state: 'KEY_REJECTED' };
+      }
+      if (err instanceof Anthropic.RateLimitError) return { state: 'BUSY' };
+      if (err instanceof Anthropic.NotFoundError) return { state: 'NO_MODEL' };
+      if (err instanceof Anthropic.APIConnectionError) return { state: 'UNREACHABLE' };
+      return { state: 'ERROR' };
     }
   }
 

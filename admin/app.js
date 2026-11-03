@@ -501,13 +501,55 @@ function recentActivity(events) {
   );
 }
 
+// ---------- AI health ----------
+
+const AI_STATES = {
+  OK: ['ok', 'AI is working', (a) => `Answering with ${a.model ?? 'Gemini'}.`],
+  UNCHECKED: ['ok', 'AI not checked yet', () => 'The server checks the AI a few seconds after it starts.'],
+  KEY_REJECTED: [
+    'err',
+    'AI key rejected',
+    () =>
+      'Google (or Anthropic) refused the key: it was deleted, expired or blocked. Exams fall back to practice questions and the AI helper is off. ' +
+      'Fix: create a new key at aistudio.google.com/apikey, then in Render open study-assistant-api → Environment → GEMINI_API_KEY, paste it and save. Then press Check now.',
+  ],
+  BUSY: ['err', 'AI is busy (rate limit)', () => 'The free quota is used up for now. It recovers by itself; a paid key avoids this.'],
+  NO_MODEL: ['err', 'AI model retired', () => 'None of the configured models exist any more. Update GEMINI_MODEL in Render.'],
+  UNREACHABLE: ['err', "Can't reach the AI", () => 'The server could not connect to the AI service. It usually recovers by itself.'],
+  ERROR: ['err', 'AI error', () => 'The AI answered with an error. Press Check now; if it stays, look at the Render logs.'],
+  NOT_CONFIGURED: ['err', 'No AI set up', () => 'Exams use built-in practice questions. Add GEMINI_API_KEY in Render to turn the AI on.'],
+};
+
+function aiCard(ai, onCheck) {
+  const [tone, title, text] = AI_STATES[ai.state] ?? AI_STATES.ERROR;
+  const when = ai.checkedAt ? `Checked ${fmt.ago(ai.checkedAt)}` : 'Not checked yet';
+  const button = el('button', { class: 'btn small', type: 'button' }, 'Check now');
+  button.addEventListener('click', async () => {
+    button.disabled = true;
+    button.textContent = 'Checking…';
+    try {
+      await api('/admin/ai/check', { method: 'POST' });
+    } catch (err) {
+      toast(err.message, 'err');
+    }
+    onCheck();
+  });
+  return el(
+    'div',
+    { class: `banner ${tone} ai-status`, role: tone === 'err' ? 'alert' : 'status' },
+    el('div', {}, el('strong', {}, title), el('span', { class: 'muted' }, ` · ${when}`), el('div', { class: 'ai-text' }, text(ai))),
+    button,
+  );
+}
+
 function renderOverview(main, silent = false) {
   if (!silent) setLive(() => renderOverview(main, true));
   load(main, 'Overview', async () => {
-    const s = await api('/admin/stats');
+    const [s, ai] = await Promise.all([api('/admin/stats'), api('/admin/ai')]);
     fill(
       main,
       pageHead('Overview', 'Everything updates by itself every 10 seconds', liveBadge()),
+      aiCard(ai, () => renderOverview(main, true)),
       el(
         'div',
         { class: 'tiles' },
