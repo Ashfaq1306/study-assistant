@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_logo.dart';
 import '../../../core/widgets/button_3d.dart';
 import '../../../core/widgets/float_in.dart';
+import '../../../core/widgets/liquid_glass.dart';
 import '../../../core/widgets/mascot_stage.dart';
 import '../../../core/widgets/page_shell.dart';
 
@@ -101,21 +102,5 @@ class _Chip extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(40)),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.ink),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => GlassChip(icon: icon, label: label, color: color);
 }

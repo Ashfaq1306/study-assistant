@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import 'liquid_glass.dart';
 
 /// A chunky, glossy button with a physical bottom edge that sinks when pressed.
 /// Colours default to the current theme's accent.
@@ -103,7 +104,20 @@ class _Button3DState extends State<Button3D> {
               Positioned.fill(
                 top: _depth,
                 child: DecoratedBox(
-                  decoration: BoxDecoration(color: edge, borderRadius: BorderRadius.circular(_radius)),
+                  decoration: ShapeDecoration(
+                    shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(_radius)),
+                    color: edge,
+                    shadows: secondary || !_enabled
+                        ? null
+                        : [
+                            BoxShadow(
+                              color: face.withValues(alpha: 0.35),
+                              blurRadius: 18,
+                              spreadRadius: -4,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
+                  ),
                 ),
               ),
               AnimatedPositioned(
@@ -114,18 +128,25 @@ class _Button3DState extends State<Button3D> {
                 top: offset,
                 height: widget.height,
                 child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(_radius),
+                  decoration: ShapeDecoration(
+                    shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(_radius)),
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Color.lerp(face, Colors.white, secondary ? 0.0 : 0.12)!, face],
+                      colors: secondary && _enabled
+                          ? [Color.lerp(face, Colors.white, AppColors.isDark ? 0.06 : 0.5)!, face]
+                          : [Color.lerp(face, Colors.white, 0.14)!, face],
                     ),
-                    border: secondary
-                        ? Border.all(color: AppColors.isDark ? AppColors.glassEdge : AppColors.line, width: 1.5)
-                        : null,
                   ),
-                  child: Center(child: _content(foreground)),
+                  child: CustomPaint(
+                    foregroundPainter: GlassRimPainter(
+                      radius: _radius,
+                      rim: null,
+                      dark: AppColors.isDark,
+                      onColor: !secondary && _enabled,
+                    ),
+                    child: Center(child: _content(foreground)),
+                  ),
                 ),
               ),
             ],

@@ -277,7 +277,7 @@ class _Summary extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: TextStyle(fontWeight: FontWeight.w800, color: color),
+            style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.legible(color)),
           ),
         ),
       ],

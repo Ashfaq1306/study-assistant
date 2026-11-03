@@ -167,7 +167,7 @@ class _QuestionSetEditorScreenState extends ConsumerState<QuestionSetEditorScree
             TextButton.icon(
               onPressed: _delete,
               icon: Icon(Icons.delete_outline_rounded, color: AppColors.coralDeep),
-              label: Text('Delete', style: TextStyle(color: AppColors.coralDeep)),
+              label: Text('Delete', style: TextStyle(color: AppColors.legible(AppColors.coralDeep))),
             ),
           ],
         ],

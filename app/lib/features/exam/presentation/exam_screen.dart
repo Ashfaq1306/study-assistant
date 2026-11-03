@@ -427,7 +427,7 @@ class _QuestionCard extends StatelessWidget {
             children: [
               Text(
                 'Q$number · ${question.marks} ${question.marks == 1 ? 'mark' : 'marks'} · ${question.type.label}',
-                style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.violet),
+                style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.legible(AppColors.violet)),
               ),
               const SizedBox(height: 8),
               Text(question.prompt, style: Theme.of(context).textTheme.titleLarge?.copyWith(height: 1.3)),
@@ -681,7 +681,7 @@ class _ReviewTile extends StatelessWidget {
               ),
               Text(
                 '${_ResultView._fmt(result.awarded)}/${result.marks}',
-                style: TextStyle(fontWeight: FontWeight.w900, color: color),
+                style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.legible(color)),
               ),
             ],
           ),
@@ -698,7 +698,7 @@ class _ReviewTile extends StatelessWidget {
           if (!result.correct)
             Text(
               'Right answer: ${result.correctAnswer}',
-              style: TextStyle(color: AppColors.mintDeep, fontWeight: FontWeight.w800),
+              style: TextStyle(color: AppColors.legible(AppColors.mintDeep), fontWeight: FontWeight.w800),
             ),
           if (result.explanation.isNotEmpty) ...[
             const SizedBox(height: 6),
@@ -708,7 +708,7 @@ class _ReviewTile extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               result.feedback,
-              style: TextStyle(color: AppColors.violet, fontWeight: FontWeight.w700),
+              style: TextStyle(color: AppColors.legible(AppColors.violet), fontWeight: FontWeight.w700),
             ),
           ],
           Align(

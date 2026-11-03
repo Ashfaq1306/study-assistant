@@ -186,7 +186,7 @@ class SessionTile extends StatelessWidget {
             decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20)),
             child: Text(
               label,
-              style: TextStyle(fontWeight: FontWeight.w800, color: color, fontSize: 12),
+              style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.legible(color), fontSize: 12),
             ),
           ),
         ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app_colors.dart';
+import 'design_tokens.dart';
 
 abstract final class AppTheme {
   static const radius = 20.0;
@@ -40,6 +41,13 @@ abstract final class AppTheme {
     OutlineInputBorder border(Color color, [double width = 1.6]) => OutlineInputBorder(
       borderRadius: BorderRadius.circular(radius),
       borderSide: BorderSide(color: color, width: width),
+    );
+
+    // Surfaces that float (menus, dialogs, sheets) share the cards' squircle shape and bright glass rim.
+    final glassEdge = dark ? Colors.white.withValues(alpha: 0.14) : Colors.white;
+    ShapeBorder glassShape(double r) => RoundedSuperellipseBorder(
+      borderRadius: BorderRadius.circular(r),
+      side: BorderSide(color: glassEdge, width: 1.2),
     );
 
     return base.copyWith(
@@ -92,19 +100,33 @@ abstract final class AppTheme {
         behavior: SnackBarBehavior.floating,
         backgroundColor: AppColors.ink,
         contentTextStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700, color: Colors.white),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedSuperellipseBorder(borderRadius: BorderRadius.circular(Radii.sm + 4)),
       ),
-      datePickerTheme: DatePickerThemeData(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28))),
-      dialogTheme: DialogThemeData(
-        backgroundColor: AppColors.card,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      ),
+      datePickerTheme: DatePickerThemeData(shape: glassShape(Radii.xl)),
+      dialogTheme: DialogThemeData(backgroundColor: AppColors.card, shape: glassShape(Radii.xl)),
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: AppColors.card,
         showDragHandle: true,
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
+        shape: RoundedSuperellipseBorder(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(Radii.xl)),
+          side: BorderSide(color: glassEdge, width: 1.2),
+        ),
       ),
-      popupMenuTheme: PopupMenuThemeData(color: AppColors.card),
+      popupMenuTheme: PopupMenuThemeData(
+        color: AppColors.card,
+        elevation: 10,
+        shadowColor: AppColors.violet.withValues(alpha: 0.35),
+        shape: glassShape(Radii.lg),
+        textStyle: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.ink),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: dark ? Colors.white.withValues(alpha: 0.08) : Colors.white.withValues(alpha: 0.82),
+        shape: StadiumBorder(side: BorderSide(color: glassEdge, width: 1.2)),
+        side: BorderSide(color: glassEdge, width: 1.2),
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        labelStyle: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w800, color: AppColors.ink),
+      ),
       dividerTheme: DividerThemeData(color: AppColors.line),
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: AppColors.violet,

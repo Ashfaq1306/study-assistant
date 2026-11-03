@@ -173,7 +173,7 @@ class AddPhotoTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       'Add',
-                      style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.violet),
+                      style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.legible(AppColors.violet)),
                     ),
                   ],
                 ),

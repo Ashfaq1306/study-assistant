@@ -18,10 +18,11 @@ abstract final class AppConfig {
   static const appName = 'Study Mate';
 
   /// Keep in step with the version in pubspec.yaml.
-  static const appVersion = '1.0.1';
+  static const appVersion = '1.1.0';
 
   /// Test builds are published as GitHub Releases here (tags like v0.4.0-b4).
-  static const updateRepo = 'Ashfaq1306/study-mate';
+  /// Empty turns the self-updater off (QA and screenshot builds: `--dart-define=UPDATE_REPO=`).
+  static const updateRepo = String.fromEnvironment('UPDATE_REPO', defaultValue: 'Ashfaq1306/study-mate');
 
   /// Must match PARENTAL_CONTROL_AGE on the server.
   static const parentalControlAge = 15;

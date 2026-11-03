@@ -96,7 +96,7 @@ class ExamSettingsEditor extends StatelessWidget {
                     decoration: BoxDecoration(color: AppColors.mintSoft, borderRadius: BorderRadius.circular(20)),
                     child: Text(
                       '${value.passPercent}%',
-                      style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.mintDeep),
+                      style: TextStyle(fontWeight: FontWeight.w900, color: AppColors.legible(AppColors.mintDeep)),
                     ),
                   ),
                 ],

@@ -41,7 +41,7 @@ class PasswordMeter extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           label,
-          style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 13),
+          style: TextStyle(color: AppColors.legible(color), fontWeight: FontWeight.w800, fontSize: 13),
         ),
       ],
     );

@@ -103,7 +103,11 @@ class FeatureTile extends StatelessWidget {
                   decoration: BoxDecoration(color: AppColors.sunshineSoft, borderRadius: BorderRadius.circular(20)),
                   child: Text(
                     'Soon',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: AppColors.sunshineDeep),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      color: AppColors.legible(AppColors.sunshineDeep),
+                    ),
                   ),
                 ),
             ],

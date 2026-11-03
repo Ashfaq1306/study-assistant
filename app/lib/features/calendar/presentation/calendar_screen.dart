@@ -91,7 +91,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       Expanded(
                         child: Text(
                           'Reminders are off. Tap to allow notifications so you never miss an exam.',
-                          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.coralDeep),
+                          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.legible(AppColors.coralDeep)),
                         ),
                       ),
                     ],
@@ -114,7 +114,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       Expanded(
                         child: Text(
                           'For on-the-minute class reminders, tap and allow "Alarms & reminders".',
-                          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.skyDeep),
+                          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.legible(AppColors.skyDeep)),
                         ),
                       ),
                     ],
@@ -207,7 +207,7 @@ class _CountdownChip extends StatelessWidget {
       decoration: BoxDecoration(color: AppColors.coralSoft, borderRadius: BorderRadius.circular(20)),
       child: Text(
         relativeDay(at, now),
-        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12.5, color: AppColors.coralDeep),
+        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12.5, color: AppColors.legible(AppColors.coralDeep)),
       ),
     );
   }

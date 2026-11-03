@@ -149,6 +149,18 @@ abstract final class AppColors {
   static Color get violet => _palette.violet;
   static Color get violetDeep => _palette.violetDeep;
   static Color get violetSoft => _palette.violetSoft;
+
+  /// [color] made dark enough for text on light glass (WCAG AA, 4.5:1); unchanged in dark mode.
+  /// Use for coloured labels: bright accents such as sunshine and mint are too faint as text.
+  static Color legible(Color color) {
+    if (isDark) return color;
+    var hsl = HSLColor.fromColor(color);
+    while (hsl.toColor().computeLuminance() > 0.17 && hsl.lightness > 0.05) {
+      hsl = hsl.withLightness(hsl.lightness - 0.03);
+    }
+    return hsl.toColor();
+  }
+
   static Color get sunshine => _palette.sunshine;
   static Color get sunshineDeep => _palette.sunshineDeep;
   static Color get sunshineSoft => _palette.sunshineSoft;
