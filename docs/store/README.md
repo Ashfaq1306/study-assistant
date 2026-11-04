@@ -1,7 +1,7 @@
 # Google Play launch kit
 
 Everything the Play Console asks for, ready to paste. Images are in this folder:
-`icon-512.png` (app icon), `feature-graphic.png` (1024 × 500) and `screenshots/` (10 phone screenshots, 1080 × 2160).
+`icon-512.png` (app icon), `feature-graphic.png` (1024 × 500), `screenshots/` (10 phone screenshots, 1080 × 2160) and `play-screenshots/` (the 8 uploaded to Play: 1080 × 1920, Play needs 9:16 and at most 8).
 Regenerate the artwork with `flutter test tool/store/feature_graphic_test.dart` (from `app/`).
 
 ## Store listing
