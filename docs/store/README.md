@@ -105,7 +105,7 @@ Data is encrypted in transit (HTTPS): **Yes**. Users can request deletion: **Yes
 
 **Accessibility API** (Play Console → App content → Accessibility API). Use: *"Study Mate is a focus app. While a study session or a parent's lock is running, the Accessibility service detects when one of the apps the user chose to lock comes to the foreground (only its package name) and shows the study screen instead, until the user passes a quiz. It does not read text, input or screen content of other apps."*
 In-app disclosure: App lock → Open settings shows "How app lock uses Accessibility" with **I agree / No thanks** before any settings open.
-Video: record App lock → Open settings → disclosure → I agree → enabling the service → starting a session → opening a locked app → lock screen (60 s or less, upload to YouTube unlisted).
+Video: `app-lock-disclosure.mp4` in this folder (1:12): App lock → Open settings → disclosure → I agree → enabling the service → a locked app. Uploaded unlisted: https://youtube.com/shorts/R0YiNJIH6CI (declared in Play Console on 4 Nov 2026).
 
 **Usage access (PACKAGE_USAGE_STATS):** screen time for the linked parent. Requested from App lock step 2 with an explanation.
 
